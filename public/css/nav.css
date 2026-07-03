@@ -31,6 +31,21 @@
     pointer-events: none;
 }
 
+.navbarbrand {
+    position: absolute;
+    width: 170px;
+    max-width: 15vw;
+    height: auto;
+    aspect-ratio: 205 / 46;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    margin: auto 0;
+    background: url('/static/branding/VERTEXIA.png') no-repeat center;
+    background-size: contain;
+    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.25));
+}
+
 .navbarlink,
 .navtext {
     font-family: 'Ubuntu', sans-serif;
@@ -51,7 +66,8 @@
 
 .navbarlink,
 .sidebarbutton,
-.sidebarpfpbutton {
+.sidebarpfpbutton,
+.navbarbrand {
     transform: scale(1);
     opacity: 1;
     animation: navlinkentrybounce 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
@@ -60,14 +76,16 @@
 
 .navbarlink:hover,
 .sidebarbutton:hover,
-.sidebarpfpbutton:hover {
+.sidebarpfpbutton:hover,
+.navbarbrand:hover {
     transform: scale(1.06);
     opacity: 1;
 }
 
 .navbarlink:active,
 .sidebarbutton:active,
-.sidebarpfpbutton:active {
+.sidebarpfpbutton:active,
+.navbarbrand:active {
     transform: scale(0.92);
     transition: transform 0.08s ease;
 }
