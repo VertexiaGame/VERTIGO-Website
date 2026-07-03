@@ -1,18 +1,19 @@
 <nav class="navbarcontainer">
     <!--  TODO make this play ONCE (first visit) and upon future theme change ///  -->
-    <a href="/" class="navbarlink navhome">Home</a>
+    <a href="/" hx-get="/" hx-target="body" hx-push-url="true" class="navbarbrand" aria-label="Vertexia Home"></a>
+    <a href="/" hx-get="/" hx-target="body" hx-push-url="true" class="navbarlink navhome">Home</a>
     <div class="navbardivider"></div>
-    <a href="/play" class="navbarlink navplay">Play</a>
+    <a href="/play" hx-get="/play" hx-target="body" hx-push-url="true" class="navbarlink navplay">Play</a>
     <div class="navbardivider"></div>
-    <a href="/shop" class="navbarlink navshop">Shop</a>
+    <a href="/shop" hx-get="/shop" hx-target="body" hx-push-url="true" class="navbarlink navshop">Shop</a>
     <div class="navbardivider"></div>
-    <a href="/users" class="navbarlink navusers">Users</a>
+    <a href="/users" hx-get="/users" hx-target="body" hx-push-url="true" class="navbarlink navusers">Users</a>
     <div class="navbardivider"></div>
-    <a href="/clans" class="navbarlink navclans">Clans</a>
+    <a href="/clans" hx-get="/clans" hx-target="body" hx-push-url="true" class="navbarlink navclans">Clans</a>
     <div class="navbardivider"></div>
-    <a href="/forum" class="navbarlink navforum">Forum</a>
+    <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="navbarlink navforum">Forum</a>
     <div class="navbardivider"></div>
-    <a href="/upgrade" class="navbarlink navupgrade">Upgrade</a>
+    <a href="/upgrade" hx-get="/upgrade" hx-target="body" hx-push-url="true" class="navbarlink navupgrade">Upgrade</a>
     
     {{template "components/usersidebar" .}}
 </nav>
