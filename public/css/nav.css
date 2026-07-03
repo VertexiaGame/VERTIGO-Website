@@ -54,7 +54,7 @@
 .sidebarpfpbutton {
     transform: scale(1);
     opacity: 1;
-    animation: navlinkentrybounce 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+    animation: navlinkentrybounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease;
 }
 
@@ -90,7 +90,7 @@
     flex-grow: 0;
     opacity: 1;
     border-radius: 999px;
-    animation: navdividerfade 0.8s ease backwards;
+    animation: navdividerfade 0.3s ease backwards;
     animation-delay: 0.4s;
 }
 
