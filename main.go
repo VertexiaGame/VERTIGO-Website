@@ -26,6 +26,18 @@ func main() {
 		Views: engine,
 	})
 
+	app.Get("/", func(c fiber.Ctx) error {
+		return c.Render("pages/home", fiber.Map{
+			"Title": "Vertexia",
+		}, "layouts/main")
+	})
+
+    app.Get("/login", func(c fiber.Ctx) error {
+        return c.Render("pages/login", fiber.Map{
+            "Title": "Log In - Vertexia",
+        }, "layouts/main")
+    })
+
 	app.Get("/static*", static.New("./static", static.Config{
 		NotFoundHandler: func(c fiber.Ctx) error {
 			return c.Next()
@@ -43,12 +55,5 @@ func main() {
 			return c.Next()
 		},
 	}))
-
-	app.Get("/", func(c fiber.Ctx) error {
-		return c.Render("pages/home", fiber.Map{
-			"Title": "Vertexia",
-		}, "layouts/main")
-	})
-
 	log.Fatal(app.Listen(":3000"))
 }
