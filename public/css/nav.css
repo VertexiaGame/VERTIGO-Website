@@ -89,7 +89,7 @@
 .sidebarbutton:hover,
 .sidebarpfpbutton:hover,
 .navbarbrand:hover {
-    transform: scale(1.06);
+    transform: scale(1.04);
     opacity: 1;
 }
 
@@ -97,19 +97,19 @@
 .sidebarbutton:active,
 .sidebarpfpbutton:active,
 .navbarbrand:active {
-    transform: scale(0.92);
+    transform: scale(0.96) rotateX(-25deg);
     transition: transform 0.08s ease;
 }
 
 
 /* terrible looking, im sorry */
-.navhome { width: 56px; animation-delay: 0.1s; }
-.navplay { width: 40px; animation-delay: 0.2s; }
-.navshop { width: 47px; animation-delay: 0.3s; }
-.navusers { width: 52px; animation-delay: 0.4s; }
-.navclans { width: 51px; animation-delay: 0.5s; }
-.navforum { width: 60px; animation-delay: 0.6s; }
-.navupgrade { width: 80px; animation-delay: 0.7s; }
+.navhome { width: 56px; animation-delay: 0.4s; }
+.navplay { width: 40px; animation-delay: 0.3s; }
+.navshop { width: 47px; animation-delay: 0.2s; }
+.navusers { width: 52px; animation-delay: 0.1s; }
+.navclans { width: 51px; animation-delay: 0.2s; }
+.navforum { width: 60px; animation-delay: 0.3s; }
+.navupgrade { width: 80px; animation-delay: 0.4s; }
 
 .navbardivider {
     width: 1px;
@@ -185,12 +185,20 @@
 
 /*im sure theres like a better way to do this, right? - whatthexampp*/
 /*not really - devjuice*/
+/*
 .sidebtn-vert { animation-delay: 0.8s; }
 .sidebtn-tix { animation-delay: 1.0s; }
 .sidebardiv { animation-delay: 1.2s; }
 .sidebtn-msg { animation-delay: 1.3s; }
 .sidebtn-frnd { animation-delay: 1.5s; }
 .sidebtn-pfp { animation-delay: 1.7s; }
+*/
+.sidebtn-vert { animation-delay: 0.7s; }
+.sidebtn-tix { animation-delay: 0.5s; }
+.sidebardiv { animation-delay: 0.3s; }
+.sidebtn-msg { animation-delay: 0.2s; }
+.sidebtn-frnd { animation-delay: 0.1s; }
+.sidebtn-pfp { animation-delay: 0s; }
 
 @keyframes navlinkentrybounce {
     0% {

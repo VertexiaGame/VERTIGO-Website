@@ -159,11 +159,11 @@ body {
 }
 
 .happy:hover {
-    transform: scale(1.06);
+    transform: scale(1.04);
 }
 
 .happy:active {
-    transform: scale(0.92);
+    transform: scale(0.98) rotateX(-25deg);
     transition: transform 0.08s ease;
 }
 
