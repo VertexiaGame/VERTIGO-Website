@@ -148,6 +148,8 @@
     flex: none;
     flex-grow: 0;
     height: 30px;
+    padding: 0;
+    margin: 0;
 }
 
 .sidebarpfpbutton {
@@ -155,6 +157,8 @@
     align-items: center;
     background-color: transparent;
     border: none;
+    padding: 0;
+    margin: 0;
     justify-content: center;
     text-decoration: none;
     flex: none;
@@ -313,4 +317,42 @@
 
 .dropdownlogout {
     color: #FA0000;
+}
+
+@media (max-width: 768px), .mobile-mode {
+    .navbarbrand,
+    .navbarcontainer > .navbardivider,
+    .navbarlink {
+        display: none !important;
+    }
+
+    .usersidebar {
+        width: 100%;
+        right: 0;
+        left: 0;
+        justify-content: center;
+        gap: 10px;
+        padding: 0 10px;
+    }
+
+    .sidebaricon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .sidebarpfp {
+        width: 40px;
+        height: 40px;
+    }
+
+    .navtext {
+        font-size: 18px;
+        line-height: 20px;
+        height: 20px;
+    }
+
+    .sidebarbutton {
+        gap: 4px;
+        height: 28px;
+    }
 }

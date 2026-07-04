@@ -1,10 +1,13 @@
-body {
+html, body {
+    overflow-x: hidden;
     margin: 0;
     padding: 0;
+}
+
+body {
     box-sizing: border-box;
     font-family: 'Ubuntu', sans-serif;
     background: linear-gradient(180deg, #A272C6 0%, #C3C3C5 100%);
     min-height: 100vh;
     color: #ffffff;
-    overflow-x: hidden;
 }
