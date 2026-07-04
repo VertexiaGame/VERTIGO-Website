@@ -6,9 +6,20 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/html/v3"
+	"vertexia-frontend/backend/config"
+	"vertexia-frontend/backend/database"
 )
 
 func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Config error! ########## %v", err)
+	}
+
+	if err := database.Connect(cfg); err != nil {
+		log.Fatalf("DB error! ########## %v", err)
+	}
+
 	engine := html.New("./views", ".html")
 
 	app := fiber.New(fiber.Config{

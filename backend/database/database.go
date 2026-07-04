@@ -1,0 +1,37 @@
+package database
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"vertexia-frontend/backend/config"
+)
+
+var DB *sql.DB
+
+//TODO:
+
+//add pools once i properly understand them lol
+
+func Connect(cfg *config.Config) error {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		cfg.DBUser,
+		cfg.DBPass,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+	)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return err
+	}
+
+	DB = db
+	return nil
+}
