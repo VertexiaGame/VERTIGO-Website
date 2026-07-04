@@ -163,7 +163,7 @@ body {
 }
 
 .happy:active {
-    transform: scale(0.98) rotateX(-25deg);
+    transform: scale(0.98) rotateX(-15deg);
     transition: transform 0.08s ease;
 }
 
