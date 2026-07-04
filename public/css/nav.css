@@ -251,7 +251,7 @@
     z-index: 100;
     opacity: 0;
     transform-origin: right top;
-    transform: translateY(-8px) scale(0.9);
+    transform: translateY(-8px) scale(0.9) rotateX(45deg);
     pointer-events: none;
     transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease-out;
 }
