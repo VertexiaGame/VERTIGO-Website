@@ -14,6 +14,10 @@ var DB *sql.DB
 //add pools once i properly understand them lol
 
 func Connect(cfg *config.Config) error {
+	if !cfg.RunWithDatabase {
+		return nil
+	}
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		cfg.DBUser,
 		cfg.DBPass,
