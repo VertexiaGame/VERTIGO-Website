@@ -1,3 +1,7 @@
+:root {
+    --accent: #912ADF;
+}
+
 html, body {
     overflow-x: hidden;
     margin: 0;
@@ -40,7 +44,7 @@ body {
     position: relative;
     width: 100%;
     height: 69px;
-    background: #912ADF;
+    background: var(--accent, #912ADF);
     border-radius: 6px 6px 0px 0px;
     display: flex;
     align-items: center;
@@ -48,6 +52,19 @@ body {
     box-sizing: border-box;
     flex-shrink: 0;
 }
+
+.studs {
+    position: relative;
+    background-color: var(--accent, #912ADF);
+    -webkit-mask-image: url(/static/useful/icons/stud.svg);
+    mask-image: url(/static/useful/icons/stud.svg);
+    height: 7px;
+    margin-left: 12px;
+    margin-right: 12px;
+    width: 97.2%;
+    background-repeat: repeat-x;
+}
+
 
 .title {
     font-family: 'Ubuntu', sans-serif;
@@ -184,6 +201,7 @@ body {
     background: #E0E0E0;
     border-radius: 0px;
 }
+
 
 @media (max-width: 996px) {
     .wrap {
