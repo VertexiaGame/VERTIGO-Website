@@ -3,6 +3,8 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql"
 	"vertexia-frontend/backend/config"
 )
@@ -11,7 +13,7 @@ var DB *sql.DB
 
 //TODO:
 
-//add pools once i properly understand them lol
+// done
 
 func Connect(cfg *config.Config) error {
 	if !cfg.RunWithDatabase {
@@ -30,6 +32,11 @@ func Connect(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	if err := db.Ping(); err != nil {
 		db.Close()

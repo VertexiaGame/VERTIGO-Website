@@ -2,8 +2,11 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
+	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/html/v3"
 	"vertexia-frontend/backend/config"
@@ -36,8 +39,21 @@ func main() {
 	engine := html.New("./views", ".html")
 
 	app := fiber.New(fiber.Config{
-		Views: engine,
+		Views:        engine,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		ServerHeader: "",
 	})
+
+	app.Use(recoverer.New())
+
+
+	//We should not allow more than 100 requests X minute from same IP
+	app.Use(limiter.New(limiter.Config{
+		Max:        100,
+		Expiration: 1 * time.Minute,
+	}))
 
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.Render("pages/home", fiber.Map{
@@ -45,11 +61,11 @@ func main() {
 		}, "layouts/main")
 	})
 
-    app.Get("/login", func(c fiber.Ctx) error {
-        return c.Render("pages/login", fiber.Map{
-            "Title": "Log In - Vertexia",
-        }, "layouts/main")
-    })
+	app.Get("/login", func(c fiber.Ctx) error {
+		return c.Render("pages/login", fiber.Map{
+			"Title": "Log In - Vertexia",
+		}, "layouts/main")
+	})
 
 	app.Get("/static*", static.New("./static", static.Config{
 		NotFoundHandler: func(c fiber.Ctx) error {
