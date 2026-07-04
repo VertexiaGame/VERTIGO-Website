@@ -327,12 +327,12 @@
     }
 
     .usersidebar {
-        width: 100%;
-        right: 0;
-        left: 0;
+        width: auto;
+        right: 10px;
+        left: 10px;
         justify-content: center;
         gap: 10px;
-        padding: 0 10px;
+        padding: 0;
     }
 
     .sidebaricon {

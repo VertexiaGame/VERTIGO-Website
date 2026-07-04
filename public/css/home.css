@@ -1,0 +1,195 @@
+body {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    min-height: 100vh;
+}
+
+.main-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    padding-top: 115px;
+    padding-bottom: 0;
+    box-sizing: border-box;
+    width: 100%;
+    flex-grow: 1;
+}
+
+.main-container {
+    width: 996px;
+    max-width: 95%;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 115px);
+    box-sizing: border-box;
+}
+
+.studded-row {
+    --s: 84px;
+    --h: 10px;
+    --g: 6px;
+    --r: 8px;
+
+    height: var(--h);
+    margin: 0 11px;
+    flex-shrink: 0;
+
+    background-image:
+        radial-gradient(var(--r) circle at calc(var(--r) + var(--g)/2) var(--r), #912ADF 98%, #0000 100%),
+        radial-gradient(var(--r) circle at calc(var(--s) - var(--r) - var(--g)/2) var(--r), #912ADF 98%, #0000 100%),
+        linear-gradient(to right, #0000 calc(var(--r) + var(--g)/2), #912ADF 0, #912ADF calc(var(--s) - var(--r) - var(--g)/2), #0000 0),
+        linear-gradient(to right, #0000 calc(var(--g)/2), #912ADF 0, #912ADF calc(var(--s) - var(--g)/2), #0000 0);
+
+    background-position:
+        0 0,
+        0 0,
+        0 0,
+        0 var(--r);
+
+    background-size:
+        var(--s) var(--h),
+        var(--s) var(--h),
+        var(--s) var(--r),
+        var(--s) calc(var(--h) - var(--r));
+
+    background-repeat: round no-repeat;
+}
+
+.sub-bar {
+    position: relative;
+    width: 100%;
+    height: 69px;
+    background: #912ADF;
+    border-radius: 6px 6px 0px 0px;
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.subbar-title {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 32px;
+    line-height: 37px;
+    color: #FFFFFF;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    user-select: none;
+}
+
+.search-input-wrapper {
+    position: absolute;
+    left: 294px;
+    width: 408px;
+    height: 37px;
+    background: rgba(61, 61, 61, 0.25);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.search-icon-img {
+    position: absolute;
+    left: 12px;
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+    object-fit: contain;
+    z-index: 5;
+}
+
+.search-input-field {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #FFFFFF;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 20px;
+    line-height: 23px;
+    text-align: center;
+    padding: 0 40px;
+    box-sizing: border-box;
+}
+
+.create-button {
+    position: absolute;
+    right: 16px;
+    width: 96px;
+    height: 37px;
+    background: rgba(61, 61, 61, 0.25);
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    color: #FFFFFF;
+    font-family: 'Ubuntu', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 23px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: background 0.15s ease-in-out;
+}
+
+.create-button:hover {
+    background: rgba(61, 61, 61, 0.35);
+}
+
+.create-button:active {
+    transform: scale(0.98);
+}
+
+.main-content {
+    width: 100%;
+    flex-grow: 1;
+    background: #E0E0E0;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15), 4px 0 20px rgba(0, 0, 0, 0.15);
+    border-radius: 0px;
+}
+
+@media (max-width: 996px) {
+    .main-wrapper {
+        padding-top: 80px;
+    }
+    .main-container {
+        width: 100%;
+        max-width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+    .studded-row {
+        margin-left: 4px;
+        margin-right: 4px;
+    }
+    .sub-bar {
+        height: auto;
+        padding: 12px;
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    .subbar-title {
+        text-align: center;
+        font-size: 28px;
+    }
+    .search-input-wrapper {
+        position: static;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    .create-button {
+        position: static;
+        width: 100%;
+        max-width: 100%;
+        margin-top: 4px;
+    }
+}
