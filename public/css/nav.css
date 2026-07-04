@@ -74,6 +74,10 @@
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease;
 }
 
+.navbarbrand {
+    animation: navbarbrandentryslide 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
 .navbarlink:hover,
 .sidebarbutton:hover,
 .sidebarpfpbutton:hover,
@@ -168,7 +172,8 @@
     object-fit: cover;
 }
 
-/*im sure theres like a better way to do this, right?*/
+/*im sure theres like a better way to do this, right? - whatthexampp*/
+/*not really - devjuice*/
 .sidebtn-vert { animation-delay: 0.8s; }
 .sidebtn-tix { animation-delay: 1.0s; }
 .sidebardiv { animation-delay: 1.2s; }
@@ -178,19 +183,30 @@
 
 @keyframes navlinkentrybounce {
     0% {
-        transform: scale(0.4);
         opacity: 0;
+        transform: scale(0.4);
     }
     60% {
-        transform: scale(1.15);
         opacity: 0.9;
+        transform: scale(1.15);
     }
     85% {
         transform: scale(0.94);
     }
     100% {
-        transform: scale(1);
         opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes navbarbrandentryslide {
+    0% {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
     }
 }
 
