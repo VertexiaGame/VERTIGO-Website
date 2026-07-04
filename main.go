@@ -10,6 +10,19 @@ import (
 	"vertexia-frontend/backend/database"
 )
 
+func render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
+	layout := "layouts/main"
+	if len(layouts) > 0 {
+		layout = layouts[0]
+	}
+	if c.Get("HX-Request") == "true" {
+		if layout == "layouts/main" {
+			layout = "layouts/htmx"
+		}
+	}
+	return c.Render(view, data, layout)
+}
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -55,5 +68,6 @@ func main() {
 			return c.Next()
 		},
 	}))
+
 	log.Fatal(app.Listen(":3000"))
 }
