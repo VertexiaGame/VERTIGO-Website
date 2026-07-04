@@ -21,7 +21,35 @@
         <span class="navtext">99</span>
     </a>
     
-    <button class="sidebarpfpbutton sidebtn-pfp">
+    <button class="sidebarpfpbutton sidebtn-pfp" onclick="toggleDropdown(event)">
         <img src="/static/useful/temp/pfp.png" class="sidebarpfp" alt="set this to player id in the future / username">
     </button>
+
+    <div id="userDropdown" class="userdropdown">
+        <span class="dropdownuser">devjuice</span>
+        <div class="dropdownline"></div>
+        <a href="/avatar" hx-get="/avatar" hx-target="body" hx-push-url="true" class="dropdownitem">Avatar</a>
+        <a href="/create" hx-get="/create" hx-target="body" hx-push-url="true" class="dropdownitem">Create ...</a>
+        <a href="/redeem" hx-get="/redeem" hx-target="body" hx-push-url="true" class="dropdownitem">Redeem</a>
+        <a href="/settings" hx-get="/settings" hx-target="body" hx-push-url="true" class="dropdownitem">Settings</a>
+        <a href="/admin" hx-get="/admin" hx-target="body" hx-push-url="true" class="dropdownitem">Admin</a>
+        <a href="/logout" hx-get="/logout" hx-target="body" hx-push-url="true" class="dropdownitem dropdownlogout">Log out</a>
+    </div>
 </div>
+
+<script>
+    function toggleDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('userDropdown');
+        dropdown.classList.toggle('active');
+    }
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdown');
+        if (dropdown && dropdown.classList.contains('active')) {
+            const pfpButton = document.querySelector('.sidebarpfpbutton');
+            if (!dropdown.contains(event.target) && !pfpButton.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        }
+    });
+</script>
