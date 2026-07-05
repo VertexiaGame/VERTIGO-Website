@@ -261,7 +261,7 @@ body {
 @keyframes contentryslide {
     0% {
         opacity: 0;
-        transform: translateY(25%);
+        transform: scale(99%) translateY(1%) rotateX(-15deg);
     }
     100% {
         opacity: 1;
