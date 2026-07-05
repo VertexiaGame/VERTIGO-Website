@@ -7,24 +7,12 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
-	"github.com/gofiber/fiber/v3/middleware/static"
+	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/gofiber/template/html/v3"
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/database"
+	"vertexia-frontend/backend/routes"
 )
-
-func render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
-	layout := "layouts/main"
-	if len(layouts) > 0 {
-		layout = layouts[0]
-	}
-	if c.Get("HX-Request") == "true" {
-		if layout == "layouts/main" {
-			layout = "layouts/htmx"
-		}
-	}
-	return c.Render(view, data, layout)
-}
 
 func main() {
 	cfg, err := config.Load()
@@ -59,35 +47,20 @@ func main() {
 		URL:  "/favicon.ico",
 	}))
 
-	app.Get("/", func(c fiber.Ctx) error {
-		return render(c, "pages/home", fiber.Map{
-			"Title": "VERTEXIA",
-		}, "layouts/main")
-	})
+	sessionConfig := session.Config{
+		CookieHTTPOnly: true,
+		CookieSecure:   cfg.SessionSecure,
+		CookieSameSite: cfg.SessionSameSite,
+	}
+	if cfg.SessionIdleTimeout > 0 {
+		sessionConfig.IdleTimeout = cfg.SessionIdleTimeout
+	}
+	if cfg.SessionAbsoluteTimeout > 0 && cfg.SessionAbsoluteTimeout >= cfg.SessionIdleTimeout {
+		sessionConfig.AbsoluteTimeout = cfg.SessionAbsoluteTimeout
+	}
+	app.Use(session.New(sessionConfig))
 
-	app.Get("/login", func(c fiber.Ctx) error {
-		return render(c, "pages/login", fiber.Map{
-			"Title": "Log In - VERTEXIA",
-		}, "layouts/main")
-	})
-
-	app.Get("/static*", static.New("./static", static.Config{
-		NotFoundHandler: func(c fiber.Ctx) error {
-			return c.Next()
-		},
-	}))
-
-	app.Get("/static*", static.New("./public", static.Config{
-		NotFoundHandler: func(c fiber.Ctx) error {
-			return c.Next()
-		},
-	}))
-
-	app.Get("/*", static.New("./public", static.Config{
-		NotFoundHandler: func(c fiber.Ctx) error {
-			return c.Next()
-		},
-	}))
+	routes.Setup(app)
 
 	log.Fatal(app.Listen(":3000"))
 }

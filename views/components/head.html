@@ -15,4 +15,25 @@
     } else if (/iPad|Tablet/i.test(navigator.userAgent)) {
        //not implemented for now, but mobile won't work out on tablet i dont think
     }
+
+    let isReload = false;
+    if (window.performance && window.performance.getEntriesByType) {
+        const navEntries = window.performance.getEntriesByType('navigation');
+        if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+            isReload = true;
+        }
+    }
+
+    if (isReload) {
+        sessionStorage.removeItem('alreadyLoaded');
+    }
+
+    if (!isReload && sessionStorage.getItem('alreadyLoaded') === 'true') {
+        document.documentElement.classList.add('notreq');
+    } else {
+        setTimeout(function() {
+            document.documentElement.classList.add('notreq');
+            sessionStorage.setItem('alreadyLoaded', 'true');
+        }, 1500);
+    }
 </script>

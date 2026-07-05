@@ -15,5 +15,11 @@
     <div class="navbardivider"></div>
     <a href="/upgrade" hx-get="/upgrade" hx-target="body" hx-push-url="true" class="navbarlink navupgrade">Upgrade</a>
     
-    {{template "components/usersidebar" .}}
+    {{if .IsLoggedIn}}
+        {{template "components/usersidebar" .}}
+    {{else}}
+        <div class="usersidebar" style="justify-content: flex-end; width: auto; right: 15px; left: auto;">
+            <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true" class="navbarlink" style="width: auto;">Login</a>
+        </div>
+    {{end}}
 </nav>

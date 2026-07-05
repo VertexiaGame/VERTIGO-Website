@@ -268,3 +268,11 @@ body {
         transform: translateY(0);
     }
 }
+
+html.notreq .navbarlink,
+html.notreq .sidebarbutton,
+html.notreq .sidebarpfpbutton,
+html.notreq .navbarbrand,
+html.notreq .navbardivider {
+    animation: none !important;
+}
