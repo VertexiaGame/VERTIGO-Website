@@ -61,13 +61,13 @@ func main() {
 
 	app.Get("/", func(c fiber.Ctx) error {
 		return render(c, "pages/home", fiber.Map{
-			"Title": "Vertexia",
+			"Title": "VERTEXIA",
 		}, "layouts/main")
 	})
 
 	app.Get("/login", func(c fiber.Ctx) error {
 		return render(c, "pages/login", fiber.Map{
-			"Title": "Log In - Vertexia",
+			"Title": "Log In - VERTEXIA",
 		}, "layouts/main")
 	})
 
