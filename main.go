@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/static"
+	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/template/html/v3"
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/database"
@@ -53,6 +54,11 @@ func main() {
 	app.Use(limiter.New(limiter.Config{
 		Max:        100,
 		Expiration: 1 * time.Minute,
+	}))
+
+	app.Use(favicon.New(favicon.Config{
+	    File:	"./static/branding/favicon.ico",
+	    URL:	"/favicon.ico",
 	}))
 
 	app.Get("/", func(c fiber.Ctx) error {
