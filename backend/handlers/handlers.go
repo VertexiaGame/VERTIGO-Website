@@ -20,5 +20,5 @@ func LoginGet(c fiber.Ctx) error {
 func Logout(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	_ = sess.Destroy()
-	return c.Redirect("/")
+	return c.Redirect().To("/")
 }
