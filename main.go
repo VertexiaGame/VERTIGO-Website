@@ -2,13 +2,12 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/static"
-	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/template/html/v3"
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/database"
@@ -41,34 +40,33 @@ func main() {
 
 	app := fiber.New(fiber.Config{
 		Views:        engine,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  cfg.ServerReadTimeout,
+		WriteTimeout: cfg.ServerWriteTimeout,
+		IdleTimeout:  cfg.ServerIdleTimeout,
 		ServerHeader: "",
 	})
 
 	app.Use(recoverer.New())
 
-
 	//We should not allow more than 100 requests X minute from same IP
 	app.Use(limiter.New(limiter.Config{
-		Max:        100,
-		Expiration: 1 * time.Minute,
+		Max:        cfg.LimiterMax,
+		Expiration: cfg.LimiterExpiration,
 	}))
 
 	app.Use(favicon.New(favicon.Config{
-	    File:	"./static/branding/favicon.ico",
-	    URL:	"/favicon.ico",
+		File: "./static/branding/favicon.ico",
+		URL:  "/favicon.ico",
 	}))
 
 	app.Get("/", func(c fiber.Ctx) error {
-		return c.Render("pages/home", fiber.Map{
+		return render(c, "pages/home", fiber.Map{
 			"Title": "Vertexia",
 		}, "layouts/main")
 	})
 
 	app.Get("/login", func(c fiber.Ctx) error {
-		return c.Render("pages/login", fiber.Map{
+		return render(c, "pages/login", fiber.Map{
 			"Title": "Log In - Vertexia",
 		}, "layouts/main")
 	})

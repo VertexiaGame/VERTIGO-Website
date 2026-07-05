@@ -3,8 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"time"
-
 	_ "github.com/go-sql-driver/mysql"
 	"vertexia-frontend/backend/config"
 )
@@ -13,7 +11,7 @@ var DB *sql.DB
 
 //TODO:
 
-// done
+//done
 
 func Connect(cfg *config.Config) error {
 	if !cfg.RunWithDatabase {
@@ -33,10 +31,11 @@ func Connect(cfg *config.Config) error {
 		return err
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetConnMaxIdleTime(5 * time.Minute)
+	//get config
+	db.SetMaxOpenConns(cfg.DBMaxOpenConns)
+	db.SetMaxIdleConns(cfg.DBMaxIdleConns)
+	db.SetConnMaxLifetime(cfg.DBConnMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.DBConnMaxIdleTime)
 
 	if err := db.Ping(); err != nil {
 		db.Close()
