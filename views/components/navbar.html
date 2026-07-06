@@ -18,7 +18,9 @@
     {{if .IsLoggedIn}}
         {{template "components/usersidebar" .}}
     {{else}}
-        <div class="usersidebar" style="justify-content: flex-end; width: auto; right: 15px; left: auto;">
+        <div class="usersidebar" style="justify-content: flex-end; width: auto; right: 15px; left: auto; gap: 15px;">
+            <a href="/register" hx-get="/register" hx-target="body" hx-push-url="true" class="navbarlink" style="width: auto;">Register</a>
+            <div class="navbardivider" style="height: 18px; margin: 0;"></div>
             <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true" class="navbarlink" style="width: auto;">Login</a>
         </div>
     {{end}}

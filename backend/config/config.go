@@ -30,7 +30,10 @@ type Config struct {
 	SessionSameSite        string
 	SessionIdleTimeout     time.Duration
 	SessionAbsoluteTimeout time.Duration
+	AltchaHMACKey          string
 }
+
+var Global *Config
 
 func Load() (*Config, error) {
 	_ = godotenv.Load()
@@ -50,9 +53,9 @@ func Load() (*Config, error) {
 	sessionSameSite := os.Getenv("SESSION_SAMESITE")
 	sessionIdleTimeout, _ := time.ParseDuration(os.Getenv("SESSION_IDLE_TIMEOUT"))
 	sessionAbsoluteTimeout, _ := time.ParseDuration(os.Getenv("SESSION_ABSOLUTE_TIMEOUT"))
+	altchaHMACKey := os.Getenv("ALTCHA_HMAC_KEY")
 
-	//return to database.go the config
-	return &Config{
+	cfg := &Config{
 		DBUser:                 os.Getenv("DB_USER"),
 		DBPass:                 os.Getenv("DB_PASS"),
 		DBHost:                 os.Getenv("DB_HOST"),
@@ -72,5 +75,11 @@ func Load() (*Config, error) {
 		SessionSameSite:        sessionSameSite,
 		SessionIdleTimeout:     sessionIdleTimeout,
 		SessionAbsoluteTimeout: sessionAbsoluteTimeout,
-	}, nil
+		AltchaHMACKey:          altchaHMACKey,
+	}
+
+	Global = cfg
+
+	//return to database.go the config
+	return cfg, nil
 }

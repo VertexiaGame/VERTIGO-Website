@@ -2,7 +2,7 @@
     <div class="cont">
         <div class="studs"></div>
         <div class="bar">
-            <span class="title">Login</span>
+            <span class="title">Register</span>
             <div class="pill">
                 <img src="/static/useful/icons/search.png" class="icon" alt="Search">
                 <input type="text" class="input" placeholder="search">
@@ -11,27 +11,39 @@
         </div>
         <div class="pane">
             <font color="black">
-                <h2>Log In</h2>
+                <h2>Register</h2>
                 {{if .Error}}
                     <p><font color="red">{{.Error}}</font></p>
                 {{end}}
-                <form action="/login" method="POST" hx-boost="false">
+                <form action="/register" method="POST" hx-boost="false">
                     <p>
-                        <label>Username or Email</label><br>
-                        <input type="text" name="identifier" required>
+                        <label>Username</label><br>
+                        <input type="text" name="username" required>
+                    </p>
+                    <p>
+                        <label>Display Name (Optional)</label><br>
+                        <input type="text" name="displayname">
+                    </p>
+                    <p>
+                        <label>Email</label><br>
+                        <input type="email" name="email" required>
                     </p>
                     <p>
                         <label>Password</label><br>
                         <input type="password" name="password" required>
                     </p>
                     <p>
+                        <label>Confirm Password</label><br>
+                        <input type="password" name="password_confirm" required>
+                    </p>
+                    <p>
                         <altcha-widget challengeurl="/altcha" hidelogo="true"></altcha-widget>
                     </p>
                     <p>
-                        <button type="submit" class="button">Log In</button>
+                        <button type="submit" class="button">Register</button>
                     </p>
                 </form>
-                <p>Don't have an account? <a href="/register" hx-get="/register" hx-target="body" hx-push-url="true">Register here</a></p>
+                <p>Already have an account? <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true">Login here</a></p>
             </font>
         </div>
     </div>
