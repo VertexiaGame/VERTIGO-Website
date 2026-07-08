@@ -43,6 +43,18 @@ body {
     animation: 1s cubic-bezier(0.175, 0.885, 0.32, 1.0) 0s 1 contentryslide;
 }
 
+.pane::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: url(/static/useful/icons/bricks.avif);
+    background-size: cover;
+    opacity: 0.04;
+}
+
 .bar {
     position: relative;
     width: 100%;
