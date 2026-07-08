@@ -1,12 +1,12 @@
 <div class="usersidebar">
     <a href="/currency" hx-get="/currency" hx-target="body" hx-push-url="true" class="sidebarbutton sidebtn-vert">
         <img src="/static/useful/icons/vertice.png" class="sidebaricon" alt="Vertice">
-        <span class="navtext">99K</span>
+        <span class="navtext">{{.Bucks}}</span>
     </a>
 
     <a href="/currency" hx-get="/currency" hx-target="body" hx-push-url="true" class="sidebarbutton sidebtn-tix">
         <img src="/static/useful/icons/tix.png" class="sidebaricon" alt="Tix">
-        <span class="navtext">99K</span>
+        <span class="navtext">{{.Bits}}</span>
     </a>
 
     <div class="navbardivider sidebardiv"></div>

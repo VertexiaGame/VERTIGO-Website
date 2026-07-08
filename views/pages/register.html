@@ -7,7 +7,10 @@
                 <img src="/static/useful/icons/search.png" class="icon" alt="Search">
                 <input type="text" class="input" placeholder="search">
             </div>
-            <button hx-get="/" hx-target="body" hx-push-url="true" class="button generic">Go back</button>
+            <div class="bar-buttons">
+                <button hx-get="/login" hx-target="body" hx-push-url="true" class="button bar-btn">Login</button>
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button bar-btn">Go back</button>
+            </div>
         </div>
         <div class="pane">
             <div class="form-layout">

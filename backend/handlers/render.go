@@ -67,19 +67,28 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 	if len(layouts) > 0 {
 		layout = layouts[0]
 	}
-	if c.Get("HX-Request") == "true" {
-		if layout == "layouts/main" {
-			layout = "layouts/htmx"
-		}
-	}
 
 	username := GetActiveUser(c)
 	if username != "" {
 		data["Username"] = username
 		data["IsLoggedIn"] = true
+
+		bucks := 0
+		bits := 0
+		if database.DB != nil {
+			u, err := models.GetUserByUsername(database.DB, username)
+			if err == nil && u != nil {
+				bucks = u.Bucks
+				bits = u.Bits
+			}
+		}
+		data["Bucks"] = bucks
+		data["Bits"] = bits
 	} else {
 		data["Username"] = ""
 		data["IsLoggedIn"] = false
+		data["Bucks"] = 0
+		data["Bits"] = 0
 	}
 
 	return c.Render(view, data, layout)
