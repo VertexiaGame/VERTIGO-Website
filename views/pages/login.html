@@ -10,30 +10,109 @@
             <button hx-get="/" hx-target="body" hx-push-url="true" class="button generic">Go back</button>
         </div>
         <div class="pane">
-            <font color="black">
-                <h2>Log In</h2>
-                {{if .Error}}
-                    <p><font color="red">{{.Error}}</font></p>
-                {{end}}
-                <form action="/login" method="POST" hx-boost="false">
-                    <p>
-                        <label>Username or Email</label><br>
-                        <input type="text" name="identifier" required>
-                    </p>
-                    <p>
-                        <label>Password</label><br>
-                        <input type="password" name="password" required>
-                    </p>
-                    <p>
-                        <altcha-widget challengeurl="/altcha" hidelogo="true"></altcha-widget>
-                    </p>
-                    <p>
-                        <button type="submit" class="button">Log In</button>
-                    </p>
-                </form>
-                <p>Don't have an account? <a href="/register" hx-get="/register" hx-target="body" hx-push-url="true">Register here</a></p>
-            </font>
+            <div class="form-layout">
+                <div class="form-main">
+                    <h2 class="form-header-title">Log In</h2>
+                    <form action="/login" method="POST" hx-boost="false">
+                        <div class="form-group">
+                            <div class="form-input-container">
+                                <input type="text" name="identifier" class="form-input" placeholder="Username or Email" required>
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-input-container">
+                                <input type="password" name="password" class="form-input" placeholder="Password" required>
+                                <i class="fa-solid fa-key"></i>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; margin-bottom: 20px;">
+                            <altcha-widget challengeurl="/altcha" hidelogo="true"></altcha-widget>
+                        </div>
+                        <div>
+                            <button type="submit" class="happy" style="position: relative; left: auto; top: auto; display: inline-flex;">
+                                <span>Log In</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-sidebar">
+                    <div class="form-sidebar-section">
+                        <h3 class="form-sidebar-title">Security Tips</h3>
+                        <ul class="form-sidebar-list">
+                            <li>Always verify you are on vertexia.</li>
+                            <li>Never share your credentials with anyone.</li>
+                            <li>Enable verification methods in settings.</li>
+                        </ul>
+                    </div>
+                    <div class="form-sidebar-section">
+                        <h3 class="form-sidebar-title">Don't have an account?</h3>
+                        <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 0;">
+                            Join VERTEXIA to experience avatars, forums, and custom clans! <a href="/register" hx-get="/register" hx-target="body" hx-push-url="true" class="form-sidebar-link">Register here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{{if .Error}}
+<script>
+    (function() {
+        var err = "{{.Error}}";
+        if (!err) return;
+        
+        var targetInput = null;
+        var errLower = err.toLowerCase();
+        
+        if (errLower.indexOf("username") !== -1 && errLower.indexOf("password") !== -1) {
+            var u = document.querySelector('input[name="identifier"]');
+            var p = document.querySelector('input[name="password"]');
+            if (u) u.classList.add('input-error');
+            if (p) p.classList.add('input-error');
+            showErrorUnder(p || u, err);
+        } else if (errLower.indexOf("username") !== -1 || errLower.indexOf("identifier") !== -1 || errLower.indexOf("credentials") !== -1) {
+            targetInput = document.querySelector('input[name="identifier"]');
+            if (targetInput) {
+                targetInput.classList.add('input-error');
+                showErrorUnder(targetInput, err);
+            }
+        } else if (errLower.indexOf("password") !== -1) {
+            targetInput = document.querySelector('input[name="password"]');
+            if (targetInput) {
+                targetInput.classList.add('input-error');
+                showErrorUnder(targetInput, err);
+            }
+        } else if (errLower.indexOf("captcha") !== -1) {
+            var widget = document.querySelector('altcha-widget');
+            if (widget) {
+                widget.style.border = "1px solid #ff3b30";
+                widget.style.borderRadius = "8px";
+                widget.style.padding = "4px";
+                showErrorUnder(widget, err);
+            }
+        } else {
+            targetInput = document.querySelector('.form-input');
+            if (targetInput) {
+                targetInput.classList.add('input-error');
+                showErrorUnder(targetInput, err);
+            }
+        }
+        
+        function showErrorUnder(element, message) {
+            var group = element.closest('.form-group') || element.parentElement;
+            var errDiv = group.querySelector('.form-input-error-text');
+            if (!errDiv) {
+                errDiv = document.createElement('span');
+                errDiv.className = 'form-input-error-text';
+                group.appendChild(errDiv);
+            }
+            errDiv.textContent = message;
+            requestAnimationFrame(function() {
+                errDiv.classList.add('visible');
+            });
+        }
+    })();
+</script>
+{{end}}
 <script async defer src="https://cdn.jsdelivr.net/npm/altcha/dist/altcha.min.js" type="module"></script>

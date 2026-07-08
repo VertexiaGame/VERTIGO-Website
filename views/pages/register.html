@@ -10,42 +10,115 @@
             <button hx-get="/" hx-target="body" hx-push-url="true" class="button generic">Go back</button>
         </div>
         <div class="pane">
-            <font color="black">
-                <h2>Register</h2>
-                {{if .Error}}
-                    <p><font color="red">{{.Error}}</font></p>
-                {{end}}
-                <form action="/register" method="POST" hx-boost="false">
-                    <p>
-                        <label>Username</label><br>
-                        <input type="text" name="username" required>
-                    </p>
-                    <p>
-                        <label>Display Name (Optional)</label><br>
-                        <input type="text" name="displayname">
-                    </p>
-                    <p>
-                        <label>Email</label><br>
-                        <input type="email" name="email" required>
-                    </p>
-                    <p>
-                        <label>Password</label><br>
-                        <input type="password" name="password" required>
-                    </p>
-                    <p>
-                        <label>Confirm Password</label><br>
-                        <input type="password" name="password_confirm" required>
-                    </p>
-                    <p>
-                        <altcha-widget challengeurl="/altcha" hidelogo="true"></altcha-widget>
-                    </p>
-                    <p>
-                        <button type="submit" class="button">Register</button>
-                    </p>
-                </form>
-                <p>Already have an account? <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true">Login here</a></p>
-            </font>
+            <div class="form-layout">
+                <div class="form-main">
+                    <h2 class="form-header-title">Create Account</h2>
+                    <form action="/register" method="POST" hx-boost="false">
+                        <div class="form-group">
+                            <div class="form-input-container">
+                                <input type="text" name="username" class="form-input" placeholder="Username" required>
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <span class="form-helper">3-25 alphanumeric characters</span>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-input-container">
+                                <input type="email" name="email" class="form-input" placeholder="Email" required>
+                                <i class="fa-solid fa-envelope"></i>
+                            </div>
+                            <span class="form-helper">Used for account recovery</span>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-input-container">
+                                <input type="password" name="password" class="form-input" placeholder="Password" required>
+                                <i class="fa-solid fa-key"></i>
+                            </div>
+                            <span class="form-helper">Min 8 characters</span>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-input-container">
+                                <input type="password" name="password_confirm" class="form-input" placeholder="Confirm Password" required>
+                                <i class="fa-solid fa-key"></i>
+                            </div>
+                        </div>
+                        <label class="form-checkbox-group">
+                            <input type="checkbox" required>
+                            <span>I agree to the <a href="/tos" hx-get="/tos" hx-target="body" hx-push-url="true">Terms of Service</a></span>
+                        </label>
+                        <div style="margin-bottom: 20px;">
+                            <altcha-widget challengeurl="/altcha" hidelogo="true"></altcha-widget>
+                        </div>
+                        <div>
+                            <button type="submit" class="happy" style="position: relative; left: auto; top: auto; display: inline-flex;">
+                                <span>Sign Up</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-sidebar" style="display: flex; flex-direction: column; justify-content: flex-end; align-items: center; background: #ffffff; padding: 40px 0 0 0; overflow: hidden; border: none; width: 100%; max-width: 420px;">
+                    <img src="/static/useful/pages/auth/hello.png" alt="Welcome" style="width: 100%; height: auto; display: block; margin-bottom: 0; object-fit: contain;">
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{{if .Error}}
+<script>
+    (function() {
+        var err = "{{.Error}}";
+        if (!err) return;
+        
+        var targetInput = null;
+        var errLower = err.toLowerCase();
+        
+        if (errLower.indexOf("username") !== -1) {
+            targetInput = document.querySelector('input[name="username"]');
+            if (targetInput) {
+                targetInput.classList.add('input-error');
+                showErrorUnder(targetInput, err);
+            }
+        } else if (errLower.indexOf("email") !== -1) {
+            targetInput = document.querySelector('input[name="email"]');
+            if (targetInput) {
+                targetInput.classList.add('input-error');
+                showErrorUnder(targetInput, err);
+            }
+        } else if (errLower.indexOf("password") !== -1) {
+            targetInput = document.querySelector('input[name="password"]') || document.querySelector('input[name="password_confirm"]');
+            if (targetInput) {
+                targetInput.classList.add('input-error');
+                showErrorUnder(targetInput, err);
+            }
+        } else if (errLower.indexOf("captcha") !== -1) {
+            var widget = document.querySelector('altcha-widget');
+            if (widget) {
+                widget.style.border = "1px solid #ff3b30";
+                widget.style.borderRadius = "8px";
+                widget.style.padding = "4px";
+                showErrorUnder(widget, err);
+            }
+        } else {
+            targetInput = document.querySelector('.form-input');
+            if (targetInput) {
+                targetInput.classList.add('input-error');
+                showErrorUnder(targetInput, err);
+            }
+        }
+        
+        function showErrorUnder(element, message) {
+            var group = element.closest('.form-group') || element.parentElement;
+            var errDiv = group.querySelector('.form-input-error-text');
+            if (!errDiv) {
+                errDiv = document.createElement('span');
+                errDiv.className = 'form-input-error-text';
+                group.appendChild(errDiv);
+            }
+            errDiv.textContent = message;
+            requestAnimationFrame(function() {
+                errDiv.classList.add('visible');
+            });
+        }
+    })();
+</script>
+{{end}}
 <script async defer src="https://cdn.jsdelivr.net/npm/altcha/dist/altcha.min.js" type="module"></script>
