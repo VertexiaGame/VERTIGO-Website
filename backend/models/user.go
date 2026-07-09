@@ -3,7 +3,6 @@ package models
 import (
 	"crypto/rand"
 	"database/sql"
-	"encoding/binary"
 	"errors"
 	"strings"
 	"sync"
@@ -122,19 +121,11 @@ func CreateUser(db *sql.DB, username, displayname, email, password string) (*Use
 		return nil, err
 	}
 
-	var id int
-	idBytes := make([]byte, 4)
-	if _, err := rand.Read(idBytes); err != nil {
-		return nil, err
-	}
-	id = int(binary.BigEndian.Uint32(idBytes) & 0x7FFFFFFF)
-
 	if displayname == "" {
 		displayname = username
 	}
 
 	user := &User{
-		ID:           id,
 		Username:     username,
 		DisplayName:  displayname,
 		Mail:         email,
@@ -155,9 +146,8 @@ func CreateUser(db *sql.DB, username, displayname, email, password string) (*Use
 		FeedCaptchas: 0,
 	}
 
-	query := "INSERT INTO users (id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	_, err = db.Exec(query,
-		user.ID,
+	query := "INSERT INTO users (username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	res, err := db.Exec(query,
 		user.Username,
 		user.DisplayName,
 		user.Mail,
@@ -177,6 +167,57 @@ func CreateUser(db *sql.DB, username, displayname, email, password string) (*Use
 		user.CreationDate,
 		user.Views,
 		user.FeedCaptchas,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	user.ID = int(lastID)
+
+	torsoColors := []string{"c60000", "3292d3", "85ad00", "e58700"}
+	legColors := []string{"650013", "1c4399", "1d6a19", "76603f"}
+
+	idxBytes := make([]byte, 1)
+	if _, err := rand.Read(idxBytes); err != nil {
+		return nil, err
+	}
+	torsoIdx := int(idxBytes[0]) % 4
+
+	if _, err := rand.Read(idxBytes); err != nil {
+		return nil, err
+	}
+	legIdx := int(idxBytes[0]) % 4
+
+	torso := torsoColors[torsoIdx]
+	leg := legColors[legIdx]
+
+	avatarQuery := "INSERT INTO avatar (id, head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face, head, larm, rarm, torso, lleg, rleg, light_color, light_intensity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	_, err = db.Exec(avatarQuery,
+		user.ID,
+		"f3b700",
+		"f3b700",
+		"f3b700",
+		torso,
+		leg,
+		leg,
+		0, 0, 0, 0, 0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		"ffffff",
+		100,
 	)
 	if err != nil {
 		return nil, err
@@ -304,4 +345,16 @@ func UpdateUserOnline(db *sql.DB, userID int) error {
 	query := "UPDATE users SET last_online = ? WHERE id = ?"
 	_, err := db.Exec(query, time.Now(), userID)
 	return err
+}
+
+func GetUserCount(db *sql.DB) (int, error) {
+	if db == nil {
+		return 0, nil
+	}
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

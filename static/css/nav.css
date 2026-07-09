@@ -1,0 +1,373 @@
+.navbarcontainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding-top: 23px;
+    padding-right: 10px;
+    padding-bottom: 23px;
+    padding-left: 10px;
+    gap: 10px;
+    position: absolute;
+    width: 100%;
+    height: 66px;
+    left: 0px;
+    top: 0px;
+    box-sizing: border-box;
+    opacity: 1;
+    z-index: 10;
+}
+
+.navbarcontainer::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(61, 61, 61, 0.42) 0%, rgba(61, 61, 61, 0) 100%);
+    filter: blur(11.65px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.navbarbrand {
+    position: absolute;
+    width: 170px;
+    max-width: 15vw;
+    height: auto;
+    aspect-ratio: 205 / 46;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    margin: auto 0;
+    background: url('/static/branding/VERTEXIA.png') no-repeat center;
+    background-size: contain;
+    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.25));
+}
+
+.navbarlink,
+.navtext {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 20px;
+    line-height: 23px;
+    color: #FFFFFF;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex: none;
+    flex-grow: 0;
+    height: 23px;
+}
+
+.navbarlink {
+    font-weight: 500;
+}
+
+.navtext {
+    font-weight: 400;
+}
+
+.navbarlink,
+.sidebarbutton,
+.sidebarpfpbutton,
+.navbarbrand {
+    transform: scale(1);
+    opacity: 1;
+    animation: navlinkentrybounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease;
+}
+
+.navbarbrand {
+    animation: navbarbrandentryslide 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.navbarlink:hover,
+.sidebarbutton:hover,
+.sidebarpfpbutton:hover,
+.navbarbrand:hover {
+    transform: scale(1.04);
+    opacity: 1;
+}
+
+.navbarlink:active,
+.sidebarbutton:active,
+.sidebarpfpbutton:active,
+.navbarbrand:active {
+    transform: scale(0.96) rotateX(-15deg);
+    transition: transform 0.08s ease;
+}
+
+
+/* terrible looking, im sorry */
+.navhome { width: 56px; animation-delay: 0.4s; }
+.navplay { width: 40px; animation-delay: 0.3s; }
+.navshop { width: 47px; animation-delay: 0.2s; }
+.navusers { width: 52px; animation-delay: 0.1s; }
+.navclans { width: 51px; animation-delay: 0.2s; }
+.navforum { width: 60px; animation-delay: 0.3s; }
+.navupgrade { width: 80px; animation-delay: 0.4s; }
+
+.navbardivider {
+    width: 1px;
+    height: 23px;
+    background-color: rgba(255, 255, 255, 0.2);
+    flex: none;
+    flex-grow: 0;
+    opacity: 1;
+    border-radius: 999px;
+    animation: navdividerfade 0.8s ease backwards;
+    animation-delay: 0.4s;
+}
+
+.usersidebar {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 10px;
+    gap: 10px;
+    position: absolute;
+    width: 433px;
+    height: 66px;
+    right: 0px;
+    top: 0px;
+    box-sizing: border-box;
+    z-index: 11;
+}
+
+.sidebarbutton {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    flex: none;
+    flex-grow: 0;
+    height: 30px;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebarpfpbutton {
+    display: flex;
+    align-items: center;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    justify-content: center;
+    text-decoration: none;
+    flex: none;
+    flex-grow: 0;
+}
+
+.sidebaricon {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    flex-grow: 0;
+    object-fit: contain;
+}
+
+.sidebarpfp {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    background-color: rgba(0, 0, 0, 0.2);
+    flex: none;
+    flex-grow: 0;
+    object-fit: cover;
+}
+
+.sidebtn-vert { animation-delay: 0.7s; }
+.sidebtn-tix { animation-delay: 0.5s; }
+.sidebardiv { animation-delay: 0.3s; }
+.sidebtn-msg { animation-delay: 0.2s; }
+.sidebtn-frnd { animation-delay: 0.1s; }
+.sidebtn-pfp { animation-delay: 0s; }
+
+@keyframes navlinkentrybounce {
+    0% {
+        opacity: 0;
+        transform: scale(0.4) translateY(10px);
+    }
+    60% {
+        opacity: 0.9;
+        transform: scale(1.15) translateY(-2px);
+    }
+    85% {
+        transform: scale(0.94) translateY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes navbarbrandentryslide {
+    0% {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes navdividerfade {
+    0% {
+        opacity: 0;
+        transform: scaleY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+.userdropdown {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px;
+    gap: 10px;
+    position: absolute;
+    width: 199px;
+    height: 228px;
+    right: 10px;
+    top: 72px;
+    background: rgba(61, 61, 61, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 6px;
+    box-sizing: border-box;
+    z-index: 100;
+    opacity: 0;
+    transform-origin: right top;
+    transform: translateY(-8px) scale(0.9) rotateX(45deg);
+    pointer-events: none;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease-out;
+}
+
+.userdropdown.active {
+    opacity: 0.75;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdownuser {
+    font-family: 'Ubuntu';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 20px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #FFFFFF;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    flex: none;
+    flex-grow: 0;
+    height: 20px;
+}
+
+.dropdownline {
+    width: 169px;
+    height: 0px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: none;
+    align-self: stretch;
+    flex-grow: 0;
+}
+
+.dropdownitem {
+    font-family: 'Ubuntu';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 18px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #FFFFFF;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    text-decoration: none;
+    flex: none;
+    flex-grow: 0;
+    height: 18px;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.copyleft {
+    font-family: 'Ubuntu';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 18px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #FFFFFF;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    text-decoration: none;
+    flex: none;
+    flex-grow: 0;
+    height: 18px;
+}
+
+.dropdownitem:hover {
+    transform: translateX(4px);
+    opacity: 0.85;
+}
+
+.dropdownitem:active {
+    transform: scale(0.97);
+}
+
+.dropdownlogout {
+    color: #FA0000;
+}
+
+@media (max-width: 768px), .mobile-mode {
+    .navbarbrand,
+    .navbarcontainer > .navbardivider,
+    .navbarlink {
+        display: none !important;
+    }
+
+    .usersidebar {
+        width: auto;
+        right: 10px;
+        left: 10px;
+        justify-content: center;
+        gap: 10px;
+        padding: 0;
+    }
+
+    .sidebaricon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .sidebarpfp {
+        width: 40px;
+        height: 40px;
+    }
+
+    .navtext {
+        font-size: 18px;
+        line-height: 20px;
+        height: 20px;
+    }
+
+    .sidebarbutton {
+        gap: 4px;
+        height: 28px;
+    }
+}

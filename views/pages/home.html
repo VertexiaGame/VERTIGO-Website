@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="/static/css/land.css">
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -7,12 +8,87 @@
                 <img src="/static/useful/icons/search.png" class="icon" alt="Search">
                 <input type="text" class="input" placeholder="search">
             </div>
+            {{if .IsLoggedIn}}
+            <button hx-get="/profile" hx-target="body" hx-push-url="true" class="button generic">Profile</button>
+            {{else}}
             <button hx-get="/login" hx-target="body" hx-push-url="true" class="button generic">Login</button>
+            {{end}}
         </div>
         <div class="pane">
-            <button class="happy">
-                <span>happy yippe yippee</span>
-            </button>
+            <div class="hero-container">
+                <div class="hero-text">
+                    <h1 class="hero-heading">The creativity free platform</h1>
+                    <p class="hero-paragraph">
+                        Join over <strong>{{.UserCount}}</strong> users creating, destroying, and rebuilding on VERTEXIA!
+                    </p>
+                    <div class="hero-buttons">
+                        <button hx-get="/register" hx-target="body" hx-push-url="true" class="happy">
+                            <span>Register</span>
+                        </button>
+                        <button hx-get="/login" hx-target="body" hx-push-url="true" class="happy">
+                            <span>Login</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-image-container">
+                    <div class="tooltip-container">
+                        <img src="/static/useful/pages/land/g21art.png" alt="Vertexia Art" class="hero-image">
+                        <span class="tooltip-text">Made by G21!</span>
+                    </div>
+                </div>
+            </div>
+            {{if .Games}}
+            <div class="carousel-section">
+                <h2 class="carousel-title">Games</h2>
+                <div class="carousel-wrapper">
+                    <div class="carousel-container" id="gamesCarousel">
+                        {{range .Games}}
+                        <a href="/games/{{.ID}}" class="game-card">
+                            <div class="game-thumbnail-wrapper">
+                                <img src="/static/uploads/games/{{.ID}}.png" onerror="this.src='/static/useful/temp/pfp.png'; this.style.filter='blur(10px)';" alt="{{.Name}}" class="game-thumbnail">
+                            </div>
+                            <div class="game-info">
+                                <div class="game-name">{{.Name}}</div>
+                                <div class="game-playing">
+                                    <i class="fa-solid fa-users"></i>
+                                    <span>{{.Playing}}</span>
+                                </div>
+                            </div>
+                        </a>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            {{end}}
         </div>
     </div>
 </div>
+<script>
+    (function() {
+        const carousel = document.getElementById('gamesCarousel');
+        if (!carousel) return;
+
+        let autoScrollInterval;
+        const scrollAmount = 196;
+
+        function startAutoScroll() {
+            autoScrollInterval = setInterval(() => {
+                const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
+                if (carousel.scrollLeft >= maxScrollLeft - 5) {
+                    carousel.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                }
+            }, 3000);
+        }
+
+        function stopAutoScroll() {
+            clearInterval(autoScrollInterval);
+        }
+
+        carousel.addEventListener('mouseenter', stopAutoScroll);
+        carousel.addEventListener('mouseleave', startAutoScroll);
+
+        startAutoScroll();
+    })();
+</script>

@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/template/html/v3"
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/database"
+	"vertexia-frontend/backend/renderer"
 	"vertexia-frontend/backend/routes"
 )
 
@@ -23,6 +24,8 @@ func main() {
 	if err := database.Connect(cfg); err != nil {
 		log.Fatalf("DB error! ########## %v", err)
 	}
+
+	renderer.Init()
 
 	engine := html.New("./views", ".html")
 

@@ -1,0 +1,663 @@
+:root {
+    --accent: #912ADF;
+}
+
+html, body {
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    box-sizing: border-box;
+    font-family: 'Ubuntu', sans-serif;
+    background: linear-gradient(180deg, rgba(195, 195, 197, 0.58) 0%, #C3C3C5 100%), var(--accent, #912ADF);
+    min-height: 100vh;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+}
+
+/*TODO: Move the main container styles to a separate CSS files*/
+
+.wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 115px;
+    padding-bottom: 0;
+    box-sizing: border-box;
+    width: 100%;
+    flex-grow: 1;
+}
+
+.cont {
+    width: 996px;
+    max-width: 95%;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 115px);
+    box-sizing: border-box;
+    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.25));
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease, background 0.15s ease-in-out;
+    animation: 1s cubic-bezier(0.175, 0.885, 0.32, 1.0) 0s 1 contentryslide;
+}
+
+.pane::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: url(/static/useful/icons/bricks.avif);
+    background-size: cover;
+    opacity: 0.04;
+    pointer-events: none;
+}
+
+.bar {
+    position: relative;
+    width: 100%;
+    height: 69px;
+    background: var(--accent, #912ADF);
+    border-radius: 6px 6px 0px 0px;
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.studs {
+    position: relative;
+    background-color: var(--accent, #912ADF);
+    -webkit-mask-image: url(/static/useful/icons/stud.svg);
+    mask-image: url(/static/useful/icons/stud.svg);
+    height: 7px;
+    margin-left: 12px;
+    margin-right: 12px;
+    width: 97.2%;
+    background-repeat: repeat-x;
+}
+
+
+.title {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 32px;
+    line-height: 37px;
+    color: #FFFFFF;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    user-select: none;
+}
+
+.pill {
+    position: absolute;
+    left: 294px;
+    width: 408px;
+    height: 37px;
+    background: rgba(61, 61, 61, 0.25);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.icon {
+    position: absolute;
+    left: 12px;
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+    object-fit: contain;
+    z-index: 5;
+}
+
+.input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #FFFFFF;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 20px;
+    line-height: 23px;
+    text-align: center;
+    padding: 0 40px;
+    box-sizing: border-box;
+}
+
+.button {
+    border: none;
+    outline: none;
+    font-family: 'Ubuntu', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transform: scale(1);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease, background 0.15s ease-in-out;
+}
+
+.button:hover {
+    transform: scale(1.06);
+}
+
+.button:active {
+    transform: scale(0.92);
+    transition: transform 0.08s ease;
+}
+
+.generic {
+    position: absolute;
+    right: 16px;
+    width: 96px;
+    height: 37px;
+    background: rgba(61, 61, 61, 0.25);
+    border-radius: 6px;
+    color: #FFFFFF;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 23px;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+}
+
+.generic:hover {
+    background: rgba(61, 61, 61, 0.35);
+}
+
+.bar-buttons {
+    position: absolute;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.bar-btn {
+    width: auto;
+    padding: 0 16px;
+    height: 37px;
+    background: rgba(61, 61, 61, 0.25);
+    border-radius: 6px;
+    color: #FFFFFF;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 23px;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+}
+
+.bar-btn:hover {
+    background: rgba(61, 61, 61, 0.35);
+}
+
+.happy { /* yes i actually called it happy LMAO */
+    position: absolute;
+    width: auto;
+    min-width: 114px;
+    height: 48px;
+    left: 20px;
+    top: 20px;
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 4px rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    box-sizing: border-box;
+    transform: scale(1);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease;
+}
+
+.happy:hover {
+    transform: scale(1.04);
+}
+
+.happy:active {
+    transform: scale(0.98) rotateX(-15deg);
+    transition: transform 0.08s ease;
+}
+
+.happy span {
+    font-family: 'Ubuntu';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    color: #FFFFFF;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+}
+
+.pane {
+    position: relative;
+    width: 100%;
+    flex-grow: 1;
+    background: #E0E0E0;
+    border-radius: 0px;
+    display: flex;
+    flex-direction: column;
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px;
+    gap: 10px;
+    position: absolute;
+    width: auto;
+    height: auto;
+    left: 10px;
+    bottom: 10px;
+    background: rgba(61, 61, 61, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 996px) {
+    .wrap {
+        padding-top: 80px;
+    }
+    .cont {
+        width: 100%;
+        max-width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+    .bar {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 16px;
+        gap: 12px;
+    }
+    .title {
+        display: none;
+    }
+    .pill {
+        position: relative;
+        left: auto;
+        flex-grow: 1;
+        width: auto;
+        max-width: none;
+    }
+    .generic {
+        position: static;
+        width: 96px;
+        flex-shrink: 0;
+    }
+    .bar-buttons {
+        position: static;
+        flex-shrink: 0;
+    }
+}
+
+@keyframes contentryslide {
+    0% {
+        opacity: 0;
+        transform: scale(99%) translateY(1%) rotateX(-15deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+html.notreq .navbarlink,
+html.notreq .sidebarbutton,
+html.notreq .sidebarpfpbutton,
+html.notreq .navbarbrand,
+html.notreq .navbardivider {
+    animation: none !important;
+}
+
+.form-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    background: #ffffff;
+    color: #333333;
+    border-radius: 0 0 6px 6px;
+    box-sizing: border-box;
+    min-height: 500px;
+    flex-grow: 1;
+}
+
+.form-main {
+    flex: 1;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+.form-sidebar {
+    width: 320px;
+    padding: 40px;
+    border-left: 1px solid #e0e0e0;
+    box-sizing: border-box;
+    background: #fafafa;
+    border-radius: 0 0 6px 0;
+}
+
+.form-header-title {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--accent, #912ADF);
+    margin-top: 0;
+    margin-bottom: 24px;
+}
+
+.form-group {
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.form-input-container {
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+}
+
+.form-input-container i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888888;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+input[type="text"]:not(.input),
+input[type="password"],
+input[type="email"],
+.form-input {
+    width: 100%;
+    height: 36px;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    padding-left: 38px;
+    padding-right: 12px;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 14px;
+    color: #333333;
+    box-sizing: border-box;
+    outline: none;
+}
+
+input[type="text"]:not(.input)::placeholder,
+input[type="password"]::placeholder,
+input[type="email"]::placeholder,
+.form-input::placeholder {
+    color: #888888;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+input[type="text"]:not(.input):focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+.form-input:focus {
+    border-color: var(--accent, #912ADF);
+}
+
+input[type="text"]:not(.input).input-error,
+input[type="password"].input-error,
+input[type="email"].input-error,
+.form-input.input-error {
+    border-color: #ff3b30;
+}
+
+input[type="text"]:not(.input).input-error:focus,
+input[type="password"].input-error:focus,
+input[type="email"].input-error:focus,
+.form-input.input-error:focus {
+    border-color: #ff3b30;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    -webkit-text-fill-color: #333333 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.form-helper {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 11px;
+    color: #888888;
+    margin-top: 0;
+    margin-left: 2px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transform: translateY(-5px);
+    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, margin-top 0.2s ease;
+}
+
+.form-group:focus-within .form-helper {
+    opacity: 1;
+    max-height: 20px;
+    margin-top: 4px;
+    transform: translateY(0);
+}
+
+.form-input-error-text {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 11px;
+    color: #ff3b30;
+    margin-top: 0;
+    margin-left: 2px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transform: translateY(-5px);
+    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, margin-top 0.2s ease;
+}
+
+.form-input-error-text.visible {
+    opacity: 1;
+    max-height: 20px;
+    margin-top: 4px;
+    transform: translateY(0);
+}
+
+.form-checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    margin-bottom: 16px;
+    user-select: none;
+    cursor: pointer;
+}
+
+input[type="checkbox"],
+.form-checkbox-group input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: #ffffff;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+input[type="checkbox"]:hover,
+.form-checkbox-group input:hover {
+    border-color: var(--accent, #912ADF);
+    box-shadow: none;
+    outline: none;
+}
+
+input[type="checkbox"]:focus,
+.form-checkbox-group input:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+input[type="checkbox"]:active,
+.form-checkbox-group input:active {
+    transform: scale(0.9);
+}
+
+input[type="checkbox"]:checked,
+.form-checkbox-group input:checked {
+    background-color: var(--accent, #912ADF);
+    border-color: var(--accent, #912ADF);
+    transform: scale(1.1);
+}
+
+input[type="checkbox"]:checked::after,
+.form-checkbox-group input:checked::after {
+    content: "";
+    position: absolute;
+    width: 4px;
+    height: 8px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-0.5px, -1px) scale(0);
+    animation: checkmark-bounce 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.5) forwards;
+}
+
+@keyframes checkmark-bounce {
+    to {
+        transform: rotate(45deg) translate(-0.5px, -1px) scale(1);
+    }
+}
+
+.form-checkbox-group span {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 13px;
+    color: #555555;
+}
+
+.form-checkbox-group a {
+    color: var(--accent, #912ADF);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.form-checkbox-group a:hover {
+    text-decoration: underline;
+}
+
+.form-sidebar-section {
+    margin-bottom: 24px;
+}
+
+.form-sidebar-title {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--accent, #912ADF);
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.form-sidebar-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.form-sidebar-list li {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 13px;
+    color: #444444;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.form-sidebar-link {
+    color: var(--accent, #912ADF);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.form-sidebar-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .form-layout {
+        flex-direction: column;
+    }
+    .form-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #e0e0e0;
+        border-radius: 0 0 6px 6px;
+    }
+    .form-main, .form-sidebar {
+        padding: 24px;
+    }
+}
+
+.tooltip-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: max-content;
+    background-color: #2b2b2b;
+    color: #ffffff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 6px 12px;
+    position: absolute;
+    z-index: 99;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(5px) scale(0.8);
+    transform-origin: bottom center;
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 13px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #2b2b2b transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
