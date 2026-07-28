@@ -18,7 +18,7 @@ func Connect(cfg *config.Config) error {
 		return nil
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
 		cfg.DBUser,
 		cfg.DBPass,
 		cfg.DBHost,

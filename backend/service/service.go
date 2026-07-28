@@ -1,0 +1,33 @@
+package service
+
+import (
+	"database/sql"
+	"time"
+
+	"vertexia-frontend/backend/repository"
+)
+
+var (
+	Auth     *AuthService
+	User     *UserService
+	Feed     *FeedService
+	Game     *GameService
+	Music    *MusicService
+	Cooldown *CooldownService
+	Friend   *FriendService
+)
+
+func Init(db *sql.DB) {
+	userRepo := repository.NewUserRepository(db)
+	feedRepo := repository.NewFeedRepository(db)
+	gameRepo := repository.NewGameRepository(db)
+	friendRepo := repository.NewFriendRepository(db)
+
+	Cooldown = NewCooldownService(5 * time.Second)
+	Auth = NewAuthService(userRepo)
+	User = NewUserService(userRepo, Cooldown)
+	Feed = NewFeedService(feedRepo, userRepo, Cooldown)
+	Game = NewGameService(gameRepo)
+	Music = NewMusicService()
+	Friend = NewFriendService(friendRepo, userRepo, Cooldown)
+}

@@ -3,6 +3,7 @@
 }
 
 html, body {
+    overflow-y: auto;
     overflow-x: hidden;
     margin: 0;
     padding: 0;
@@ -51,9 +52,11 @@ body {
     left: 0;
     right: 0;
     background: url(/static/useful/icons/bricks.avif);
-    background-size: cover;
+    background-repeat: repeat;
+    background-size: 750px auto;
     opacity: 0.04;
     pointer-events: none;
+    z-index: 0;
 }
 
 .bar {
@@ -80,7 +83,6 @@ body {
     width: 97.2%;
     background-repeat: repeat-x;
 }
-
 
 .title {
     font-family: 'Ubuntu', sans-serif;
@@ -169,7 +171,7 @@ body {
     background: rgba(61, 61, 61, 0.35);
 }
 
-.bar-buttons {
+.barbtns {
     position: absolute;
     right: 16px;
     display: flex;
@@ -177,7 +179,7 @@ body {
     align-items: center;
 }
 
-.bar-btn {
+.barbtn {
     width: auto;
     padding: 0 16px;
     height: 37px;
@@ -191,11 +193,11 @@ body {
     text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
 }
 
-.bar-btn:hover {
+.barbtn:hover {
     background: rgba(61, 61, 61, 0.35);
 }
 
-.happy { /* yes i actually called it happy LMAO */
+.happy { 
     position: absolute;
     width: auto;
     min-width: 114px;
@@ -226,14 +228,72 @@ body {
     transition: transform 0.08s ease;
 }
 
+.happy:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
 .happy span {
-    font-family: 'Ubuntu';
+    font-family: 'Ubuntu', sans-serif;
     font-style: normal;
-    font-weight: 400;
+    font-weight: 500;
     font-size: 20px;
+    line-height: 1.2;
     color: #FFFFFF;
     text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
     white-space: nowrap;
+}
+
+.hpyico {
+    width: 18px !important;
+    height: 18px !important;
+    margin-right: 6px !important;
+    object-fit: contain !important;
+    flex-shrink: 0 !important;
+}
+
+.happy.hpyprim {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+}
+
+.happy.hpysuc {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745;
+}
+
+.happy.hpywrn {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22;
+}
+
+.happy.hpyerr,
+.happy.hpydng {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #DC3545;
+}
+
+.happy.hpyinf {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8;
+}
+
+.happy.hpyinl {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    display: inline-flex !important;
+}
+
+.happy.hpysm {
+    height: 36px !important;
+    padding: 0 16px !important;
+    min-width: 0 !important;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 4px rgba(255, 255, 255, 0.25) !important;
+    border-radius: 4px !important;
+}
+
+.happy.hpysm span {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    line-height: 17px !important;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25) !important;
 }
 
 .pane {
@@ -246,13 +306,18 @@ body {
     flex-direction: column;
 }
 
+.pane > * {
+    position: relative;
+    z-index: 1;
+}
+
 .footer {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     padding: 15px;
     gap: 10px;
-    position: absolute;
+    position: fixed;
     width: auto;
     height: auto;
     left: 10px;
@@ -262,6 +327,112 @@ body {
     -webkit-backdrop-filter: blur(10px);
     border-radius: 6px;
     box-sizing: border-box;
+    z-index: 100;
+}
+
+.movl {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1000 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.movl.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+.mcard {
+    background: #E0E0E0 !important;
+    border: 2px solid #C1C1C1 !important;
+    border-radius: 16px !important;
+    width: 90% !important;
+    max-width: 460px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    transform: scale(0.95) translateY(8px) !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.movl.active .mcard {
+    opacity: 1 !important;
+    transform: scale(1) translateY(0) !important;
+}
+
+.mhdr {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 20px 20px 14px 20px !important;
+    position: relative !important;
+    border-bottom: 2px solid #C1C1C1 !important;
+    background: #E0E0E0 !important;
+}
+
+.mtitle {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 20px !important;
+    font-weight: 500 !important;
+    color: #3D3D3D !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.msub {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+    color: #718096 !important;
+    margin-top: 4px !important;
+    margin-bottom: 0 !important;
+    line-height: 1.3 !important;
+}
+
+.mclose {
+    position: absolute !important;
+    right: 16px !important;
+    top: 16px !important;
+    background: transparent !important;
+    border: none !important;
+    font-size: 18px !important;
+    color: #3D3D3D !important;
+    opacity: 0.6 !important;
+    cursor: pointer !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
+.mclose:hover {
+    opacity: 1 !important;
+    transform: scale(1.1) !important;
+    background: transparent !important;
+}
+
+.mbody {
+    padding: 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    background: #E0E0E0 !important;
 }
 
 @media (max-width: 996px) {
@@ -297,7 +468,7 @@ body {
         width: 96px;
         flex-shrink: 0;
     }
-    .bar-buttons {
+    .barbtns {
         position: static;
         flex-shrink: 0;
     }
@@ -314,316 +485,22 @@ body {
     }
 }
 
-html.notreq .navbarlink,
-html.notreq .sidebarbutton,
-html.notreq .sidebarpfpbutton,
-html.notreq .navbarbrand,
-html.notreq .navbardivider {
+html.notreq .navlnk,
+html.notreq .sbtn,
+html.notreq .pfpbtn,
+html.notreq .navbrd,
+html.notreq .navdiv {
     animation: none !important;
 }
 
-.form-layout {
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-    background: #ffffff;
-    color: #333333;
-    border-radius: 0 0 6px 6px;
-    box-sizing: border-box;
-    min-height: 500px;
-    flex-grow: 1;
-}
-
-.form-main {
-    flex: 1;
-    padding: 40px;
-    box-sizing: border-box;
-}
-
-.form-sidebar {
-    width: 320px;
-    padding: 40px;
-    border-left: 1px solid #e0e0e0;
-    box-sizing: border-box;
-    background: #fafafa;
-    border-radius: 0 0 6px 0;
-}
-
-.form-header-title {
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 28px;
-    font-weight: 500;
-    color: var(--accent, #912ADF);
-    margin-top: 0;
-    margin-bottom: 24px;
-}
-
-.form-group {
-    margin-bottom: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.form-input-container {
-    position: relative;
-    width: 100%;
-    max-width: 340px;
-}
-
-.form-input-container i {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #888888;
-    font-size: 14px;
-    pointer-events: none;
-}
-
-input[type="text"]:not(.input),
-input[type="password"],
-input[type="email"],
-.form-input {
-    width: 100%;
-    height: 36px;
-    background: #ffffff;
-    border: 1px solid #cccccc;
-    border-radius: 8px;
-    padding-left: 38px;
-    padding-right: 12px;
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 14px;
-    color: #333333;
-    box-sizing: border-box;
-    outline: none;
-}
-
-input[type="text"]:not(.input)::placeholder,
-input[type="password"]::placeholder,
-input[type="email"]::placeholder,
-.form-input::placeholder {
-    color: #888888;
-    font-family: 'Ubuntu', sans-serif;
-}
-
-input[type="text"]:not(.input):focus,
-input[type="password"]:focus,
-input[type="email"]:focus,
-.form-input:focus {
-    border-color: var(--accent, #912ADF);
-}
-
-input[type="text"]:not(.input).input-error,
-input[type="password"].input-error,
-input[type="email"].input-error,
-.form-input.input-error {
-    border-color: #ff3b30;
-}
-
-input[type="text"]:not(.input).input-error:focus,
-input[type="password"].input-error:focus,
-input[type="email"].input-error:focus,
-.form-input.input-error:focus {
-    border-color: #ff3b30;
-}
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
-    -webkit-text-fill-color: #333333 !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-
-.form-helper {
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 11px;
-    color: #888888;
-    margin-top: 0;
-    margin-left: 2px;
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transform: translateY(-5px);
-    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, margin-top 0.2s ease;
-}
-
-.form-group:focus-within .form-helper {
-    opacity: 1;
-    max-height: 20px;
-    margin-top: 4px;
-    transform: translateY(0);
-}
-
-.form-input-error-text {
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 11px;
-    color: #ff3b30;
-    margin-top: 0;
-    margin-left: 2px;
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transform: translateY(-5px);
-    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, margin-top 0.2s ease;
-}
-
-.form-input-error-text.visible {
-    opacity: 1;
-    max-height: 20px;
-    margin-top: 4px;
-    transform: translateY(0);
-}
-
-.form-checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 12px;
-    margin-bottom: 16px;
-    user-select: none;
-    cursor: pointer;
-}
-
-input[type="checkbox"],
-.form-checkbox-group input {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 1px solid #cccccc;
-    border-radius: 4px;
-    outline: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    background: #ffffff;
-    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-input[type="checkbox"]:hover,
-.form-checkbox-group input:hover {
-    border-color: var(--accent, #912ADF);
-    box-shadow: none;
-    outline: none;
-}
-
-input[type="checkbox"]:focus,
-.form-checkbox-group input:focus {
-    box-shadow: none;
-    outline: none;
-}
-
-input[type="checkbox"]:active,
-.form-checkbox-group input:active {
-    transform: scale(0.9);
-}
-
-input[type="checkbox"]:checked,
-.form-checkbox-group input:checked {
-    background-color: var(--accent, #912ADF);
-    border-color: var(--accent, #912ADF);
-    transform: scale(1.1);
-}
-
-input[type="checkbox"]:checked::after,
-.form-checkbox-group input:checked::after {
-    content: "";
-    position: absolute;
-    width: 4px;
-    height: 8px;
-    border: solid #ffffff;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg) translate(-0.5px, -1px) scale(0);
-    animation: checkmark-bounce 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.5) forwards;
-}
-
-@keyframes checkmark-bounce {
-    to {
-        transform: rotate(45deg) translate(-0.5px, -1px) scale(1);
-    }
-}
-
-.form-checkbox-group span {
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 13px;
-    color: #555555;
-}
-
-.form-checkbox-group a {
-    color: var(--accent, #912ADF);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.form-checkbox-group a:hover {
-    text-decoration: underline;
-}
-
-.form-sidebar-section {
-    margin-bottom: 24px;
-}
-
-.form-sidebar-title {
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--accent, #912ADF);
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.form-sidebar-list {
-    margin: 0;
-    padding-left: 0;
-    list-style: none;
-}
-
-.form-sidebar-list li {
-    font-family: 'Ubuntu', sans-serif;
-    font-size: 13px;
-    color: #444444;
-    margin-bottom: 8px;
-    line-height: 1.4;
-}
-
-.form-sidebar-link {
-    color: var(--accent, #912ADF);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.form-sidebar-link:hover {
-    text-decoration: underline;
-}
-
-@media (max-width: 768px) {
-    .form-layout {
-        flex-direction: column;
-    }
-    .form-sidebar {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid #e0e0e0;
-        border-radius: 0 0 6px 6px;
-    }
-    .form-main, .form-sidebar {
-        padding: 24px;
-    }
-}
-
-.tooltip-container {
+.ttpcnt {
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.tooltip-text {
+.ttptxt {
     visibility: hidden;
     width: max-content;
     background-color: #2b2b2b;
@@ -645,7 +522,7 @@ input[type="checkbox"]:checked::after,
     pointer-events: none;
 }
 
-.tooltip-text::after {
+.ttptxt::after {
     content: "";
     position: absolute;
     top: 100%;
@@ -656,8 +533,82 @@ input[type="checkbox"]:checked::after,
     border-color: #2b2b2b transparent transparent transparent;
 }
 
-.tooltip-container:hover .tooltip-text {
+.ttpcnt:hover .ttptxt {
     visibility: visible;
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-track-piece,
+::-webkit-scrollbar-corner {
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.musld {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 30px 0 !important;
+    width: 100% !important;
+}
+
+.dmspn {
+    width: 32px !important;
+    height: 32px !important;
+    color: #3D3D3D !important;
+}
+
+.dmspn .sq {
+    fill: currentColor !important;
+    opacity: 0.15;
+    animation: diamond-fade 0.8s infinite linear !important;
+}
+
+.dmspn .sq-1 { animation-delay: 0s !important; }
+.dmspn .sq-2 { animation-delay: -0.7s !important; }
+.dmspn .sq-3 { animation-delay: -0.6s !important; }
+.dmspn .sq-4 { animation-delay: -0.5s !important; }
+.dmspn .sq-5 { animation-delay: -0.4s !important; }
+.dmspn .sq-6 { animation-delay: -0.3s !important; }
+.dmspn .sq-7 { animation-delay: -0.2s !important; }
+.dmspn .sq-8 { animation-delay: -0.1s !important; }
+
+@keyframes diamond-fade {
+    0% {
+        opacity: 1;
+    }
+    12.5% {
+        opacity: 0.85;
+    }
+    25% {
+        opacity: 0.6;
+    }
+    37.5% {
+        opacity: 0.35;
+    }
+    50%, 100% {
+        opacity: 0.15;
+    }
 }

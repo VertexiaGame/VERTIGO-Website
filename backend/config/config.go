@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -31,9 +32,52 @@ type Config struct {
 	SessionIdleTimeout     time.Duration
 	SessionAbsoluteTimeout time.Duration
 	AltchaHMACKey          string
+	GameserverAPIKey       string
+	LiveTimerEnabled       bool
+	LiveTimerDuration      time.Duration
+	LiveTimerEnd           time.Time
 }
 
 var Global *Config
+
+func parseLiveTimerDuration(val string) time.Duration {
+	val = strings.TrimSpace(val)
+	if val == "" {
+		return 0
+	}
+	if d, err := time.ParseDuration(val); err == nil && d > 0 {
+		return d
+	}
+	if sec, err := strconv.Atoi(val); err == nil && sec > 0 {
+		return time.Duration(sec) * time.Second
+	}
+	if strings.Contains(val, ":") {
+		parts := strings.Split(val, ":")
+		if len(parts) == 2 {
+			m, err1 := strconv.Atoi(parts[0])
+			s, err2 := strconv.Atoi(parts[1])
+			if err1 == nil && err2 == nil && m >= 0 && s >= 0 {
+				return time.Duration(m)*time.Minute + time.Duration(s)*time.Second
+			}
+		}
+	}
+	return 0
+}
+
+func (c *Config) IsLiveTimerActive() bool {
+	return c != nil && c.LiveTimerEnabled && c.LiveTimerDuration > 0 && time.Now().Before(c.LiveTimerEnd)
+}
+
+func (c *Config) LiveTimerRemaining() time.Duration {
+	if !c.IsLiveTimerActive() {
+		return 0
+	}
+	rem := time.Until(c.LiveTimerEnd)
+	if rem < 0 {
+		return 0
+	}
+	return rem
+}
 
 func Load() (*Config, error) {
 	_ = godotenv.Load()
@@ -54,6 +98,13 @@ func Load() (*Config, error) {
 	sessionIdleTimeout, _ := time.ParseDuration(os.Getenv("SESSION_IDLE_TIMEOUT"))
 	sessionAbsoluteTimeout, _ := time.ParseDuration(os.Getenv("SESSION_ABSOLUTE_TIMEOUT"))
 	altchaHMACKey := os.Getenv("ALTCHA_HMAC_KEY")
+
+	liveTimerEnabled, _ := strconv.ParseBool(os.Getenv("LIVETIMER_ENABLED"))
+	liveTimerDuration := parseLiveTimerDuration(os.Getenv("LIVETIMER_DURATION"))
+	if liveTimerDuration > time.Hour {
+		liveTimerDuration = time.Hour
+	}
+	liveTimerEnd := time.Now().Add(liveTimerDuration)
 
 	cfg := &Config{
 		DBUser:                 os.Getenv("DB_USER"),
@@ -76,6 +127,10 @@ func Load() (*Config, error) {
 		SessionIdleTimeout:     sessionIdleTimeout,
 		SessionAbsoluteTimeout: sessionAbsoluteTimeout,
 		AltchaHMACKey:          altchaHMACKey,
+		GameserverAPIKey:       os.Getenv("GAMESERVER_API_KEY"),
+		LiveTimerEnabled:       liveTimerEnabled,
+		LiveTimerDuration:      liveTimerDuration,
+		LiveTimerEnd:           liveTimerEnd,
 	}
 
 	Global = cfg

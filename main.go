@@ -13,6 +13,7 @@ import (
 	"vertexia-frontend/backend/database"
 	"vertexia-frontend/backend/renderer"
 	"vertexia-frontend/backend/routes"
+	"vertexia-frontend/backend/service"
 )
 
 func main() {
@@ -24,6 +25,8 @@ func main() {
 	if err := database.Connect(cfg); err != nil {
 		log.Fatalf("DB error! ########## %v", err)
 	}
+
+	service.Init(database.DB)
 
 	renderer.Init()
 

@@ -1,0 +1,23 @@
+<div id="usernameConfirmModal" class="mus-modal-overlay" onclick="closeUsernameModalOnOverlay(event)">
+    <div class="mus-modal" onclick="event.stopPropagation()">
+        <div class="mus-header">
+            <h3 class="mus-title">Hold up!</h3>
+            <button type="button" class="mus-close" onclick="closeUsernameModal()" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="mus-body" style="gap: 16px;">
+            <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">
+                Are you sure you want to change your username to <strong id="confirmNewUsername"></strong> for <span class="vert-highlight"><img src="/static/useful/icons/verticec.png" class="vert-highlight-icon" alt="">100 Vertices</span>? You have <strong id="confirmChangesLeft"></strong> username changes left for the next 3 days!
+            </p>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+                <button type="button" class="happy happy-error happy-inline happy-sm" onclick="closeUsernameModal()">
+                    <span>Cancel</span>
+                </button>
+                <button type="button" class="happy happy-primary happy-inline happy-sm" onclick="confirmUsernameChange()">
+                    <span>Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/database"
 	"vertexia-frontend/backend/renderer"
+	"vertexia-frontend/backend/service"
 )
 
 func AvatarGet(c fiber.Ctx) error {
@@ -19,9 +20,8 @@ func AvatarGet(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
 	}
 
-	var exists bool
-	if database.DB != nil {
-		err := database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)", userID).Scan(&exists)
+	if service.User != nil {
+		exists, err := service.User.UserExists(userID)
 		if err != nil || !exists {
 			return c.Status(fiber.StatusNotFound).SendString("User not found")
 		}
@@ -69,9 +69,8 @@ func AvatarHeadshotGet(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
 	}
 
-	var exists bool
-	if database.DB != nil {
-		err := database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)", userID).Scan(&exists)
+	if service.User != nil {
+		exists, err := service.User.UserExists(userID)
 		if err != nil || !exists {
 			return c.Status(fiber.StatusNotFound).SendString("User not found")
 		}
@@ -126,4 +125,60 @@ func ShopRenderGet(c fiber.Ctx) error {
 
 	c.Set("Content-Type", "image/png")
 	return c.Send(imgBytes)
+}
+
+func AvatarDataGet(c fiber.Ctx) error {
+	idParam := c.Params("id")
+	idParam = strings.TrimSuffix(idParam, ".png")
+	userID, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
+	}
+
+	var headColor, larmColor, rarmColor, torsoColor, llegColor, rlegColor string
+	var hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face int
+
+	if database.DB != nil {
+		query := "SELECT head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face FROM avatar WHERE id = ?"
+		_ = database.DB.QueryRow(query, userID).Scan(
+			&headColor, &larmColor, &rarmColor, &torsoColor, &llegColor, &rlegColor,
+			&hat1, &hat2, &hat3, &hat4, &hat5, &tool, &shirt, &tshirt, &pants, &face,
+		)
+	}
+
+	if headColor == "" {
+		headColor = "f3b700"
+	}
+	if larmColor == "" {
+		larmColor = "f3b700"
+	}
+	if rarmColor == "" {
+		rarmColor = "f3b700"
+	}
+	if torsoColor == "" {
+		torsoColor = "c60000"
+	}
+	if llegColor == "" {
+		llegColor = "650013"
+	}
+	if rlegColor == "" {
+		rlegColor = "650013"
+	}
+
+	formatColor := func(hex string) string {
+		if !strings.HasPrefix(hex, "#") {
+			return "#" + hex
+		}
+		return hex
+	}
+
+	return c.JSON(fiber.Map{
+		"head_color":  formatColor(headColor),
+		"torso_color": formatColor(torsoColor),
+		"larm_color":  formatColor(larmColor),
+		"rarm_color":  formatColor(rarmColor),
+		"lleg_color":  formatColor(llegColor),
+		"rleg_color":  formatColor(rlegColor),
+		"face_id":     face,
+	})
 }

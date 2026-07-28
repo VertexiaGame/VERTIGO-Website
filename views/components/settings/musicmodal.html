@@ -1,0 +1,51 @@
+<div id="musicNoticeModal" class="mus-modal-overlay" onclick="closeMusicNoticeModalOnOverlay(event)">
+    <div class="mus-modal" onclick="event.stopPropagation()">
+        <div class="mus-header">
+            <h3 class="mus-title">Heads up!</h3>
+            <button type="button" class="mus-close" onclick="closeMusicNoticeModal()" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="mus-body" style="gap: 16px;">
+            <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">
+                We use the Deezer API that allows us to play 30-seconds snippets of tracks you pick. This is a limit that we cannot control! :(
+            </p>
+            <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">
+                Additionally, some songs will get blacklisted and will not be allowed to be played in your profile. Each track must also pass a moderation before getting approved for reproduction!
+            </p>
+            <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                <button type="button" class="happy happy-primary happy-inline happy-sm" id="musicNoticeContinueBtn" onclick="proceedToMusicSearch()">
+                    <span id="musicNoticeContinueText">Continue</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="musicModal" class="mus-modal-overlay" onclick="closeMusicModalOnOverlay(event)">
+    <div class="mus-modal" onclick="event.stopPropagation()">
+        <div class="mus-header">
+            <h3 class="mus-title">Search Songs</h3>
+            <p class="mus-subtitle">Play tracks on your profile!</p>
+            <button type="button" class="mus-close" onclick="closeMusicModal()" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="mus-body">
+            <form action="javascript:void(0);" onsubmit="searchMusic(event); return false;" hx-boost="false" class="mus-search-form">
+                <div class="feed-in-box">
+                    <input type="text" id="musSearchInput" class="feed-in" placeholder="Search or use artist:[name] track:[title]" autocomplete="off">
+                    <button type="submit" class="feed-snd" title="Search">
+                        <i class="fa-solid fa-magnifying-glass" style="font-size: 20px !important;"></i>
+                    </button>
+                </div>
+            </form>
+            <div id="musResults" class="mus-list">
+                <div class="mus-empty">Type something to find songs</div>
+            </div>
+            <div class="mus-footer">
+                <img src="https://media.ffycdn.net/eu/deezer/oqCi8Ax1KqCWHkJq1eQn.png?width=300" alt="Powered by Deezer" class="mus-deezer-logo">
+            </div>
+        </div>
+    </div>
+</div>

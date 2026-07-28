@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="/static/css/forms.css">
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -7,44 +8,44 @@
                 <img src="/static/useful/icons/search.png" class="icon" alt="Search">
                 <input type="text" class="input" placeholder="search">
             </div>
-            <div class="bar-buttons">
-                <button hx-get="/login" hx-target="body" hx-push-url="true" class="button bar-btn">Login</button>
-                <button hx-get="/" hx-target="body" hx-push-url="true" class="button bar-btn">Go back</button>
+            <div class="barbtns">
+                <button hx-get="/login" hx-target="body" hx-push-url="true" class="button barbtn">Login</button>
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
             </div>
         </div>
         <div class="pane">
-            <div class="form-layout">
-                <div class="form-main">
-                    <h2 class="form-header-title">Create Account</h2>
+            <div class="frmlay">
+                <div class="frmmain">
+                    <h2 class="frmttl">Create Account</h2>
                     <form action="/register" method="POST" hx-boost="false">
-                        <div class="form-group">
-                            <div class="form-input-container">
-                                <input type="text" name="username" class="form-input" placeholder="Username" required>
+                        <div class="frmgrp">
+                            <div class="frmincnt">
+                                <input type="text" name="username" class="frmin" placeholder="Username" required>
                                 <i class="fa-solid fa-user"></i>
                             </div>
-                            <span class="form-helper">3-25 alphanumeric characters</span>
+                            <span class="frmhlp">3-25 alphanumeric characters</span>
                         </div>
-                        <div class="form-group">
-                            <div class="form-input-container">
-                                <input type="email" name="email" class="form-input" placeholder="Email" required>
+                        <div class="frmgrp">
+                            <div class="frmincnt">
+                                <input type="email" name="email" class="frmin" placeholder="Email" required>
                                 <i class="fa-solid fa-envelope"></i>
                             </div>
-                            <span class="form-helper">Used for account recovery</span>
+                            <span class="frmhlp">Used for account recovery</span>
                         </div>
-                        <div class="form-group">
-                            <div class="form-input-container">
-                                <input type="password" name="password" class="form-input" placeholder="Password" required>
+                        <div class="frmgrp">
+                            <div class="frmincnt">
+                                <input type="password" name="password" class="frmin" placeholder="Password" required>
                                 <i class="fa-solid fa-key"></i>
                             </div>
-                            <span class="form-helper">Min 8 characters</span>
+                            <span class="frmhlp">Min 8 characters</span>
                         </div>
-                        <div class="form-group">
-                            <div class="form-input-container">
-                                <input type="password" name="password_confirm" class="form-input" placeholder="Confirm Password" required>
+                        <div class="frmgrp">
+                            <div class="frmincnt">
+                                <input type="password" name="password_confirm" class="frmin" placeholder="Confirm Password" required>
                                 <i class="fa-solid fa-key"></i>
                             </div>
                         </div>
-                        <label class="form-checkbox-group">
+                        <label class="frmchkgrp">
                             <input type="checkbox" required>
                             <span>I agree to the <a href="/tos" hx-get="/tos" hx-target="body" hx-push-url="true">Terms of Service</a></span>
                         </label>
@@ -57,9 +58,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-                <div class="form-sidebar" style="display: flex; flex-direction: column; justify-content: flex-end; align-items: center; background: #ffffff; padding: 40px 0 0 0; overflow: hidden; border: none; width: 100%; max-width: 420px;">
-                    <img src="/static/useful/pages/auth/hello.png" alt="Welcome" style="width: 100%; height: auto; display: block; margin-bottom: 0; object-fit: contain;">
                 </div>
             </div>
         </div>
@@ -77,19 +75,19 @@
         if (errLower.indexOf("username") !== -1) {
             targetInput = document.querySelector('input[name="username"]');
             if (targetInput) {
-                targetInput.classList.add('input-error');
+                targetInput.classList.add('inerr');
                 showErrorUnder(targetInput, err);
             }
         } else if (errLower.indexOf("email") !== -1) {
             targetInput = document.querySelector('input[name="email"]');
             if (targetInput) {
-                targetInput.classList.add('input-error');
+                targetInput.classList.add('inerr');
                 showErrorUnder(targetInput, err);
             }
         } else if (errLower.indexOf("password") !== -1) {
             targetInput = document.querySelector('input[name="password"]') || document.querySelector('input[name="password_confirm"]');
             if (targetInput) {
-                targetInput.classList.add('input-error');
+                targetInput.classList.add('inerr');
                 showErrorUnder(targetInput, err);
             }
         } else if (errLower.indexOf("captcha") !== -1) {
@@ -101,19 +99,19 @@
                 showErrorUnder(widget, err);
             }
         } else {
-            targetInput = document.querySelector('.form-input');
+            targetInput = document.querySelector('.frmin');
             if (targetInput) {
-                targetInput.classList.add('input-error');
+                targetInput.classList.add('inerr');
                 showErrorUnder(targetInput, err);
             }
         }
         
         function showErrorUnder(element, message) {
-            var group = element.closest('.form-group') || element.parentElement;
-            var errDiv = group.querySelector('.form-input-error-text');
+            var group = element.closest('.frmgrp') || element.parentElement;
+            var errDiv = group.querySelector('.frminerr');
             if (!errDiv) {
                 errDiv = document.createElement('span');
-                errDiv.className = 'form-input-error-text';
+                errDiv.className = 'frminerr';
                 group.appendChild(errDiv);
             }
             errDiv.textContent = message;

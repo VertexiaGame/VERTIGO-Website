@@ -1,4 +1,4 @@
-.navbarcontainer {
+.navcnt {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -18,7 +18,7 @@
     z-index: 10;
 }
 
-.navbarcontainer::before {
+.navcnt::before {
     content: "";
     position: absolute;
     top: -20px;
@@ -31,7 +31,7 @@
     pointer-events: none;
 }
 
-.navbarbrand {
+.navbrd {
     position: absolute;
     width: 170px;
     max-width: 15vw;
@@ -46,8 +46,8 @@
     filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.25));
 }
 
-.navbarlink,
-.navtext {
+.navlnk,
+.navtxt {
     font-family: 'Ubuntu', sans-serif;
     font-size: 20px;
     line-height: 23px;
@@ -63,44 +63,43 @@
     height: 23px;
 }
 
-.navbarlink {
+.navlnk {
     font-weight: 500;
 }
 
-.navtext {
+.navtxt {
     font-weight: 400;
 }
 
-.navbarlink,
-.sidebarbutton,
-.sidebarpfpbutton,
-.navbarbrand {
+.navlnk,
+.sbtn,
+.pfpbtn,
+.navbrd {
     transform: scale(1);
     opacity: 1;
     animation: navlinkentrybounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease;
 }
 
-.navbarbrand {
+.navbrd {
     animation: navbarbrandentryslide 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
 }
 
-.navbarlink:hover,
-.sidebarbutton:hover,
-.sidebarpfpbutton:hover,
-.navbarbrand:hover {
+.navlnk:hover,
+.sbtn:hover,
+.pfpbtn:hover,
+.navbrd:hover {
     transform: scale(1.04);
     opacity: 1;
 }
 
-.navbarlink:active,
-.sidebarbutton:active,
-.sidebarpfpbutton:active,
-.navbarbrand:active {
+.navlnk:active,
+.sbtn:active,
+.pfpbtn:active,
+.navbrd:active {
     transform: scale(0.96) rotateX(-15deg);
     transition: transform 0.08s ease;
 }
-
 
 /* terrible looking, im sorry */
 .navhome { width: 56px; animation-delay: 0.4s; }
@@ -109,9 +108,9 @@
 .navusers { width: 52px; animation-delay: 0.1s; }
 .navclans { width: 51px; animation-delay: 0.2s; }
 .navforum { width: 60px; animation-delay: 0.3s; }
-.navupgrade { width: 80px; animation-delay: 0.4s; }
+.navupg { width: 80px; animation-delay: 0.4s; }
 
-.navbardivider {
+.navdiv {
     width: 1px;
     height: 23px;
     background-color: rgba(255, 255, 255, 0.2);
@@ -123,7 +122,7 @@
     animation-delay: 0.4s;
 }
 
-.usersidebar {
+.sbar {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -139,7 +138,7 @@
     z-index: 11;
 }
 
-.sidebarbutton {
+.sbtn {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -152,7 +151,7 @@
     margin: 0;
 }
 
-.sidebarpfpbutton {
+.pfpbtn {
     display: flex;
     align-items: center;
     background-color: transparent;
@@ -165,7 +164,7 @@
     flex-grow: 0;
 }
 
-.sidebaricon {
+.sico {
     width: 20px;
     height: 20px;
     flex: none;
@@ -173,7 +172,7 @@
     object-fit: contain;
 }
 
-.sidebarpfp {
+.pfpimg {
     width: 46px;
     height: 46px;
     border-radius: 999px;
@@ -183,12 +182,12 @@
     object-fit: cover;
 }
 
-.sidebtn-vert { animation-delay: 0.7s; }
-.sidebtn-tix { animation-delay: 0.5s; }
-.sidebardiv { animation-delay: 0.3s; }
-.sidebtn-msg { animation-delay: 0.2s; }
-.sidebtn-frnd { animation-delay: 0.1s; }
-.sidebtn-pfp { animation-delay: 0s; }
+.sbtnvrt { animation-delay: 0.7s; }
+.sbtntix { animation-delay: 0.5s; }
+.sbardiv { animation-delay: 0.3s; }
+.sbtnmsg { animation-delay: 0.2s; }
+.sbtnfrn { animation-delay: 0.1s; }
+.sbtnpfp { animation-delay: 0s; }
 
 @keyframes navlinkentrybounce {
     0% {
@@ -230,7 +229,7 @@
     }
 }
 
-.userdropdown {
+.udrop {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -254,14 +253,14 @@
     transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease-out;
 }
 
-.userdropdown.active {
+.udrop.active {
     opacity: 0.75;
     transform: translateY(0) scale(1);
     pointer-events: auto;
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dropdownuser {
+.dropusr {
     font-family: 'Ubuntu';
     font-style: normal;
     font-weight: 400;
@@ -277,7 +276,7 @@
     height: 20px;
 }
 
-.dropdownline {
+.droplne {
     width: 169px;
     height: 0px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -286,7 +285,7 @@
     flex-grow: 0;
 }
 
-.dropdownitem {
+.dropitm {
     font-family: 'Ubuntu';
     font-style: normal;
     font-weight: 400;
@@ -321,27 +320,27 @@
     height: 18px;
 }
 
-.dropdownitem:hover {
+.dropitm:hover {
     transform: translateX(4px);
     opacity: 0.85;
 }
 
-.dropdownitem:active {
+.dropitm:active {
     transform: scale(0.97);
 }
 
-.dropdownlogout {
+.droplgo {
     color: #FA0000;
 }
 
-@media (max-width: 768px), .mobile-mode {
-    .navbarbrand,
-    .navbarcontainer > .navbardivider,
-    .navbarlink {
+@media (max-width: 768px), .mobmode {
+    .navbrd,
+    .navcnt > .navdiv,
+    .navlnk {
         display: none !important;
     }
 
-    .usersidebar {
+    .sbar {
         width: auto;
         right: 10px;
         left: 10px;
@@ -350,23 +349,23 @@
         padding: 0;
     }
 
-    .sidebaricon {
+    .sico {
         width: 20px;
         height: 20px;
     }
 
-    .sidebarpfp {
+    .pfpimg {
         width: 40px;
         height: 40px;
     }
 
-    .navtext {
+    .navtxt {
         font-size: 18px;
         line-height: 20px;
         height: 20px;
     }
 
-    .sidebarbutton {
+    .sbtn {
         gap: 4px;
         height: 28px;
     }

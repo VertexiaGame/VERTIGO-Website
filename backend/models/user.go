@@ -3,12 +3,10 @@ package models
 import (
 	"crypto/rand"
 	"database/sql"
-	"errors"
+	"encoding/json"
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -34,6 +32,105 @@ type User struct {
 	FeedCaptchas      int
 	EmailVerifyToken  sql.NullString
 	EmailVerifyExpiry sql.NullInt64
+	Pronouns          string
+	Socials           string
+}
+
+type SocialLink struct {
+	Platform string `json:"platform"`
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	URL      string `json:"url"`
+	Icon     string `json:"icon"`
+	Color    string `json:"color"`
+}
+
+func (u *User) ParsedSocials() []SocialLink {
+	if u.Socials == "" {
+		return nil
+	}
+	var raw map[string]string
+	if err := json.Unmarshal([]byte(u.Socials), &raw); err != nil {
+		return nil
+	}
+
+	platforms := []struct {
+		Key    string
+		Name   string
+		Icon   string
+		Color  string
+		URLFmt func(v string) string
+	}{
+		{"discord", "Discord", "fa-brands fa-discord", "#5865F2", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			return "https://discord.com/users/" + v
+		}},
+		{"twitter", "Twitter / X", "fa-brands fa-x-twitter", "#000000", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			return "https://x.com/" + strings.TrimPrefix(v, "@")
+		}},
+		{"youtube", "YouTube", "fa-brands fa-youtube", "#FF0000", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			if !strings.HasPrefix(v, "@") && !strings.HasPrefix(v, "c/") && !strings.HasPrefix(v, "channel/") {
+				return "https://youtube.com/@" + v
+			}
+			return "https://youtube.com/" + v
+		}},
+		{"twitch", "Twitch", "fa-brands fa-twitch", "#9146FF", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			return "https://twitch.tv/" + v
+		}},
+		{"github", "GitHub", "fa-brands fa-github", "#24292e", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			return "https://github.com/" + v
+		}},
+		{"instagram", "Instagram", "fa-brands fa-instagram", "#E1306C", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			return "https://instagram.com/" + strings.TrimPrefix(v, "@")
+		}},
+		{"tiktok", "TikTok", "fa-brands fa-tiktok", "#000000", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			return "https://tiktok.com/@" + strings.TrimPrefix(v, "@")
+		}},
+		{"steam", "Steam", "fa-brands fa-steam", "#171a21", func(v string) string {
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return v
+			}
+			return "https://steamcommunity.com/id/" + v
+		}},
+	}
+
+	var result []SocialLink
+	for _, p := range platforms {
+		if val, ok := raw[p.Key]; ok {
+			trimmed := strings.TrimSpace(val)
+			if trimmed != "" {
+				result = append(result, SocialLink{
+					Platform: p.Key,
+					Name:     p.Name,
+					Value:    trimmed,
+					URL:      p.URLFmt(trimmed),
+					Icon:     p.Icon,
+					Color:    p.Color,
+				})
+			}
+		}
+	}
+	return result
 }
 
 type ReplayCache struct {
@@ -83,278 +180,4 @@ func GenerateRandomString(length int) (string, error) {
 		b[i] = charset[int(b[i])%len(charset)]
 	}
 	return string(b), nil
-}
-
-func CreateUser(db *sql.DB, username, displayname, email, password string) (*User, error) {
-	if db == nil {
-		mockUser := &User{
-			Username:    username,
-			DisplayName: displayname,
-			Mail:        email,
-		}
-		return mockUser, nil
-	}
-
-	existingUser, err := GetUserByUsername(db, username)
-	if err != nil {
-		return nil, err
-	}
-	if existingUser != nil {
-		return nil, errors.New("username is already taken")
-	}
-
-	existingEmail, err := GetUserByEmail(db, email)
-	if err != nil {
-		return nil, err
-	}
-	if existingEmail != nil {
-		return nil, errors.New("email is already registered")
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-
-	unikey, err := GenerateRandomString(25)
-	if err != nil {
-		return nil, err
-	}
-
-	if displayname == "" {
-		displayname = username
-	}
-
-	user := &User{
-		Username:     username,
-		DisplayName:  displayname,
-		Mail:         email,
-		Password:     string(hashedPassword),
-		Description:  "I am new to VERTEXIA!",
-		Unikey:       unikey,
-		Power:        0,
-		PrimaryClan:  0,
-		NameColor:    "7423CB",
-		Vermail:      "false",
-		Vermc:        "false",
-		Casom:        "false",
-		Bits:         250,
-		Bucks:        100,
-		LastOnline:   time.Now(),
-		CreationDate: time.Now(),
-		Views:        0,
-		FeedCaptchas: 0,
-	}
-
-	query := "INSERT INTO users (username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	res, err := db.Exec(query,
-		user.Username,
-		user.DisplayName,
-		user.Mail,
-		user.Password,
-		user.Description,
-		user.Unikey,
-		user.Power,
-		user.PrimaryClan,
-		user.NameColor,
-		user.CustomCSS,
-		user.Vermail,
-		user.Vermc,
-		user.Casom,
-		user.Bits,
-		user.Bucks,
-		user.LastOnline,
-		user.CreationDate,
-		user.Views,
-		user.FeedCaptchas,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	lastID, err := res.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
-	user.ID = int(lastID)
-
-	torsoColors := []string{"c60000", "3292d3", "85ad00", "e58700"}
-	legColors := []string{"650013", "1c4399", "1d6a19", "76603f"}
-
-	idxBytes := make([]byte, 1)
-	if _, err := rand.Read(idxBytes); err != nil {
-		return nil, err
-	}
-	torsoIdx := int(idxBytes[0]) % 4
-
-	if _, err := rand.Read(idxBytes); err != nil {
-		return nil, err
-	}
-	legIdx := int(idxBytes[0]) % 4
-
-	torso := torsoColors[torsoIdx]
-	leg := legColors[legIdx]
-
-	avatarQuery := "INSERT INTO avatar (id, head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face, head, larm, rarm, torso, lleg, rleg, light_color, light_intensity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	_, err = db.Exec(avatarQuery,
-		user.ID,
-		"f3b700",
-		"f3b700",
-		"f3b700",
-		torso,
-		leg,
-		leg,
-		0, 0, 0, 0, 0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		"ffffff",
-		100,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-func GetUserByUsername(db *sql.DB, username string) (*User, error) {
-	if db == nil {
-		return nil, errors.New("database connection is offline")
-	}
-
-	query := "SELECT id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry FROM users WHERE username = ?"
-	row := db.QueryRow(query, username)
-
-	var u User
-	err := row.Scan(
-		&u.ID,
-		&u.Username,
-		&u.DisplayName,
-		&u.Mail,
-		&u.Password,
-		&u.Description,
-		&u.Unikey,
-		&u.Power,
-		&u.PrimaryClan,
-		&u.NameColor,
-		&u.CustomCSS,
-		&u.Vermail,
-		&u.Vermc,
-		&u.Casom,
-		&u.Bits,
-		&u.Bucks,
-		&u.LastOnline,
-		&u.CreationDate,
-		&u.Views,
-		&u.FeedCaptchas,
-		&u.EmailVerifyToken,
-		&u.EmailVerifyExpiry,
-	)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return &u, nil
-}
-
-func GetUserByEmail(db *sql.DB, email string) (*User, error) {
-	if db == nil {
-		return nil, errors.New("database connection is offline")
-	}
-
-	query := "SELECT id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry FROM users WHERE mail = ?"
-	row := db.QueryRow(query, email)
-
-	var u User
-	err := row.Scan(
-		&u.ID,
-		&u.Username,
-		&u.DisplayName,
-		&u.Mail,
-		&u.Password,
-		&u.Description,
-		&u.Unikey,
-		&u.Power,
-		&u.PrimaryClan,
-		&u.NameColor,
-		&u.CustomCSS,
-		&u.Vermail,
-		&u.Vermc,
-		&u.Casom,
-		&u.Bits,
-		&u.Bucks,
-		&u.LastOnline,
-		&u.CreationDate,
-		&u.Views,
-		&u.FeedCaptchas,
-		&u.EmailVerifyToken,
-		&u.EmailVerifyExpiry,
-	)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return &u, nil
-}
-
-func AuthenticateUser(db *sql.DB, identifier, password string) (*User, error) {
-	var user *User
-	var err error
-
-	if strings.Contains(identifier, "@") {
-		user, err = GetUserByEmail(db, identifier)
-	} else {
-		user, err = GetUserByUsername(db, identifier)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if user == nil {
-		return nil, errors.New("invalid username/email or password")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return nil, errors.New("invalid username/email or password")
-	}
-
-	return user, nil
-}
-
-func UpdateUserOnline(db *sql.DB, userID int) error {
-	if db == nil {
-		return nil
-	}
-	query := "UPDATE users SET last_online = ? WHERE id = ?"
-	_, err := db.Exec(query, time.Now(), userID)
-	return err
-}
-
-func GetUserCount(db *sql.DB) (int, error) {
-	if db == nil {
-		return 0, nil
-	}
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
 }
