@@ -380,7 +380,7 @@ const resetFeedView = () => {
 
     const allPosts = postsList.querySelectorAll('.pstitm');
     allPosts.forEach(p => {
-        p.style.display = 'block';
+        p.style.display = '';
         loadPostComments(p, false);
     });
 };
@@ -718,11 +718,12 @@ const initFeed = () => {
         return;
     }
 
+    resetFeedView();
+
     currentTab = 'worldwide';
-    feedOffset = 10;
+    feedOffset = document.querySelectorAll('.pstitm').length || 10;
     loadingFeed = false;
     noMorePosts = false;
-    activeFocusedPostId = null;
 
     setupGlobalDelegation();
 
@@ -869,7 +870,12 @@ initFeed();
 
 document.addEventListener('htmx:afterSettle', initFeed);
 
+document.addEventListener('htmx:beforeHistorySave', () => {
+    resetFeedView();
+});
+
 document.addEventListener('htmx:beforeTransition', () => {
+    resetFeedView();
     if (postObserver) {
         postObserver.disconnect();
     }

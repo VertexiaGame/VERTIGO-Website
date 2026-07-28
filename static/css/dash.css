@@ -271,7 +271,7 @@
     top: 0 !important;
     bottom: auto !important;
     margin-top: -2px !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 0px !important;
     background: rgba(120, 120, 120, 0.45) !important;
     border-width: 0px 2px 2px 2px !important;
     border-style: solid !important;
@@ -431,7 +431,7 @@
     position: relative !important;
     width: 100% !important;
     min-height: 85px !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
     animation: postreducedbounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1) backwards;
     transition: min-height 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
@@ -613,7 +613,7 @@
     margin-left: 99px !important;
     margin-top: 4px !important;
     margin-right: 16px !important;
-    margin-bottom: 12px !important;
+    margin-bottom: 8px !important;
     font-family: 'Ubuntu' !important;
     font-style: normal !important;
     font-weight: 500 !important;
@@ -693,11 +693,16 @@
     display: flex !important;
     flex-direction: column !important;
     gap: 12px !important;
-    margin-top: 8px !important;
+    margin-top: 6px !important;
     margin-left: 20px !important;
     width: calc(100% - 20px) !important;
     box-sizing: border-box !important;
     animation: replyExpandAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.cmtlst:empty {
+    display: none !important;
+    margin-top: 0 !important;
 }
 
 .cmtnest {
@@ -723,7 +728,7 @@
 .cmtcrd {
     position: relative !important;
     box-sizing: border-box !important;
-    background: #EAEAEA !important;
+    background: #E0E0E0 !important;
     border: 1px solid #C1C1C1 !important;
     border-radius: 10px !important;
     padding: 8px 65px 8px 56px !important;
@@ -777,7 +782,7 @@
     top: 0 !important;
     bottom: auto !important;
     margin-top: -2px !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 0px !important;
     border-radius: 0 0 5px 5px !important;
     z-index: 4 !important;
 }
@@ -862,8 +867,8 @@
     color: #7423CB !important;
     cursor: pointer !important;
     display: block !important;
-    margin-top: 12px !important;
-    margin-bottom: 6px !important;
+    margin-top: 1px !important;
+    margin-bottom: 1px !important;
     margin-left: 48px !important;
     text-decoration: none !important;
 }
