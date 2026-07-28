@@ -728,22 +728,24 @@
 .cmtcrd {
     position: relative !important;
     box-sizing: border-box !important;
+    width: 100% !important;
     background: #E0E0E0 !important;
-    border: 1px solid #C1C1C1 !important;
-    border-radius: 10px !important;
+    border: 2px solid #C1C1C1 !important;
+    border-radius: 12px !important;
     padding: 8px 65px 8px 56px !important;
     min-height: 48px !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: none !important;
+    transition: min-height 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease !important;
 }
 
 .cmtavt {
     position: absolute !important;
-    left: -1px !important;
-    top: -1px !important;
+    left: -2px !important;
+    top: -2px !important;
     width: 48px !important;
     height: 48px !important;
-    border-radius: 9px 0 0 9px !important;
-    border-right: 1px solid #C1C1C1 !important;
+    border-radius: 10px 0 0 10px !important;
+    border-right: 2px solid #C1C1C1 !important;
     overflow: hidden !important;
 }
 
