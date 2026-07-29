@@ -8,6 +8,10 @@ let listenersInitialized = false;
 let currentTab = 'worldwide';
 let activeFocusedPostId = null;
 const reactionCooldowns = new Map();
+const REPLY_ICON = '<i class="fa-solid fa-reply"></i>';
+const FLAG_ICON = '<i class="fa-solid fa-flag"></i>';
+const REACT_ICON = '<i class="fa-regular fa-face-laugh-squint"></i>';
+const MAX_THREAD_DEPTH = 3;
 
 const updateOdometer = (element, value) => {
     const valString = String(value);
@@ -41,6 +45,67 @@ const animateReactionCounter = (span, targetValue) => {
     if (!span) return;
     updateOdometer(span, 0);
     setTimeout(() => updateOdometer(span, targetValue), 50);
+};
+
+const buildAvatar = (userId, username, wrapperClass) => {
+    const avt = document.createElement('div');
+    avt.className = wrapperClass;
+    const img = document.createElement('img');
+    img.src = `/api/v1/avatar/headshot/${userId}.png`;
+    img.alt = username;
+    img.onerror = () => { img.src = '/static/useful/temp/pfp.png'; };
+    avt.appendChild(img);
+    return avt;
+};
+
+const buildTimeTooltip = (timeAgo, fullDate, timeClass) => {
+    const ttp = document.createElement('div');
+    ttp.className = 'ttpcnt';
+    const tme = document.createElement('span');
+    tme.className = timeClass;
+    tme.textContent = timeAgo;
+    const txt = document.createElement('span');
+    txt.className = 'ttptxt';
+    txt.textContent = fullDate;
+    ttp.appendChild(tme);
+    ttp.appendChild(txt);
+    return ttp;
+};
+
+const buildReplyButton = () => {
+    const btn = document.createElement('div');
+    btn.className = 'pstrpl';
+    btn.title = 'Reply';
+    btn.innerHTML = REPLY_ICON;
+    return btn;
+};
+
+const buildFlagLink = href => {
+    const a = document.createElement('a');
+    a.className = 'pstflg';
+    a.title = 'Report';
+    a.href = href;
+    a.setAttribute('hx-get', href);
+    a.setAttribute('hx-target', 'body');
+    a.setAttribute('hx-push-url', 'true');
+    a.innerHTML = FLAG_ICON;
+    return a;
+};
+
+const buildReactionBadge = (hasReacted, reactions, isComment) => {
+    const bdg = document.createElement('div');
+    bdg.className = isComment
+        ? (hasReacted ? 'rctbdg cmtrctbdg reacted' : 'rctbdg cmtrctbdg')
+        : (hasReacted ? 'rctbdg reacted' : 'rctbdg');
+    const ico = document.createElement('div');
+    ico.className = 'rctico';
+    ico.innerHTML = REACT_ICON;
+    const cnt = document.createElement('span');
+    cnt.className = 'rctcnt';
+    cnt.dataset.target = reactions || 0;
+    bdg.appendChild(ico);
+    bdg.appendChild(cnt);
+    return { bdg, cnt };
 };
 
 const updateTabIndicator = () => {
@@ -113,7 +178,7 @@ const countTotalComments = commentsList => {
     return count;
 };
 
-const createCommentElement = comment => {
+const createCommentElement = (comment, parentUser, depth = 0) => {
     const wrapper = document.createElement('div');
     wrapper.className = 'cmtitm';
     wrapper.dataset.commentId = comment.id;
@@ -121,12 +186,7 @@ const createCommentElement = comment => {
     const card = document.createElement('div');
     card.className = 'cmtcrd';
 
-    const avatar = document.createElement('div');
-    avatar.className = 'cmtavt';
-    const img = document.createElement('img');
-    img.src = `/api/v1/avatar/headshot/${comment.user_id}.png`;
-    img.onerror = () => { img.src = '/static/useful/temp/pfp.png'; };
-    avatar.appendChild(img);
+    card.appendChild(buildAvatar(comment.user_id, comment.username, 'cmtavt'));
 
     const header = document.createElement('div');
     header.className = 'cmthdr';
@@ -139,76 +199,53 @@ const createCommentElement = comment => {
     author.setAttribute('hx-push-url', 'true');
     author.textContent = comment.username;
 
-    const timeTooltip = document.createElement('div');
-    timeTooltip.className = 'ttpcnt';
-
-    const time = document.createElement('span');
-    time.className = 'cmttme';
-    time.textContent = comment.time_ago || 'Just now';
-
-    const ttptxt = document.createElement('span');
-    ttptxt.className = 'ttptxt';
-    ttptxt.textContent = comment.full_date || '';
-
-    timeTooltip.appendChild(time);
-    timeTooltip.appendChild(ttptxt);
-
     header.appendChild(author);
-    header.appendChild(timeTooltip);
+    header.appendChild(buildTimeTooltip(comment.time_ago || 'Just now', comment.full_date || '', 'cmttme'));
+    card.appendChild(header);
+
+    if (parentUser) {
+        const rep = document.createElement('div');
+        rep.className = 'cmtrep';
+        const arrow = document.createElement('i');
+        arrow.className = 'fa-solid fa-reply';
+        const lbl = document.createElement('span');
+        lbl.textContent = 'replying to';
+        const link = document.createElement('a');
+        link.href = `/user/${parentUser.id}`;
+        link.setAttribute('hx-get', `/user/${parentUser.id}`);
+        link.setAttribute('hx-target', 'body');
+        link.setAttribute('hx-push-url', 'true');
+        link.textContent = `@${parentUser.username}`;
+        rep.appendChild(arrow);
+        rep.appendChild(lbl);
+        rep.appendChild(link);
+        card.appendChild(rep);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'cmtact';
+    actions.appendChild(buildReplyButton());
+    actions.appendChild(buildFlagLink(`/report/comment/${comment.id}`));
+    card.appendChild(actions);
 
     const body = document.createElement('div');
     body.className = 'cmtbdy';
     body.textContent = comment.comment;
-
-    const actions = document.createElement('div');
-    actions.className = 'cmtact';
-
-    const replyBtn = document.createElement('div');
-    replyBtn.className = 'pstrpl';
-    replyBtn.title = 'Reply';
-    replyBtn.innerHTML = '<i class="fa-solid fa-reply"></i>';
-
-    const flagBtn = document.createElement('a');
-    flagBtn.className = 'pstflg';
-    flagBtn.title = 'Report';
-    flagBtn.href = `/report/comment/${comment.id}`;
-    flagBtn.setAttribute('hx-get', `/report/comment/${comment.id}`);
-    flagBtn.setAttribute('hx-target', 'body');
-    flagBtn.setAttribute('hx-push-url', 'true');
-    flagBtn.innerHTML = '<i class="fa-solid fa-flag"></i>';
-
-    actions.appendChild(replyBtn);
-    actions.appendChild(flagBtn);
-
-    card.appendChild(avatar);
-    card.appendChild(header);
-    card.appendChild(actions);
     card.appendChild(body);
 
-    const reactBdg = document.createElement('div');
-    reactBdg.className = comment.has_reacted ? 'rctbdg cmtrctbdg reacted' : 'rctbdg cmtrctbdg';
-
-    const reactIco = document.createElement('div');
-    reactIco.className = 'rctico';
-    reactIco.innerHTML = '<i class="fa-regular fa-face-laugh-squint"></i>';
-
-    const reactCnt = document.createElement('span');
-    reactCnt.className = 'rctcnt';
-    reactCnt.dataset.target = comment.reactions || 0;
-
-    reactBdg.appendChild(reactIco);
-    reactBdg.appendChild(reactCnt);
-
+    const { bdg: reactBdg, cnt: reactCnt } = buildReactionBadge(comment.has_reacted, comment.reactions, true);
     animateReactionCounter(reactCnt, comment.reactions || 0);
 
     wrapper.appendChild(card);
     wrapper.appendChild(reactBdg);
 
     if (comment.replies && comment.replies.length > 0) {
+        const childDepth = depth + 1;
         const nested = document.createElement('div');
-        nested.className = 'cmtnest';
+        nested.className = childDepth > MAX_THREAD_DEPTH ? 'cmtnest cmtnest-max' : 'cmtnest';
+        const childParent = { id: comment.user_id, username: comment.username };
         comment.replies.forEach(r => {
-            nested.appendChild(createCommentElement(r));
+            nested.appendChild(createCommentElement(r, childParent, childDepth));
         });
         wrapper.appendChild(nested);
     }
@@ -225,14 +262,14 @@ const renderCommentsForPost = (postWrapper, comments, isFocused) => {
 
     if (isFocused) {
         comments.forEach(c => {
-            cmtList.appendChild(createCommentElement(c));
+            cmtList.appendChild(createCommentElement(c, null, 0));
         });
         return;
     }
 
     const displayCount = Math.min(3, comments.length);
     for (let i = 0; i < displayCount; i++) {
-        cmtList.appendChild(createCommentElement(comments[i]));
+        cmtList.appendChild(createCommentElement(comments[i], null, 0));
     }
 
     const totalCount = countTotalComments(comments);
@@ -419,16 +456,7 @@ const createPost = post => {
     const postCard = document.createElement('div');
     postCard.className = 'pstcrd';
 
-    const postAvatar = document.createElement('div');
-    postAvatar.className = 'pstavt';
-
-    const avatarImg = document.createElement('img');
-    avatarImg.src = `/api/v1/avatar/headshot/${userId}.png`;
-    avatarImg.alt = username;
-    avatarImg.onerror = () => {
-        avatarImg.src = '/static/useful/temp/pfp.png';
-    };
-    postAvatar.appendChild(avatarImg);
+    postCard.appendChild(buildAvatar(userId, username, 'pstavt'));
 
     const postHeader = document.createElement('div');
     postHeader.className = 'psthdr';
@@ -441,86 +469,33 @@ const createPost = post => {
     postAuthor.setAttribute('hx-push-url', 'true');
     postAuthor.textContent = username;
 
-    const timeTooltip = document.createElement('div');
-    timeTooltip.className = 'ttpcnt';
-
-    const postTime = document.createElement('span');
-    postTime.className = 'psttme';
-    postTime.textContent = timeAgo;
-
-    const tooltipTxt = document.createElement('span');
-    tooltipTxt.className = 'ttptxt';
-    tooltipTxt.textContent = fullDate;
-
-    timeTooltip.appendChild(postTime);
-    timeTooltip.appendChild(tooltipTxt);
-
     postHeader.appendChild(postAuthor);
-    postHeader.appendChild(timeTooltip);
+    postHeader.appendChild(buildTimeTooltip(timeAgo, fullDate, 'psttme'));
+    postCard.appendChild(postHeader);
 
     const postActions = document.createElement('div');
     postActions.className = 'pstact';
-
-    const postReply = document.createElement('div');
-    postReply.className = 'pstrpl';
-    postReply.title = 'Reply';
-
-    const replyIcon = document.createElement('i');
-    replyIcon.className = 'fa-solid fa-reply';
-    postReply.appendChild(replyIcon);
+    postActions.appendChild(buildReplyButton());
 
     const postReactBtn = document.createElement('div');
     postReactBtn.className = 'pstrct';
     postReactBtn.title = 'Add Reaction';
-
     const reactImg = document.createElement('img');
     reactImg.src = '/static/useful/icons/fadd.png';
     reactImg.alt = 'Add Reaction';
     reactImg.className = 'pstico';
     postReactBtn.appendChild(reactImg);
-
-    const postFlag = document.createElement('a');
-    postFlag.className = 'pstflg';
-    postFlag.href = `/report/feed/${id}`;
-    postFlag.setAttribute('hx-get', `/report/feed/${id}`);
-    postFlag.setAttribute('hx-target', 'body');
-    postFlag.setAttribute('hx-push-url', 'true');
-    postFlag.title = 'Report';
-
-    const flagIcon = document.createElement('i');
-    flagIcon.className = 'fa-solid fa-flag';
-    postFlag.appendChild(flagIcon);
-
-    postActions.appendChild(postReply);
     postActions.appendChild(postReactBtn);
-    postActions.appendChild(postFlag);
+
+    postActions.appendChild(buildFlagLink(`/report/feed/${id}`));
+    postCard.appendChild(postActions);
 
     const postBody = document.createElement('div');
     postBody.className = 'pbdy';
     postBody.textContent = content;
-
-    postCard.appendChild(postAvatar);
-    postCard.appendChild(postHeader);
-    postCard.appendChild(postActions);
     postCard.appendChild(postBody);
 
-    const reactBdg = document.createElement('div');
-    reactBdg.className = hasReacted ? 'rctbdg reacted' : 'rctbdg';
-
-    const reactIco = document.createElement('div');
-    reactIco.className = 'rctico';
-
-    const faceIcon = document.createElement('i');
-    faceIcon.className = 'fa-regular fa-face-laugh-squint';
-    reactIco.appendChild(faceIcon);
-
-    const reactCnt = document.createElement('span');
-    reactCnt.className = 'rctcnt';
-    reactCnt.dataset.target = reactions;
-    reactCnt.textContent = '0';
-
-    reactBdg.appendChild(reactIco);
-    reactBdg.appendChild(reactCnt);
+    const { bdg: reactBdg } = buildReactionBadge(hasReacted, reactions, false);
 
     const cmtList = document.createElement('div');
     cmtList.className = 'cmtlst';
@@ -569,15 +544,7 @@ const fetchFeedPosts = (tabName, offset = 0, limit = 10) => {
                 if (offset === 0 && tabName === 'friends') {
                     const placeholder = document.createElement('div');
                     placeholder.id = 'friends-feed-empty';
-                    placeholder.className = 'noitms';
-                    placeholder.style.marginTop = '20px';
-                    placeholder.style.color = '#FFFFFF';
-                    placeholder.style.background = 'rgba(61, 61, 61, 0.4)';
-                    placeholder.style.border = '1px dashed rgba(255,255,255,0.2)';
-                    placeholder.style.padding = '16px';
-                    placeholder.style.borderRadius = '8px';
-                    placeholder.style.textAlign = 'center';
-                    placeholder.style.fontFamily = "'Ubuntu', sans-serif";
+                    placeholder.className = 'feedemt';
                     placeholder.textContent = 'No active friends are posting right now.';
                     postsList.appendChild(placeholder);
                 }
