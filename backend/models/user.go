@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+const (
+	PowerMember       = 0
+	PowerTrainee      = 1
+	PowerModerator    = 2
+	PowerHeadManager  = 3
+	PowerVertexiaTeam = 4
+	PowerOwner        = 5
+)
+
 type User struct {
 	ID                int
 	Username          string
@@ -34,6 +43,48 @@ type User struct {
 	EmailVerifyExpiry sql.NullInt64
 	Pronouns          string
 	Socials           string
+}
+
+func (u *User) RoleName() string {
+	switch {
+	case u.Power >= PowerOwner:
+		return "owner"
+	case u.Power == PowerVertexiaTeam:
+		return "vertexia-team"
+	case u.Power == PowerHeadManager:
+		return "head manager"
+	case u.Power == PowerModerator:
+		return "moderator"
+	case u.Power == PowerTrainee:
+		return "trainee"
+	default:
+		return "member"
+	}
+}
+
+func (u *User) RoleDisplayName() string {
+	switch {
+	case u.Power >= PowerOwner:
+		return "Owner"
+	case u.Power == PowerVertexiaTeam:
+		return "VERTEXIA Team"
+	case u.Power == PowerHeadManager:
+		return "Head Manager"
+	case u.Power == PowerModerator:
+		return "Moderator"
+	case u.Power == PowerTrainee:
+		return "Trainee"
+	default:
+		return "Member"
+	}
+}
+
+func (u *User) HasAdminAccess() bool {
+	return u.Power >= PowerTrainee
+}
+
+func (u *User) HasPower(required int) bool {
+	return u.Power >= required
 }
 
 type SocialLink struct {

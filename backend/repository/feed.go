@@ -15,31 +15,7 @@ func NewFeedRepository(db *sql.DB) *FeedRepository {
 }
 
 func (r *FeedRepository) GetRecentFeedPosts(limit, currentUserID int) ([]*models.FeedPost, error) {
-	if r.db == nil {
-		return nil, nil
-	}
-	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
-	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
-	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
-              FROM feed f 
-              INNER JOIN users u ON f.user_id = u.id 
-              WHERE f.removed = 'false' 
-              ORDER BY f.creation_date DESC, f.id DESC LIMIT ?`
-	rows, err := r.db.Query(query, currentUserID, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var posts []*models.FeedPost
-	for rows.Next() {
-		var p models.FeedPost
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted); err != nil {
-			return nil, err
-		}
-		posts = append(posts, &p)
-	}
-	return posts, nil
+	return r.GetRecentFeedPostsPaginated(limit, 0, currentUserID)
 }
 
 func (r *FeedRepository) GetRecentFeedPostsPaginated(limit, offset, currentUserID int) ([]*models.FeedPost, error) {
@@ -118,36 +94,7 @@ func (r *FeedRepository) GetReactionCount(feedID int) (int, error) {
 }
 
 func (r *FeedRepository) GetRecentFriendsFeedPosts(limit, currentUserID int) ([]*models.FeedPost, error) {
-	if r.db == nil {
-		return nil, nil
-	}
-	query := `SELECT f.id, f.userid, u.username, f.status, f.removed, f.edited, f.editdate, f.creationdate,
-	                 (SELECT COUNT(*) FROM ffreact r WHERE r.fid = f.id) AS reactions,
-	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
-              FROM ffeed f 
-              INNER JOIN users u ON f.userid = u.id 
-              WHERE f.removed = 'false' 
-                AND (f.userid = ? OR f.userid IN (
-                    SELECT CASE WHEN uid = ? THEN fid ELSE uid END 
-                    FROM friends 
-                    WHERE (uid = ? OR fid = ?) AND state = 'accepted'
-                ))
-              ORDER BY f.creationdate DESC, f.id DESC LIMIT ?`
-	rows, err := r.db.Query(query, currentUserID, currentUserID, currentUserID, currentUserID, currentUserID, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var posts []*models.FeedPost
-	for rows.Next() {
-		var p models.FeedPost
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted); err != nil {
-			return nil, err
-		}
-		posts = append(posts, &p)
-	}
-	return posts, nil
+	return r.GetRecentFriendsFeedPostsPaginated(limit, 0, currentUserID)
 }
 
 func (r *FeedRepository) GetRecentFriendsFeedPostsPaginated(limit, offset, currentUserID int) ([]*models.FeedPost, error) {

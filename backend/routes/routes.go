@@ -75,6 +75,9 @@ func Setup(app *fiber.App) {
 	app.Post("/settings/pronouns", handlers.SettingsPronounsPost)
 	app.Post("/settings/socials", handlers.SettingsSocialsPost)
 
+	app.Get("/admin", handlers.AdminIndex)
+	app.Get("/admin/users/:id", handlers.AdminUserViewPage)
+
 	api := app.Group("/api/v1")
 	api.Get("/altcha", handlers.AltchaGet)
 	api.Get("/feed", handlers.GetFeedPaginated)
@@ -87,6 +90,9 @@ func Setup(app *fiber.App) {
 	api.Get("/auth/validate", handlers.ValidateUkey)
 	api.Get("/music/search", handlers.MusicSearchGet)
 	api.Get("/livetimer", handlers.LiveTimerAPIGet)
+	api.Get("/admin/status", handlers.AdminStatusAPI)
+	api.Get("/admin/users", handlers.AdminUsersAPI)
+	api.Get("/admin/users/:id", handlers.AdminUserDetailAPI)
 
 	app.Get("/assets*", static.New("./assets", static.Config{
 		NotFoundHandler: func(c fiber.Ctx) error {

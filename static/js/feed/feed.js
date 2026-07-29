@@ -351,13 +351,24 @@ const focusSinglePost = postItem => {
         }
     });
 
+    const postCard = postItem.querySelector('.pstcrd');
+    if (postCard) {
+        postCard.classList.remove('focused');
+        void postCard.offsetWidth;
+        postCard.classList.add('focused');
+    }
+
     let backBtn = document.getElementById('backToFeedBtn');
     if (!backBtn) {
-        backBtn = document.createElement('button');
+        backBtn = document.createElement('a');
         backBtn.id = 'backToFeedBtn';
-        backBtn.className = 'happy hpyprim hpyinl hpysm bkcbtn';
-        backBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i><span>Back to Feed</span>';
-        backBtn.onclick = resetFeedView;
+        backBtn.className = 'bkcbtn';
+        backBtn.href = '#';
+        backBtn.textContent = 'Back to Feed';
+        backBtn.onclick = e => {
+            e.preventDefault();
+            resetFeedView();
+        };
         postsList.insertBefore(backBtn, postsList.firstChild);
     }
 
@@ -377,6 +388,9 @@ const resetFeedView = () => {
 
     const allReplyBtns = postsList.querySelectorAll('.pstrpl.active');
     allReplyBtns.forEach(btn => btn.classList.remove('active'));
+
+    const allCards = postsList.querySelectorAll('.pstcrd.focused');
+    allCards.forEach(c => c.classList.remove('focused'));
 
     const allPosts = postsList.querySelectorAll('.pstitm');
     allPosts.forEach(p => {
@@ -699,8 +713,18 @@ const onWindowScroll = () => {
     const postsList = document.querySelector('.pstlst');
     if (loadingFeed || noMorePosts || !postsList || activeFocusedPostId) return;
 
-    const triggerOffset = 150;
-    if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - triggerOffset) {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    const documentHeight = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+    );
+
+    const triggerOffset = 200;
+    if (scrollTop + windowHeight >= documentHeight - triggerOffset) {
         fetchFeedPosts(currentTab, feedOffset, 10);
     }
 };

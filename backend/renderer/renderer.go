@@ -100,29 +100,26 @@ type CompositeTexture struct {
 }
 
 func (t CompositeTexture) Sample(u, v float64) fauxgl.Color {
-	final := t.Color
-	final.A = 1.0
-	for _, l := range t.Layers {
-		if l == nil {
-			continue
-		}
-		c := l.Sample(u, v)
-		invA := 1.0 - c.A
-		final.R = c.R*c.A + final.R*invA
-		final.G = c.G*c.A + final.G*invA
-		final.B = c.B*c.A + final.B*invA
-	}
-	return final
+	return t.blendLayers(u, v, false)
 }
 
 func (t CompositeTexture) BilinearSample(u, v float64) fauxgl.Color {
+	return t.blendLayers(u, v, true)
+}
+
+func (t CompositeTexture) blendLayers(u, v float64, bilinear bool) fauxgl.Color {
 	final := t.Color
 	final.A = 1.0
 	for _, l := range t.Layers {
 		if l == nil {
 			continue
 		}
-		c := l.BilinearSample(u, v)
+		var c fauxgl.Color
+		if bilinear {
+			c = l.BilinearSample(u, v)
+		} else {
+			c = l.Sample(u, v)
+		}
 		invA := 1.0 - c.A
 		final.R = c.R*c.A + final.R*invA
 		final.G = c.G*c.A + final.G*invA
@@ -335,6 +332,17 @@ func getNDC(m fauxgl.Matrix, v fauxgl.Vector) (float64, float64, float64, float6
 	return x, y, z, w
 }
 
+func createPhongShader(matrixcm fauxgl.Matrix, eye fauxgl.Vector, objColor fauxgl.Color, texture fauxgl.Texture) *fauxgl.PhongShader {
+	shader := fauxgl.NewPhongShader(matrixcm, fauxgl.Vector{X: -1, Y: 1, Z: 1}, eye)
+	shader.AmbientColor = fauxgl.Color{R: Brightness, G: Brightness, B: Brightness, A: 1}
+	shader.DiffuseColor = fauxgl.Color{R: 0.35, G: 0.35, B: 0.35, A: 1}
+	specularIntensity := math.Max(0, 1.0-Roughness)
+	shader.SpecularColor = fauxgl.Color{R: specularIntensity, G: specularIntensity, B: specularIntensity, A: 1}
+	shader.ObjectColor = objColor
+	shader.Texture = texture
+	return shader
+}
+
 func renderav(req RenderRequest) ([]byte, error) {
 	context := fauxgl.NewContext(Width*ScaleFactor, Height*ScaleFactor)
 	context.ClearColorBufferWith(fauxgl.Transparent)
@@ -347,7 +355,7 @@ func renderav(req RenderRequest) ([]byte, error) {
 
 	mTorso := fauxgl.Translate(fauxgl.Vector{X: 0, Y: -1.5, Z: 0})
 	mRArm := fauxgl.Translate(fauxgl.Vector{X: 0, Y: -1.5, Z: 0})
-	
+
 	var mLArm fauxgl.Matrix
 	if req.IsTool {
 		if MeshOrig, Ok := preloadmeshes[LArmFile]; Ok {
@@ -479,12 +487,12 @@ func renderav(req RenderRequest) ([]byte, error) {
 		var baseCorners []fauxgl.Vector
 		var attachmentCorners []fauxgl.Vector
 
-		addBaseCorners := func(m *fauxgl.Mesh, mat fauxgl.Matrix) {
+		addMeshCorners := func(m *fauxgl.Mesh, mat fauxgl.Matrix, target *[]fauxgl.Vector) {
 			if m == nil {
 				return
 			}
 			b := m.BoundingBox()
-			corners := []fauxgl.Vector{
+			*target = append(*target,
 				mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Min.Y, Z: b.Min.Z}),
 				mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Min.Y, Z: b.Max.Z}),
 				mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Max.Y, Z: b.Min.Z}),
@@ -493,42 +501,23 @@ func renderav(req RenderRequest) ([]byte, error) {
 				mat.MulPosition(fauxgl.Vector{X: b.Max.X, Y: b.Min.Y, Z: b.Max.Z}),
 				mat.MulPosition(fauxgl.Vector{X: b.Max.X, Y: b.Max.Y, Z: b.Min.Z}),
 				mat.MulPosition(fauxgl.Vector{X: b.Max.X, Y: b.Max.Y, Z: b.Max.Z}),
-			}
-			baseCorners = append(baseCorners, corners...)
+			)
 		}
 
-		addAttachmentCorners := func(m *fauxgl.Mesh, mat fauxgl.Matrix) {
-			if m == nil {
-				return
-			}
-			b := m.BoundingBox()
-			corners := []fauxgl.Vector{
-				mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Min.Y, Z: b.Min.Z}),
-				mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Min.Y, Z: b.Max.Z}),
-				mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Max.Y, Z: b.Min.Z}),
-				mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Max.Y, Z: b.Max.Z}),
-				mat.MulPosition(fauxgl.Vector{X: b.Max.X, Y: b.Min.Y, Z: b.Min.Z}),
-				mat.MulPosition(fauxgl.Vector{X: b.Max.X, Y: b.Min.Y, Z: b.Max.Z}),
-				mat.MulPosition(fauxgl.Vector{X: b.Max.X, Y: b.Max.Y, Z: b.Min.Z}),
-				mat.MulPosition(fauxgl.Vector{X: b.Max.X, Y: b.Max.Y, Z: b.Max.Z}),
-			}
-			attachmentCorners = append(attachmentCorners, corners...)
-		}
-
-		addBaseCorners(preloadmeshes[HeadFile], mHead)
-		addBaseCorners(preloadmeshes[TorsoFile], mTorso)
-		addBaseCorners(preloadmeshes[RArmFile], mRArm)
-		addBaseCorners(preloadmeshes[LArmFile], mLArm)
-		addBaseCorners(preloadmeshes[RLegFile], mRLeg)
-		addBaseCorners(preloadmeshes[LLegFile], mLLeg)
-		addBaseCorners(preloadmeshes[TShirtFile], mTShirt)
+		addMeshCorners(preloadmeshes[HeadFile], mHead, &baseCorners)
+		addMeshCorners(preloadmeshes[TorsoFile], mTorso, &baseCorners)
+		addMeshCorners(preloadmeshes[RArmFile], mRArm, &baseCorners)
+		addMeshCorners(preloadmeshes[LArmFile], mLArm, &baseCorners)
+		addMeshCorners(preloadmeshes[RLegFile], mRLeg, &baseCorners)
+		addMeshCorners(preloadmeshes[LLegFile], mLLeg, &baseCorners)
+		addMeshCorners(preloadmeshes[TShirtFile], mTShirt, &baseCorners)
 
 		for _, lh := range loadedHats {
-			addAttachmentCorners(lh.Mesh, mHead)
+			addMeshCorners(lh.Mesh, mHead, &attachmentCorners)
 		}
 
 		if toolMesh != nil {
-			addAttachmentCorners(toolMesh, mTool)
+			addMeshCorners(toolMesh, mTool, &attachmentCorners)
 		}
 
 		maxNDC := 0.0
@@ -619,22 +608,7 @@ func renderav(req RenderRequest) ([]byte, error) {
 			return
 		}
 		mesh := orig.Copy()
-		c := parsec(colorHex)
-
-		shader := fauxgl.NewPhongShader(matrixcm, fauxgl.Vector{X: -1, Y: 1, Z: 1}, eye)
-		shader.AmbientColor = fauxgl.Color{R: Brightness, G: Brightness, B: Brightness, A: 1}
-		shader.DiffuseColor = fauxgl.Color{R: 0.35, G: 0.35, B: 0.35, A: 1}
-
-		specularIntensity := 1.0 - Roughness
-		if specularIntensity < 0 {
-			specularIntensity = 0
-		}
-		shader.SpecularColor = fauxgl.Color{R: specularIntensity, G: specularIntensity, B: specularIntensity, A: 1}
-
-		shader.ObjectColor = c
-		shader.Texture = texture
-		context.Shader = shader
-
+		context.Shader = createPhongShader(matrixcm, eye, parsec(colorHex), texture)
 		mesh.Transform(matrix)
 		context.DrawMesh(mesh)
 	}
@@ -647,20 +621,7 @@ func renderav(req RenderRequest) ([]byte, error) {
 
 	for _, lh := range loadedHats {
 		hMesh := lh.Mesh.Copy()
-
-		shader := fauxgl.NewPhongShader(matrixcm, fauxgl.Vector{X: -1, Y: 1, Z: 1}, eye)
-		shader.AmbientColor = fauxgl.Color{R: Brightness, G: Brightness, B: Brightness, A: 1}
-		shader.DiffuseColor = fauxgl.Color{R: 0.35, G: 0.35, B: 0.35, A: 1}
-
-		specularIntensity := 1.0 - Roughness
-		if specularIntensity < 0 {
-			specularIntensity = 0
-		}
-		shader.SpecularColor = fauxgl.Color{R: specularIntensity, G: specularIntensity, B: specularIntensity, A: 1}
-		shader.ObjectColor = parsec("#FFFFFF")
-		shader.Texture = lh.Tex
-		context.Shader = shader
-
+		context.Shader = createPhongShader(matrixcm, eye, parsec("#FFFFFF"), lh.Tex)
 		hMesh.Transform(mHead)
 		context.DrawMesh(hMesh)
 	}
@@ -672,20 +633,7 @@ func renderav(req RenderRequest) ([]byte, error) {
 				hatTex, _ = fauxgl.LoadTexture(req.PreviewTexture)
 			}
 			hMesh := PreloadedHatMesh.Copy()
-
-			shader := fauxgl.NewPhongShader(matrixcm, fauxgl.Vector{X: -1, Y: 1, Z: 1}, eye)
-			shader.AmbientColor = fauxgl.Color{R: Brightness, G: Brightness, B: Brightness, A: 1}
-			shader.DiffuseColor = fauxgl.Color{R: 0.35, G: 0.35, B: 0.35, A: 1}
-
-			specularIntensity := 1.0 - Roughness
-			if specularIntensity < 0 {
-				specularIntensity = 0
-			}
-			shader.SpecularColor = fauxgl.Color{R: specularIntensity, G: specularIntensity, B: specularIntensity, A: 1}
-			shader.ObjectColor = parsec("#FFFFFF")
-			shader.Texture = hatTex
-			context.Shader = shader
-
+			context.Shader = createPhongShader(matrixcm, eye, parsec("#FFFFFF"), hatTex)
 			hMesh.Transform(mHead)
 			context.DrawMesh(hMesh)
 		}
@@ -730,20 +678,7 @@ func renderav(req RenderRequest) ([]byte, error) {
 
 	if toolMesh != nil {
 		tMesh := toolMesh.Copy()
-
-		shader := fauxgl.NewPhongShader(matrixcm, fauxgl.Vector{X: -1, Y: 1, Z: 1}, eye)
-		shader.AmbientColor = fauxgl.Color{R: Brightness, G: Brightness, B: Brightness, A: 1}
-		shader.DiffuseColor = fauxgl.Color{R: 0.35, G: 0.35, B: 0.35, A: 1}
-
-		specularIntensity := 1.0 - Roughness
-		if specularIntensity < 0 {
-			specularIntensity = 0
-		}
-		shader.SpecularColor = fauxgl.Color{R: specularIntensity, G: specularIntensity, B: specularIntensity, A: 1}
-		shader.ObjectColor = parsec("#FFFFFF")
-		shader.Texture = toolTex
-		context.Shader = shader
-
+		context.Shader = createPhongShader(matrixcm, eye, parsec("#FFFFFF"), toolTex)
 		tMesh.Transform(mTool)
 		context.DrawMesh(tMesh)
 	}
@@ -760,6 +695,30 @@ func renderav(req RenderRequest) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func submitRenderJob(req RenderRequest, timeoutMsg string) ([]byte, error) {
+	for gettheload() >= 95.0 {
+		time.Sleep(1 * time.Second)
+	}
+
+	resultChan := make(chan []byte, 1)
+	errChan := make(chan error, 1)
+
+	jobq <- RenderJob{
+		Req:    req,
+		Result: resultChan,
+		Error:  errChan,
+	}
+
+	select {
+	case imgBytes := <-resultChan:
+		return imgBytes, nil
+	case renderErr := <-errChan:
+		return nil, renderErr
+	case <-time.After(15 * time.Second):
+		return nil, errors.New(timeoutMsg)
+	}
 }
 
 func RenderUser(db *sql.DB, userID int) ([]byte, error) {
@@ -819,27 +778,7 @@ func RenderUserWithPreviewType(db *sql.DB, userID int, previewType string) ([]by
 		PreviewType:   previewType,
 	}
 
-	for gettheload() >= 95.0 {
-		time.Sleep(1 * time.Second)
-	}
-
-	resultChan := make(chan []byte, 1)
-	errChan := make(chan error, 1)
-
-	jobq <- RenderJob{
-		Req:    req,
-		Result: resultChan,
-		Error:  errChan,
-	}
-
-	select {
-	case imgBytes := <-resultChan:
-		return imgBytes, nil
-	case renderErr := <-errChan:
-		return nil, renderErr
-	case <-time.After(15 * time.Second):
-		return nil, errors.New("render timeout")
-	}
+	return submitRenderJob(req, "render timeout")
 }
 
 func RenderShopItem(itemType string, itemID int) ([]byte, error) {
@@ -869,25 +808,5 @@ func RenderShopItem(itemType string, itemID int) ([]byte, error) {
 		req.ToolID = itemID
 	}
 
-	for gettheload() >= 95.0 {
-		time.Sleep(1 * time.Second)
-	}
-
-	resultChan := make(chan []byte, 1)
-	errChan := make(chan error, 1)
-
-	jobq <- RenderJob{
-		Req:    req,
-		Result: resultChan,
-		Error:  errChan,
-	}
-
-	select {
-	case imgBytes := <-resultChan:
-		return imgBytes, nil
-	case renderErr := <-errChan:
-		return nil, renderErr
-	case <-time.After(15 * time.Second):
-		return nil, errors.New("shop render timeout")
-	}
+	return submitRenderJob(req, "shop render timeout")
 }

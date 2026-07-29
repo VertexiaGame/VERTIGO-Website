@@ -8,6 +8,65 @@ import (
 	"vertexia-frontend/backend/service"
 )
 
+func handleFriendAction(c fiber.Ctx, action func(userID, targetID int) error, fallbackPath string) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/login")
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+		return c.Redirect().To("/login")
+	}
+
+	targetID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || targetID <= 0 {
+		return c.Redirect().To("/")
+	}
+
+	if service.User == nil || service.Friend == nil {
+		if fallbackPath != "" {
+			return c.Redirect().To(fallbackPath)
+		}
+		return c.Redirect().To("/user/" + strconv.Itoa(targetID))
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/login")
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+		return c.Redirect().To("/login")
+	}
+
+	_ = action(user.ID, targetID)
+
+	if c.Get("HX-Request") == "true" {
+		ref := c.Get("Referer")
+		if strings.Contains(ref, "/user/") {
+			targetUser, _ := service.User.GetUserByID(targetID)
+			if targetUser != nil {
+				friendStatus, _ := service.Friend.GetFriendStatus(user.ID, targetID)
+				return c.Render("components/profile/actions", fiber.Map{
+					"ProfileUser":  targetUser,
+					"FriendStatus": friendStatus,
+					"IsOwnProfile": false,
+				})
+			}
+		}
+		return c.SendString("")
+	}
+
+	ref := c.Get("Referer")
+	if ref != "" {
+		return c.Redirect().To(ref)
+	}
+	if fallbackPath != "" {
+		return c.Redirect().To(fallbackPath)
+	}
+	return c.Redirect().To("/user/" + strconv.Itoa(targetID))
+}
+
 func FriendsGet(c fiber.Ctx) error {
 	username := GetActiveUser(c)
 	if username == "" {
@@ -59,239 +118,21 @@ func FriendsGet(c fiber.Ctx) error {
 }
 
 func FriendSendPost(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-	targetID, err := strconv.Atoi(c.Params("id"))
-	if err != nil || targetID <= 0 {
-		return c.Redirect().To("/")
-	}
-	if service.User == nil || service.Friend == nil {
-		return c.Redirect().To("/user/" + strconv.Itoa(targetID))
-	}
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-
-	_ = service.Friend.SendFriendRequest(user.ID, targetID)
-
-	if c.Get("HX-Request") == "true" {
-		ref := c.Get("Referer")
-		if strings.Contains(ref, "/user/") {
-			targetUser, _ := service.User.GetUserByID(targetID)
-			if targetUser != nil {
-				friendStatus, _ := service.Friend.GetFriendStatus(user.ID, targetID)
-				return c.Render("components/profile/actions", fiber.Map{
-					"ProfileUser":  targetUser,
-					"FriendStatus": friendStatus,
-					"IsOwnProfile": false,
-				})
-			}
-		}
-		return c.SendString("")
-	}
-
-	ref := c.Get("Referer")
-	if ref != "" {
-		return c.Redirect().To(ref)
-	}
-	return c.Redirect().To("/user/" + strconv.Itoa(targetID))
+	return handleFriendAction(c, service.Friend.SendFriendRequest, "")
 }
 
 func FriendAcceptPost(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-	targetID, err := strconv.Atoi(c.Params("id"))
-	if err != nil || targetID <= 0 {
-		return c.Redirect().To("/")
-	}
-	if service.User == nil || service.Friend == nil {
-		return c.Redirect().To("/user/" + strconv.Itoa(targetID))
-	}
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-
-	_ = service.Friend.AcceptFriendRequest(user.ID, targetID)
-
-	if c.Get("HX-Request") == "true" {
-		ref := c.Get("Referer")
-		if strings.Contains(ref, "/user/") {
-			targetUser, _ := service.User.GetUserByID(targetID)
-			if targetUser != nil {
-				friendStatus, _ := service.Friend.GetFriendStatus(user.ID, targetID)
-				return c.Render("components/profile/actions", fiber.Map{
-					"ProfileUser":  targetUser,
-					"FriendStatus": friendStatus,
-					"IsOwnProfile": false,
-				})
-			}
-		}
-		return c.SendString("")
-	}
-
-	ref := c.Get("Referer")
-	if ref != "" {
-		return c.Redirect().To(ref)
-	}
-	return c.Redirect().To("/user/" + strconv.Itoa(targetID))
+	return handleFriendAction(c, service.Friend.AcceptFriendRequest, "")
 }
 
 func FriendDeclinePost(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-	targetID, err := strconv.Atoi(c.Params("id"))
-	if err != nil || targetID <= 0 {
-		return c.Redirect().To("/")
-	}
-	if service.User == nil || service.Friend == nil {
-		return c.Redirect().To("/friends")
-	}
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-
-	_ = service.Friend.DeclineFriendRequest(user.ID, targetID)
-
-	if c.Get("HX-Request") == "true" {
-		return c.SendString("")
-	}
-
-	ref := c.Get("Referer")
-	if ref != "" {
-		return c.Redirect().To(ref)
-	}
-	return c.Redirect().To("/friends")
+	return handleFriendAction(c, service.Friend.DeclineFriendRequest, "/friends")
 }
 
 func FriendCancelPost(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-	targetID, err := strconv.Atoi(c.Params("id"))
-	if err != nil || targetID <= 0 {
-		return c.Redirect().To("/")
-	}
-	if service.User == nil || service.Friend == nil {
-		return c.Redirect().To("/user/" + strconv.Itoa(targetID))
-	}
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-
-	_ = service.Friend.CancelFriendRequest(user.ID, targetID)
-
-	if c.Get("HX-Request") == "true" {
-		ref := c.Get("Referer")
-		if strings.Contains(ref, "/user/") {
-			targetUser, _ := service.User.GetUserByID(targetID)
-			if targetUser != nil {
-				friendStatus, _ := service.Friend.GetFriendStatus(user.ID, targetID)
-				return c.Render("components/profile/actions", fiber.Map{
-					"ProfileUser":  targetUser,
-					"FriendStatus": friendStatus,
-					"IsOwnProfile": false,
-				})
-			}
-		}
-		return c.SendString("")
-	}
-
-	ref := c.Get("Referer")
-	if ref != "" {
-		return c.Redirect().To(ref)
-	}
-	return c.Redirect().To("/user/" + strconv.Itoa(targetID))
+	return handleFriendAction(c, service.Friend.CancelFriendRequest, "")
 }
 
 func FriendRemovePost(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-	targetID, err := strconv.Atoi(c.Params("id"))
-	if err != nil || targetID <= 0 {
-		return c.Redirect().To("/")
-	}
-	if service.User == nil || service.Friend == nil {
-		return c.Redirect().To("/user/" + strconv.Itoa(targetID))
-	}
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		if c.Get("HX-Request") == "true" {
-			c.Set("HX-Redirect", "/login")
-			return c.SendStatus(fiber.StatusUnauthorized)
-		}
-		return c.Redirect().To("/login")
-	}
-
-	_ = service.Friend.RemoveFriend(user.ID, targetID)
-
-	if c.Get("HX-Request") == "true" {
-		ref := c.Get("Referer")
-		if strings.Contains(ref, "/user/") {
-			targetUser, _ := service.User.GetUserByID(targetID)
-			if targetUser != nil {
-				friendStatus, _ := service.Friend.GetFriendStatus(user.ID, targetID)
-				return c.Render("components/profile/actions", fiber.Map{
-					"ProfileUser":  targetUser,
-					"FriendStatus": friendStatus,
-					"IsOwnProfile": false,
-				})
-			}
-		}
-		return c.SendString("")
-	}
-
-	ref := c.Get("Referer")
-	if ref != "" {
-		return c.Redirect().To(ref)
-	}
-	return c.Redirect().To("/user/" + strconv.Itoa(targetID))
+	return handleFriendAction(c, service.Friend.RemoveFriend, "")
 }

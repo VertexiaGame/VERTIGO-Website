@@ -25,7 +25,7 @@ func NewFeedService(feedRepo *repository.FeedRepository, userRepo *repository.Us
 	}
 }
 
-func formatTimeAgo(t time.Time) string {
+func FormatTimeAgo(t time.Time) string {
 	d := time.Since(t)
 	if d < 0 {
 		d = 0
@@ -257,7 +257,7 @@ func (s *FeedService) GetFeedComments(feedID int, feedType, currentUsername stri
 	var rootComments []*models.FeedComment
 
 	for _, c := range flatList {
-		c.TimeAgo = formatTimeAgo(c.CreationDate)
+		c.TimeAgo = FormatTimeAgo(c.CreationDate)
 		c.FullDate = c.CreationDate.Format("January 02, 2006 at 03:04 PM")
 		commentMap[c.ID] = c
 	}

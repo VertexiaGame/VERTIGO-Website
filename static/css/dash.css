@@ -468,6 +468,24 @@
         transform: scale(1) translateY(0);
     }
 }
+@keyframes postFocusAnim {
+    0% {
+        opacity: 0.4;
+        transform: scale(0.96) translateY(6px);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(1.01) translateY(-1px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+.pstitm.focused .pstcrd,
+.pstcrd.focused {
+    animation: postFocusAnim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards !important;
+}
 .pstitm:first-child {
     margin-top: 4px !important;
 }
@@ -880,11 +898,18 @@
 }
 
 .bkcbtn {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    margin-bottom: 16px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #7423CB !important;
     cursor: pointer !important;
+    display: inline-block !important;
+    margin-bottom: 12px !important;
+    text-decoration: none !important;
+}
+
+.bkcbtn:hover {
+    text-decoration: underline !important;
 }
 
 @media (max-width: 996px) {

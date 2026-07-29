@@ -34,6 +34,10 @@ func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
 	return s.userRepo.GetByUsername(username)
 }
 
+func (s *UserService) SearchAdminUsers(search string, powerFilter int, limit, offset int) ([]*models.User, int, error) {
+	return s.userRepo.SearchAdminUsers(search, powerFilter, limit, offset)
+}
+
 func (s *UserService) GetUserCount() (int, error) {
 	return s.userRepo.GetUserCount()
 }

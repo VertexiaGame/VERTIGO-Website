@@ -8,13 +8,14 @@ import (
 )
 
 var (
-	Auth     *AuthService
-	User     *UserService
-	Feed     *FeedService
-	Game     *GameService
-	Music    *MusicService
-	Cooldown *CooldownService
-	Friend   *FriendService
+	Auth       *AuthService
+	User       *UserService
+	Feed       *FeedService
+	Game       *GameService
+	Music      *MusicService
+	Cooldown   *CooldownService
+	Friend     *FriendService
+	ModHistory *ModHistoryService
 )
 
 func Init(db *sql.DB) {
@@ -22,6 +23,7 @@ func Init(db *sql.DB) {
 	feedRepo := repository.NewFeedRepository(db)
 	gameRepo := repository.NewGameRepository(db)
 	friendRepo := repository.NewFriendRepository(db)
+	modHistRepo := repository.NewModHistoryRepository(db)
 
 	Cooldown = NewCooldownService(5 * time.Second)
 	Auth = NewAuthService(userRepo)
@@ -30,4 +32,5 @@ func Init(db *sql.DB) {
 	Game = NewGameService(gameRepo)
 	Music = NewMusicService()
 	Friend = NewFriendService(friendRepo, userRepo, Cooldown)
+	ModHistory = NewModHistoryService(modHistRepo)
 }

@@ -12,9 +12,8 @@ import (
 	"vertexia-frontend/backend/service"
 )
 
-func AvatarGet(c fiber.Ctx) error {
-	idParam := c.Params("id")
-	idParam = strings.TrimSuffix(idParam, ".png")
+func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
+	idParam := strings.TrimSuffix(c.Params("id"), ".png")
 	userID, err := strconv.Atoi(idParam)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
@@ -32,11 +31,15 @@ func AvatarGet(c fiber.Ctx) error {
 	cachePathFull := filepath.Join("static", "renders", "avatars", "full", idParam+".png")
 	cachePathHead := filepath.Join("static", "renders", "avatars", "headshots", idParam+".png")
 
+	targetCache := cachePathFull
+	if isHeadshot {
+		targetCache = cachePathHead
+	}
+
 	_, errFull := os.Stat(cachePathFull)
 	_, errHead := os.Stat(cachePathHead)
 	if errFull == nil && errHead == nil {
-		imgBytes, err := os.ReadFile(cachePathFull)
-		if err == nil {
+		if imgBytes, err := os.ReadFile(targetCache); err == nil {
 			c.Set("Content-Type", "image/png")
 			return c.Send(imgBytes)
 		}
@@ -58,56 +61,18 @@ func AvatarGet(c fiber.Ctx) error {
 	_ = os.WriteFile(cachePathHead, imgBytesHead, 0644)
 
 	c.Set("Content-Type", "image/png")
+	if isHeadshot {
+		return c.Send(imgBytesHead)
+	}
 	return c.Send(imgBytesFull)
 }
 
+func AvatarGet(c fiber.Ctx) error {
+	return serveAvatar(c, false)
+}
+
 func AvatarHeadshotGet(c fiber.Ctx) error {
-	idParam := c.Params("id")
-	idParam = strings.TrimSuffix(idParam, ".png")
-	userID, err := strconv.Atoi(idParam)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
-	}
-
-	if service.User != nil {
-		exists, err := service.User.UserExists(userID)
-		if err != nil || !exists {
-			return c.Status(fiber.StatusNotFound).SendString("User not found")
-		}
-	} else {
-		return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
-	}
-
-	cachePathFull := filepath.Join("static", "renders", "avatars", "full", idParam+".png")
-	cachePathHead := filepath.Join("static", "renders", "avatars", "headshots", idParam+".png")
-
-	_, errFull := os.Stat(cachePathFull)
-	_, errHead := os.Stat(cachePathHead)
-	if errFull == nil && errHead == nil {
-		imgBytes, err := os.ReadFile(cachePathHead)
-		if err == nil {
-			c.Set("Content-Type", "image/png")
-			return c.Send(imgBytes)
-		}
-	}
-
-	imgBytesFull, err := renderer.RenderUser(database.DB, userID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-
-	imgBytesHead, err := renderer.RenderUserHeadshot(database.DB, userID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-	}
-
-	_ = os.MkdirAll(filepath.Dir(cachePathFull), 0755)
-	_ = os.MkdirAll(filepath.Dir(cachePathHead), 0755)
-	_ = os.WriteFile(cachePathFull, imgBytesFull, 0644)
-	_ = os.WriteFile(cachePathHead, imgBytesHead, 0644)
-
-	c.Set("Content-Type", "image/png")
-	return c.Send(imgBytesHead)
+	return serveAvatar(c, true)
 }
 
 func ShopRenderGet(c fiber.Ctx) error {
@@ -128,8 +93,7 @@ func ShopRenderGet(c fiber.Ctx) error {
 }
 
 func AvatarDataGet(c fiber.Ctx) error {
-	idParam := c.Params("id")
-	idParam = strings.TrimSuffix(idParam, ".png")
+	idParam := strings.TrimSuffix(c.Params("id"), ".png")
 	userID, err := strconv.Atoi(idParam)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})

@@ -30,41 +30,24 @@ type WSClient struct {
 	mu   sync.Mutex
 }
 
+type clientInfo struct {
+	client   *WSClient
+	username string
+}
+
 var (
 	feedClients = make(map[*WSClient]string)
 	feedHubMu   sync.Mutex
 )
 
-func formatTimeAgo(t time.Time) string {
-	d := time.Since(t)
-	if d < 0 {
-		d = 0
+func getFeedClientsSnapshot() []clientInfo {
+	feedHubMu.Lock()
+	defer feedHubMu.Unlock()
+	clients := make([]clientInfo, 0, len(feedClients))
+	for client, uName := range feedClients {
+		clients = append(clients, clientInfo{client: client, username: uName})
 	}
-	if d < time.Minute {
-		return "Just now"
-	}
-	if d < time.Hour {
-		mins := int(d.Minutes())
-		if mins <= 1 {
-			return "1 minute ago"
-		}
-		return fmt.Sprintf("%d minutes ago", mins)
-	}
-	if d < 24*time.Hour {
-		hrs := int(d.Hours())
-		if hrs <= 1 {
-			return "1 hour ago"
-		}
-		return fmt.Sprintf("%d hours ago", hrs)
-	}
-	if d < 30*24*time.Hour {
-		days := int(d.Hours() / 24)
-		if days <= 1 {
-			return "1 day ago"
-		}
-		return fmt.Sprintf("%d days ago", days)
-	}
-	return t.Format("Jan 02, 2006")
+	return clients
 }
 
 func Home(c fiber.Ctx) error {
@@ -134,7 +117,7 @@ func Home(c fiber.Ctx) error {
 					Username:   dbP.Username,
 					UserID:     dbP.UserID,
 					Content:    dbP.Content,
-					TimeAgo:    formatTimeAgo(dbP.CreationDate),
+					TimeAgo:    service.FormatTimeAgo(dbP.CreationDate),
 					FullDate:   dbP.CreationDate.Format("January 02, 2006 at 03:04 PM"),
 					Reactions:  dbP.Reactions,
 					HasReacted: dbP.HasReacted,
@@ -192,7 +175,7 @@ func GetFeedPaginated(c fiber.Ctx) error {
 			Username:   dbP.Username,
 			UserID:     dbP.UserID,
 			Content:    dbP.Content,
-			TimeAgo:    formatTimeAgo(dbP.CreationDate),
+			TimeAgo:    service.FormatTimeAgo(dbP.CreationDate),
 			FullDate:   dbP.CreationDate.Format("January 02, 2006 at 03:04 PM"),
 			Reactions:  dbP.Reactions,
 			HasReacted: dbP.HasReacted,
@@ -405,17 +388,7 @@ func BroadcastFeedPost(id int, username string, userID int, content string, feed
 		return
 	}
 
-	type clientInfo struct {
-		client   *WSClient
-		username string
-	}
-
-	feedHubMu.Lock()
-	clients := make([]clientInfo, 0, len(feedClients))
-	for client, uName := range feedClients {
-		clients = append(clients, clientInfo{client: client, username: uName})
-	}
-	feedHubMu.Unlock()
+	clients := getFeedClientsSnapshot()
 
 	for _, item := range clients {
 		if feedType == "friends" {
@@ -449,15 +422,10 @@ func BroadcastCommentPost(comment *models.FeedComment) {
 		return
 	}
 
-	feedHubMu.Lock()
-	clients := make([]*WSClient, 0, len(feedClients))
-	for client := range feedClients {
-		clients = append(clients, client)
-	}
-	feedHubMu.Unlock()
+	clients := getFeedClientsSnapshot()
 
-	for _, client := range clients {
-		_ = client.Write(websocket.TextMessage, data)
+	for _, item := range clients {
+		_ = item.client.Write(websocket.TextMessage, data)
 	}
 }
 
@@ -470,17 +438,7 @@ func BroadcastReactionUpdate(fid int, reactions int, feedType string) {
 		FeedType   string `json:"feed_type"`
 	}
 
-	type clientInfo struct {
-		client   *WSClient
-		username string
-	}
-
-	feedHubMu.Lock()
-	clients := make([]clientInfo, 0, len(feedClients))
-	for client, uName := range feedClients {
-		clients = append(clients, clientInfo{client: client, username: uName})
-	}
-	feedHubMu.Unlock()
+	clients := getFeedClientsSnapshot()
 
 	for _, item := range clients {
 		hasReacted := false
@@ -512,17 +470,7 @@ func BroadcastCommentReactionUpdate(cid int, reactions int, feedType string) {
 		FeedType   string `json:"feed_type"`
 	}
 
-	type clientInfo struct {
-		client   *WSClient
-		username string
-	}
-
-	feedHubMu.Lock()
-	clients := make([]clientInfo, 0, len(feedClients))
-	for client, uName := range feedClients {
-		clients = append(clients, clientInfo{client: client, username: uName})
-	}
-	feedHubMu.Unlock()
+	clients := getFeedClientsSnapshot()
 
 	for _, item := range clients {
 		hasReacted := false

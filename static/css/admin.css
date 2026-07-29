@@ -1,0 +1,310 @@
+.adm-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+    gap: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 16px !important;
+}
+
+.adm-card {
+    background: #FAFAFA !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    box-sizing: border-box !important;
+}
+
+.adm-cardhdr {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    border-bottom: 1px solid #E0E0E0 !important;
+    padding-bottom: 10px !important;
+}
+
+.adm-cardttl {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    color: #912ADF !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.adm-cardttl i {
+    font-size: 14px !important;
+}
+
+.adm-stat {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #3D3D3D !important;
+    white-space: nowrap !important;
+}
+
+.adm-rowlst {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+.adm-rowlst-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 10px 24px !important;
+}
+
+.adm-row {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+}
+
+.adm-lbl {
+    color: #718096 !important;
+    font-weight: 400 !important;
+    flex-shrink: 0 !important;
+}
+
+.adm-val {
+    color: #3D3D3D !important;
+    font-weight: 500 !important;
+    font-variant-numeric: tabular-nums !important;
+    text-align: right !important;
+    word-break: break-word !important;
+}
+
+.adm-val.highlight {
+    color: #912ADF !important;
+    font-weight: 500 !important;
+}
+
+.adm-ind {
+    display: inline-block !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    margin-right: 6px !important;
+    flex-shrink: 0 !important;
+}
+
+.adm-ind-online {
+    background-color: #28A745 !important;
+}
+
+.adm-ind-offline {
+    background-color: #DC3545 !important;
+}
+
+.adm-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #FFFFFF !important;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25) !important;
+    box-shadow: inset 0px 0px 4px rgba(255, 255, 255, 0.25) !important;
+    white-space: nowrap !important;
+}
+
+.adm-badge-owner {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+}
+
+.adm-badge-vertexia-team {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8 !important;
+}
+
+.adm-badge-head-manager {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+}
+
+.adm-badge-moderator {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745 !important;
+}
+
+.adm-badge-trainee {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #718096 !important;
+}
+
+.adm-badge-member {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #888888 !important;
+}
+
+.adm-crdmeta {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 12px !important;
+    color: #718096 !important;
+}
+
+.adm-emt {
+    grid-column: 1 / -1 !important;
+}
+
+.adm-fltrbar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 16px !important;
+}
+
+.adm-searchbox {
+    flex: 1 !important;
+    min-width: 200px !important;
+}
+
+.adm-select {
+    height: 44px !important;
+    background: #E0E0E0 !important;
+    border: 2px solid rgba(61, 61, 61, 0.25) !important;
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 14px !important;
+    color: #3D3D3D !important;
+    outline: none !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s ease !important;
+}
+
+.adm-select:focus {
+    border-color: #912ADF !important;
+}
+
+.adm-panel {
+    background: #FAFAFA !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+
+.adm-rendsec {
+    max-width: 340px !important;
+}
+
+.adm-rendcrd {
+    width: 100% !important;
+    height: 330px !important;
+    background: #E0E0E0 !important;
+    border: 2px solid #C1C1C1 !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+.adm-rendimg {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    filter: drop-shadow(0px 10px 20px rgba(0, 0, 0, 0.15)) !important;
+}
+
+.adm-tblcnt {
+    width: 100% !important;
+    overflow-x: auto !important;
+    background: #FAFAFA !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+}
+
+.adm-usrtbl {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+}
+
+.adm-usrtbl th {
+    text-align: left !important;
+    padding: 10px 14px !important;
+    background: #E0E0E0 !important;
+    color: #718096 !important;
+    font-weight: 500 !important;
+    border-bottom: 2px solid #C1C1C1 !important;
+    white-space: nowrap !important;
+}
+
+.adm-usrtbl td {
+    padding: 10px 14px !important;
+    border-bottom: 1px solid #E0E0E0 !important;
+    color: #3D3D3D !important;
+    vertical-align: middle !important;
+}
+
+.adm-usrtbl tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.adm-usrtbl tr:hover td {
+    background: #F0F0F0 !important;
+}
+
+.adm-tblemt {
+    text-align: center !important;
+    padding: 20px !important;
+    color: #718096 !important;
+}
+
+.adm-act {
+    text-transform: capitalize !important;
+}
+
+.adm-pgncnt {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    margin-top: 16px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid #E0E0E0 !important;
+}
+
+.adm-pgntxt {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+    color: #718096 !important;
+}
+
+.adm-pgnbtns {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+@media (max-width: 768px) {
+    .adm-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .adm-rendsec {
+        max-width: 100% !important;
+    }
+}

@@ -3,6 +3,8 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"strconv"
+	"strings"
 	"time"
 
 	"vertexia-frontend/backend/models"
@@ -16,14 +18,15 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
-	if r.db == nil {
-		return nil, errors.New("database connection is offline")
-	}
-	query := "SELECT id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, '') FROM users WHERE username = ?"
-	row := r.db.QueryRow(query, username)
+const userSelectFields = "id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, '')"
+
+type scannable interface {
+	Scan(dest ...any) error
+}
+
+func scanUser(s scannable) (*models.User, error) {
 	var u models.User
-	err := row.Scan(
+	err := s.Scan(
 		&u.ID, &u.Username, &u.DisplayName, &u.Mail, &u.Password,
 		&u.Description, &u.Unikey, &u.Power, &u.PrimaryClan, &u.NameColor,
 		&u.CustomCSS, &u.Vermail, &u.Vermc, &u.Casom, &u.Bits,
@@ -37,75 +40,95 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 		return nil, err
 	}
 	return &u, nil
+}
+
+func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection is offline")
+	}
+	return scanUser(r.db.QueryRow("SELECT "+userSelectFields+" FROM users WHERE username = ?", username))
 }
 
 func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	if r.db == nil {
 		return nil, errors.New("database connection is offline")
 	}
-	query := "SELECT id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, '') FROM users WHERE id = ?"
-	row := r.db.QueryRow(query, id)
-	var u models.User
-	err := row.Scan(
-		&u.ID, &u.Username, &u.DisplayName, &u.Mail, &u.Password,
-		&u.Description, &u.Unikey, &u.Power, &u.PrimaryClan, &u.NameColor,
-		&u.CustomCSS, &u.Vermail, &u.Vermc, &u.Casom, &u.Bits,
-		&u.Bucks, &u.LastOnline, &u.CreationDate, &u.Views, &u.FeedCaptchas,
-		&u.EmailVerifyToken, &u.EmailVerifyExpiry, &u.Pronouns, &u.Socials,
-	)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &u, nil
+	return scanUser(r.db.QueryRow("SELECT "+userSelectFields+" FROM users WHERE id = ?", id))
 }
 
 func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 	if r.db == nil {
 		return nil, errors.New("database connection is offline")
 	}
-	query := "SELECT id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, '') FROM users WHERE mail = ?"
-	row := r.db.QueryRow(query, email)
-	var u models.User
-	err := row.Scan(
-		&u.ID, &u.Username, &u.DisplayName, &u.Mail, &u.Password,
-		&u.Description, &u.Unikey, &u.Power, &u.PrimaryClan, &u.NameColor,
-		&u.CustomCSS, &u.Vermail, &u.Vermc, &u.Casom, &u.Bits,
-		&u.Bucks, &u.LastOnline, &u.CreationDate, &u.Views, &u.FeedCaptchas,
-		&u.EmailVerifyToken, &u.EmailVerifyExpiry, &u.Pronouns, &u.Socials,
-	)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &u, nil
+	return scanUser(r.db.QueryRow("SELECT "+userSelectFields+" FROM users WHERE mail = ?", email))
 }
 
 func (r *UserRepository) GetByUnikey(unikey string) (*models.User, error) {
 	if r.db == nil {
 		return nil, errors.New("database connection is offline")
 	}
-	query := "SELECT id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, '') FROM users WHERE unikey = ?"
-	row := r.db.QueryRow(query, unikey)
-	var u models.User
-	err := row.Scan(
-		&u.ID, &u.Username, &u.DisplayName, &u.Mail, &u.Password,
-		&u.Description, &u.Unikey, &u.Power, &u.PrimaryClan, &u.NameColor,
-		&u.CustomCSS, &u.Vermail, &u.Vermc, &u.Casom, &u.Bits,
-		&u.Bucks, &u.LastOnline, &u.CreationDate, &u.Views, &u.FeedCaptchas,
-		&u.EmailVerifyToken, &u.EmailVerifyExpiry, &u.Pronouns, &u.Socials,
-	)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
+	return scanUser(r.db.QueryRow("SELECT "+userSelectFields+" FROM users WHERE unikey = ?", unikey))
+}
+
+func (r *UserRepository) SearchAdminUsers(search string, powerFilter int, limit, offset int) ([]*models.User, int, error) {
+	if r.db == nil {
+		return nil, 0, errors.New("database connection is offline")
 	}
-	return &u, nil
+
+	search = strings.TrimSpace(search)
+
+	var whereClauses []string
+	var args []any
+
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		if id, err := strconv.Atoi(search); err == nil {
+			whereClauses = append(whereClauses, "(username LIKE ? OR displayname LIKE ? OR mail LIKE ? OR id = ?)")
+			args = append(args, searchPattern, searchPattern, searchPattern, id)
+		} else {
+			whereClauses = append(whereClauses, "(username LIKE ? OR displayname LIKE ? OR mail LIKE ?)")
+			args = append(args, searchPattern, searchPattern, searchPattern)
+		}
+	}
+
+	if powerFilter >= 0 {
+		whereClauses = append(whereClauses, "power = ?")
+		args = append(args, powerFilter)
+	}
+
+	whereSQL := ""
+	if len(whereClauses) > 0 {
+		whereSQL = "WHERE " + strings.Join(whereClauses, " AND ")
+	}
+
+	countQuery := "SELECT COUNT(*) FROM users " + whereSQL
+	var total int
+	err := r.db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	queryArgs := append([]any{}, args...)
+	queryArgs = append(queryArgs, limit, offset)
+
+	query := "SELECT " + userSelectFields + " FROM users " + whereSQL + " ORDER BY id ASC LIMIT ? OFFSET ?"
+
+	rows, err := r.db.Query(query, queryArgs...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		users = append(users, u)
+	}
+
+	return users, total, nil
 }
 
 func (r *UserRepository) IsOldUsername(username string) (bool, error) {
