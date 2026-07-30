@@ -43,6 +43,7 @@ type User struct {
 	EmailVerifyExpiry sql.NullInt64
 	Pronouns          string
 	Socials           string
+	MusicID           sql.NullInt64
 }
 
 func (u *User) RoleName() string {

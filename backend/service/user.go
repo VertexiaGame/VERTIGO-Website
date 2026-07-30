@@ -228,6 +228,16 @@ func (s *UserService) UpdateSocials(userID int, socialsMap map[string]string) er
 	return s.userRepo.UpdateSocials(userID, string(bytesData))
 }
 
+func (s *UserService) UpdateMusicID(userID int, trackID int64) error {
+	if s.cooldown != nil {
+		key := fmt.Sprintf("action:music:%d", userID)
+		if allowed, remaining := s.cooldown.Allow(key); !allowed {
+			return fmt.Errorf("Please wait %s before performing this action again", s.cooldown.FormatRemaining(remaining))
+		}
+	}
+	return s.userRepo.UpdateMusicID(userID, trackID)
+}
+
 func (s *UserService) GetProfileData(userID int, activeUsername string) (*models.User, bool, int, int, int, error) {
 	targetUser, err := s.userRepo.GetByID(userID)
 	if err != nil || targetUser == nil {

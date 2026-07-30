@@ -1,4 +1,395 @@
 let musicNoticeTimer = null;
+window.currentAudio = new Audio();
+window.currentAudio.volume = 0.5;
+window.currentTrackData = null;
+
+function formatMusicTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+function initMusicPlayerEvents() {
+    if (window.musicPlayerEventsInited) return;
+    window.musicPlayerEventsInited = true;
+
+    window.currentAudio.addEventListener('timeupdate', () => {
+        const cur = window.currentAudio.currentTime || 0;
+        let dur = window.currentAudio.duration;
+        if (isNaN(dur) || dur <= 0) dur = 30;
+        const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
+
+        const fillModal = document.getElementById('musPlayerBarFill');
+        if (fillModal) fillModal.style.setProperty('width', `${pct}%`, 'important');
+
+        const fillSet = document.getElementById('setMusPlayerBarFill');
+        if (fillSet) fillSet.style.setProperty('width', `${pct}%`, 'important');
+
+        const fillPrf = document.getElementById('prfMusBarFill');
+        if (fillPrf) fillPrf.style.setProperty('width', `${pct}%`, 'important');
+
+        const curTimeModal = document.getElementById('musPlayerCurTime');
+        if (curTimeModal) curTimeModal.textContent = formatMusicTime(cur);
+
+        const curTimeSet = document.getElementById('setMusPlayerCurTime');
+        if (curTimeSet) curTimeSet.textContent = formatMusicTime(cur);
+
+        const curTimePrf = document.getElementById('prfMusCurTime');
+        if (curTimePrf) curTimePrf.textContent = formatMusicTime(cur);
+
+        const durTimeModal = document.getElementById('musPlayerDurTime');
+        if (durTimeModal) durTimeModal.textContent = formatMusicTime(dur);
+
+        const durTimeSet = document.getElementById('setMusPlayerDurTime');
+        if (durTimeSet) durTimeSet.textContent = formatMusicTime(dur);
+
+        const durTimePrf = document.getElementById('prfMusDurTime');
+        if (durTimePrf) durTimePrf.textContent = formatMusicTime(dur);
+    });
+
+    window.currentAudio.addEventListener('ended', () => {
+        updateMusicPlayerUI(false);
+    });
+
+    window.currentAudio.addEventListener('pause', () => {
+        updateMusicPlayerUI(false);
+    });
+
+    window.currentAudio.addEventListener('play', () => {
+        updateMusicPlayerUI(true);
+    });
+}
+
+function updateMusicPlayerUI(isPlaying) {
+    const playIconModal = document.getElementById('musPlayerPlayIcon');
+    if (playIconModal) {
+        playIconModal.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+    }
+
+    const playIconSet = document.getElementById('setMusPlayerPlayIcon');
+    if (playIconSet) {
+        playIconSet.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+    }
+
+    const playIconPrf = document.getElementById('prfMusPlayIcon');
+    if (playIconPrf) {
+        playIconPrf.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+    }
+
+    if (window.currentTrackData) {
+        const activeTrackId = window.currentTrackData.id;
+        document.querySelectorAll('.musitm').forEach(item => {
+            const trackId = item.dataset.trackId;
+            const btnIcon = item.querySelector('.musplybtn-sm i');
+            if (String(trackId) === String(activeTrackId)) {
+                item.classList.add('active');
+                if (btnIcon) {
+                    btnIcon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+                }
+            } else {
+                item.classList.remove('active');
+                if (btnIcon) {
+                    btnIcon.className = 'fa-solid fa-play';
+                }
+            }
+        });
+    }
+}
+
+window.stopCurrentMusic = function() {
+    if (window.currentAudio) {
+        window.currentAudio.pause();
+        window.currentAudio.currentTime = 0;
+    }
+    window.currentTrackData = null;
+    updateMusicPlayerUI(false);
+};
+
+window.handleTrackPlayClick = function(btn) {
+    if (!btn) return;
+    const id = btn.dataset.trackId;
+    const title = btn.dataset.title;
+    const artist = btn.dataset.artist;
+    const cover = btn.dataset.cover;
+    const preview = btn.dataset.preview;
+    window.playTrackPreview(id, title, artist, cover, preview);
+};
+
+window.playTrackPreview = function(id, title, artist, cover, preview) {
+    initMusicPlayerEvents();
+
+    if (window.currentTrackData && String(window.currentTrackData.id) === String(id)) {
+        if (window.currentAudio.paused) {
+            window.currentAudio.volume = 0.5;
+            window.currentAudio.play().catch(() => {});
+        } else {
+            window.currentAudio.pause();
+        }
+        return;
+    }
+
+    window.currentTrackData = { id, title, artist, cover, preview };
+    window.currentAudio.src = preview;
+    window.currentAudio.volume = 0.5;
+    window.currentAudio.loop = false;
+    window.currentAudio.play().catch(() => {});
+
+    const playerCard = document.getElementById('musPlayerCard');
+    if (playerCard) playerCard.style.display = 'flex';
+
+    const coverEl = document.getElementById('musPlayerCover');
+    if (coverEl) {
+        coverEl.src = cover;
+        coverEl.alt = title;
+    }
+
+    const titleEl = document.getElementById('musPlayerTitle');
+    if (titleEl) titleEl.textContent = title;
+
+    const artistEl = document.getElementById('musPlayerArtist');
+    if (artistEl) artistEl.textContent = artist;
+
+    updateMusicPlayerUI(true);
+};
+
+window.toggleCurrentTrack = function() {
+    if (!window.currentTrackData || !window.currentAudio.src) return;
+    if (window.currentAudio.paused) {
+        window.currentAudio.volume = 0.5;
+        window.currentAudio.play().catch(() => {});
+    } else {
+        window.currentAudio.pause();
+    }
+};
+
+window.toggleSettingsTrack = function() {
+    window.toggleCurrentTrack();
+};
+
+window.toggleProfileTrack = function() {
+    window.toggleCurrentTrack();
+};
+
+window.seekCurrentTrack = function(event) {
+    if (!window.currentAudio || !window.currentAudio.duration || isNaN(window.currentAudio.duration)) return;
+    const bar = event.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    window.currentAudio.currentTime = pct * window.currentAudio.duration;
+};
+
+window.seekSettingsTrack = function(event) {
+    window.seekCurrentTrack(event);
+};
+
+window.seekProfileTrack = function(event) {
+    window.seekCurrentTrack(event);
+};
+
+window.toggleMuteCurrentTrack = function() {
+    if (!window.currentAudio) return;
+    window.currentAudio.muted = !window.currentAudio.muted;
+    const volIcon = document.getElementById('musPlayerVolIcon');
+    if (volIcon) {
+        volIcon.className = window.currentAudio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+    }
+    const volIconSet = document.getElementById('setMusPlayerVolIcon');
+    if (volIconSet) {
+        volIconSet.className = window.currentAudio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+    }
+    const volIconPrf = document.getElementById('prfMusVolIcon');
+    if (volIconPrf) {
+        volIconPrf.className = window.currentAudio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+    }
+};
+
+window.toggleMuteSettingsTrack = function() {
+    window.toggleMuteCurrentTrack();
+};
+
+window.toggleMuteProfileTrack = function() {
+    window.toggleMuteCurrentTrack();
+};
+
+window.updateProfileMusic = function() {
+    if (!window.currentTrackData || !window.currentTrackData.id) return;
+    const btn = document.getElementById('musPlayerUpdateBtn');
+    if (btn) btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('track_id', window.currentTrackData.id);
+
+    fetch('/settings/music', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (btn) btn.disabled = false;
+        if (data.error) {
+            alert(data.error);
+        } else if (data.success) {
+            const btnSpan = btn ? btn.querySelector('span') : null;
+            if (btnSpan) {
+                const origText = btnSpan.textContent;
+                btnSpan.textContent = 'Updated!';
+                setTimeout(() => { btnSpan.textContent = origText; }, 2000);
+            }
+            if (window.loadSettingsSavedMusic) {
+                window.loadSettingsSavedMusic(window.currentTrackData.id);
+            }
+        }
+    })
+    .catch(() => {
+        if (btn) btn.disabled = false;
+    });
+};
+
+window.removeProfileMusic = function() {
+    fetch('/settings/music/remove', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const card = document.getElementById('settingsMusPlayerCard');
+            if (card) {
+                card.style.setProperty('display', 'none', 'important');
+            }
+
+            const section = document.getElementById('settingsMusicSection');
+            if (section) section.dataset.musicId = '0';
+
+            window.stopCurrentMusic();
+        }
+    })
+    .catch(() => {});
+};
+
+window.loadSettingsSavedMusic = function(musicId) {
+    const card = document.getElementById('settingsMusPlayerCard');
+    if (!musicId || musicId <= 0 || isNaN(musicId)) {
+        if (card) card.style.setProperty('display', 'none', 'important');
+        return;
+    }
+
+    fetch(`/api/v1/music/track/${musicId}`)
+        .then(res => res.json())
+        .then(track => {
+            if (!track || !track.id || track.error) {
+                if (card) card.style.setProperty('display', 'none', 'important');
+                return;
+            }
+
+            const cover = (track.album && track.album.cover_small) ? track.album.cover_small : '/static/useful/temp/pfp.png';
+            const artist = (track.artist && track.artist.name) ? track.artist.name : 'Unknown Artist';
+            const preview = track.preview || '';
+
+            const coverEl = document.getElementById('setMusPlayerCover');
+            if (coverEl) {
+                coverEl.src = cover;
+                coverEl.alt = track.title;
+            }
+
+            const titleEl = document.getElementById('setMusPlayerTitle');
+            if (titleEl) titleEl.textContent = track.title;
+
+            const artistEl = document.getElementById('setMusPlayerArtist');
+            if (artistEl) artistEl.textContent = artist;
+
+            if (card) card.style.display = 'flex';
+
+            initMusicPlayerEvents();
+            window.currentTrackData = { id: track.id, title: track.title, artist, cover, preview };
+            window.currentAudio.src = preview;
+            window.currentAudio.volume = 0.5;
+            window.currentAudio.loop = false;
+        })
+        .catch(() => {
+            if (card) card.style.setProperty('display', 'none', 'important');
+        });
+};
+
+window.initSettingsMusicPlayer = function() {
+    const section = document.getElementById('settingsMusicSection');
+    const card = document.getElementById('settingsMusPlayerCard');
+    if (!section) return;
+
+    const musicId = parseInt(section.dataset.musicId, 10);
+    if (musicId && musicId > 0) {
+        window.loadSettingsSavedMusic(musicId);
+    } else {
+        if (card) card.style.setProperty('display', 'none', 'important');
+    }
+};
+
+window.initProfileMusicPlayer = function() {
+    const widget = document.getElementById('profileMusicWidget');
+    if (!widget) return;
+
+    const musicId = parseInt(widget.dataset.musicId, 10);
+    if (!musicId || musicId <= 0 || isNaN(musicId)) return;
+
+    fetch(`/api/v1/music/track/${musicId}`)
+        .then(res => res.json())
+        .then(track => {
+            if (!track || !track.id || track.error) return;
+
+            const cover = (track.album && track.album.cover_small) ? track.album.cover_small : '/static/useful/temp/pfp.png';
+            const artist = (track.artist && track.artist.name) ? track.artist.name : 'Unknown Artist';
+            const preview = track.preview || '';
+
+            const coverEl = document.getElementById('prfMusCover');
+            if (coverEl) {
+                coverEl.src = cover;
+                coverEl.alt = track.title;
+            }
+
+            const titleEl = document.getElementById('prfMusTitle');
+            if (titleEl) titleEl.textContent = track.title;
+
+            const artistEl = document.getElementById('prfMusArtist');
+            if (artistEl) artistEl.textContent = artist;
+
+            initMusicPlayerEvents();
+            window.currentTrackData = { id: track.id, title: track.title, artist, cover, preview };
+            window.currentAudio.src = preview;
+            window.currentAudio.volume = 0.5;
+            window.currentAudio.loop = true;
+
+            const playPromise = window.currentAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    updateMusicPlayerUI(true);
+                }).catch(() => {
+                    updateMusicPlayerUI(false);
+                    const enableAutoplay = () => {
+                        if (window.currentAudio && window.currentAudio.src && window.location.pathname.startsWith('/user/')) {
+                            window.currentAudio.volume = 0.5;
+                            window.currentAudio.play().then(() => {
+                                updateMusicPlayerUI(true);
+                            }).catch(() => {});
+                        }
+                    };
+                    document.addEventListener('click', enableAutoplay, { once: true });
+                    document.addEventListener('keydown', enableAutoplay, { once: true });
+                    document.addEventListener('touchstart', enableAutoplay, { once: true });
+                    document.addEventListener('pointerdown', enableAutoplay, { once: true });
+                });
+            }
+        })
+        .catch(() => {});
+};
 
 window.getSpinnerHTML = function() {
     return `
@@ -99,6 +490,9 @@ window.closeMusicModal = function() {
     if (modal) {
         modal.classList.remove('active');
     }
+    if (window.currentAudio) {
+        window.currentAudio.pause();
+    }
 };
 
 window.closeMusicModalOnOverlay = function(event) {
@@ -133,19 +527,32 @@ window.searchMusic = function(event) {
             data.data.forEach(track => {
                 const cover = (track.album && track.album.cover_small) ? track.album.cover_small : '/static/useful/temp/pfp.png';
                 const artist = (track.artist && track.artist.name) ? track.artist.name : 'Unknown Artist';
-                const preview = track.preview ? `<audio controls class="musaud" src="${track.preview}"></audio>` : '';
+                const preview = track.preview || '';
 
                 const safeTitle = window.escapeHTML ? window.escapeHTML(track.title) : track.title;
                 const safeArtist = window.escapeHTML ? window.escapeHTML(artist) : artist;
 
+                const isCurrentPlaying = window.currentTrackData &&
+                    String(window.currentTrackData.id) === String(track.id) &&
+                    !window.currentAudio.paused;
+
+                const iconClass = isCurrentPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+                const itemActiveClass = (window.currentTrackData && String(window.currentTrackData.id) === String(track.id)) ? ' active' : '';
+
+                const actionBtn = preview ? `
+                    <button type="button" class="musplybtn-sm" title="Preview track" data-track-id="${track.id}" data-title="${safeTitle}" data-artist="${safeArtist}" data-cover="${cover}" data-preview="${preview}" onclick="window.handleTrackPlayClick(this)">
+                        <i class="${iconClass}"></i>
+                    </button>
+                ` : '';
+
                 html += `
-                    <div class="musitm">
+                    <div class="musitm${itemActiveClass}" data-track-id="${track.id}">
                         <img src="${cover}" alt="${safeTitle}" class="muscvr">
                         <div class="musinf">
                             <div class="musttl">${safeTitle}</div>
                             <div class="musart">${safeArtist}</div>
                         </div>
-                        ${preview}
+                        ${actionBtn}
                     </div>
                 `;
             });
@@ -157,3 +564,29 @@ window.searchMusic = function(event) {
 
     return false;
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.initSettingsMusicPlayer();
+    window.initProfileMusicPlayer();
+});
+
+document.addEventListener('htmx:afterSettle', () => {
+    window.initSettingsMusicPlayer();
+    window.initProfileMusicPlayer();
+});
+
+document.addEventListener('htmx:beforeTransition', () => {
+    window.stopCurrentMusic();
+});
+
+document.addEventListener('htmx:beforeSwap', () => {
+    window.stopCurrentMusic();
+});
+
+window.addEventListener('beforeunload', () => {
+    window.stopCurrentMusic();
+});
+
+window.addEventListener('pagehide', () => {
+    window.stopCurrentMusic();
+});

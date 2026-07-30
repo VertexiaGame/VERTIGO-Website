@@ -70,8 +70,37 @@
 
         <div style="height: 1px; background: #e0e0e0; margin: 24px 0;"></div>
 
-        <h3 class="setttl">Add Music</h3>
+        <h3 class="setttl">Profile Music</h3>
         <span class="setinf">Play tracks on your profile via Deezer!</span>
+
+        <div id="settingsMusicSection" data-music-id="{{.UserMusicID}}" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%;">
+            <div id="settingsMusPlayerCard" class="musplayer-container" style="display: none;">
+                <div class="musplayer">
+                    <img id="setMusPlayerCover" src="" alt="" class="musplayer-cvr">
+                    <div class="musplayer-meta">
+                        <span id="setMusPlayerTitle" class="musplayer-ttl">Track Title</span>
+                        <span id="setMusPlayerArtist" class="musplayer-art">Artist Name</span>
+                    </div>
+                    <button type="button" id="setMusPlayerPlayBtn" class="musplayer-plybtn" onclick="window.toggleSettingsTrack()" title="Play/Pause">
+                        <i id="setMusPlayerPlayIcon" class="fa-solid fa-play"></i>
+                    </button>
+                    <div class="musplayer-seek">
+                        <span id="setMusPlayerCurTime" class="musplayer-time">0:00</span>
+                        <div class="musplayer-barcnt" onclick="window.seekSettingsTrack(event)">
+                            <div id="setMusPlayerBarFill" class="musplayer-barfill"></div>
+                        </div>
+                        <span id="setMusPlayerDurTime" class="musplayer-time">0:30</span>
+                    </div>
+                    <button type="button" id="setMusPlayerVolBtn" class="musplayer-volbtn" onclick="window.toggleMuteSettingsTrack()" title="Mute/Unmute">
+                        <i id="setMusPlayerVolIcon" class="fa-solid fa-volume-high"></i>
+                    </button>
+                    <button type="button" class="musplayer-removebtn" onclick="window.removeProfileMusic()" title="Remove Profile Song">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <button type="button" class="happy hpyprim hpyinl hpysm" onclick="openMusicModal()" style="align-self: flex-start;">
             <img src="/static/useful/icons/music.png" class="hpyico" alt="">
             <span>Search Songs</span>

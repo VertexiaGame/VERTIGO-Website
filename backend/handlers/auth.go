@@ -99,8 +99,13 @@ func RegisterGet(c fiber.Ctx) error {
 	if username := GetActiveUser(c); username != "" {
 		return c.Redirect().To("/")
 	}
+	userCount := 0
+	if service.User != nil {
+		userCount, _ = service.User.GetUserCount()
+	}
 	return Render(c, "pages/register", fiber.Map{
-		"Title": "Register - VERTEXIA",
+		"Title":     "Register - VERTEXIA",
+		"UserCount": userCount,
 	}, "layouts/main")
 }
 
@@ -109,11 +114,17 @@ func RegisterPost(c fiber.Ctx) error {
 		return c.Redirect().To("/")
 	}
 
+	userCount := 0
+	if service.User != nil {
+		userCount, _ = service.User.GetUserCount()
+	}
+
 	altchaPayload := c.FormValue("altcha")
 	if err := service.Auth.VerifyAltcha(altchaPayload); err != nil {
 		return Render(c, "pages/register", fiber.Map{
-			"Title": "Register - VERTEXIA",
-			"Error": err.Error(),
+			"Title":     "Register - VERTEXIA",
+			"Error":     err.Error(),
+			"UserCount": userCount,
 		}, "layouts/main")
 	}
 
@@ -126,8 +137,9 @@ func RegisterPost(c fiber.Ctx) error {
 	user, err := service.Auth.RegisterUser(username, displayname, email, password, passwordConfirm)
 	if err != nil {
 		return Render(c, "pages/register", fiber.Map{
-			"Title": "Register - VERTEXIA",
-			"Error": err.Error(),
+			"Title":     "Register - VERTEXIA",
+			"Error":     err.Error(),
+			"UserCount": userCount,
 		}, "layouts/main")
 	}
 

@@ -32,5 +32,5 @@ func Init(db *sql.DB) {
 	Game = NewGameService(gameRepo)
 	Music = NewMusicService()
 	Friend = NewFriendService(friendRepo, userRepo, Cooldown)
-	ModHistory = NewModHistoryService(modHistRepo)
+	ModHistory = NewModHistoryService(modHistRepo, userRepo)
 }

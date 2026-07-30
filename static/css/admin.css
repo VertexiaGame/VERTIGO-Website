@@ -300,6 +300,27 @@
     gap: 8px !important;
 }
 
+.adm-modact {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+}
+
+.adm-modreason {
+    max-width: 420px !important;
+}
+
+.adm-modbtns {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.adm-usrtbl td .happy {
+    white-space: nowrap !important;
+}
+
 @media (max-width: 768px) {
     .adm-grid {
         grid-template-columns: 1fr !important;

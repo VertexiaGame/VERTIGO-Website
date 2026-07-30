@@ -2,6 +2,8 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
+	"time"
 
 	"vertexia-frontend/backend/models"
 )
@@ -19,7 +21,7 @@ func (r *ModHistoryRepository) GetByUserID(userID int) ([]*models.ModHistory, er
 		return nil, nil
 	}
 
-	query := `SELECT m.id, m.uid, m.admin_id, COALESCE(u.username, 'System'), m.action_type, m.reason, m.note, m.status, m.creation_date, m.expires_at
+	query := `SELECT m.id, m.uid, m.admin_id, COALESCE(u.username, 'System'), COALESCE(u.power, 0), m.action_type, m.reason, m.note, m.status, m.creation_date, m.expires_at
               FROM modhist m
               LEFT JOIN users u ON m.admin_id = u.id
               WHERE m.uid = ?
@@ -35,7 +37,7 @@ func (r *ModHistoryRepository) GetByUserID(userID int) ([]*models.ModHistory, er
 	for rows.Next() {
 		var mh models.ModHistory
 		if err := rows.Scan(
-			&mh.ID, &mh.UID, &mh.AdminID, &mh.AdminName,
+			&mh.ID, &mh.UID, &mh.AdminID, &mh.AdminName, &mh.AdminPower,
 			&mh.ActionType, &mh.Reason, &mh.Note, &mh.Status,
 			&mh.CreationDate, &mh.ExpiresAt,
 		); err != nil {
@@ -45,4 +47,64 @@ func (r *ModHistoryRepository) GetByUserID(userID int) ([]*models.ModHistory, er
 	}
 
 	return list, nil
+}
+
+func (r *ModHistoryRepository) GetByID(id int) (*models.ModHistory, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection is offline")
+	}
+
+	query := `SELECT m.id, m.uid, m.admin_id, COALESCE(u.username, 'System'), COALESCE(u.power, 0), m.action_type, m.reason, m.note, m.status, m.creation_date, m.expires_at
+              FROM modhist m
+              LEFT JOIN users u ON m.admin_id = u.id
+              WHERE m.id = ?`
+
+	var mh models.ModHistory
+	err := r.db.QueryRow(query, id).Scan(
+		&mh.ID, &mh.UID, &mh.AdminID, &mh.AdminName, &mh.AdminPower,
+		&mh.ActionType, &mh.Reason, &mh.Note, &mh.Status,
+		&mh.CreationDate, &mh.ExpiresAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &mh, nil
+}
+
+func (r *ModHistoryRepository) Create(uid, adminID int, actionType, reason, note, status string) (int, error) {
+	if r.db == nil {
+		return 0, errors.New("database connection is offline")
+	}
+	if status == "" {
+		status = models.StatusActive
+	}
+
+	var noteArg any
+	if note != "" {
+		noteArg = note
+	}
+
+	res, err := r.db.Exec(
+		`INSERT INTO modhist (uid, admin_id, action_type, reason, note, status, creation_date) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		uid, adminID, actionType, reason, noteArg, status, time.Now(),
+	)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, nil
+	}
+	return int(id), nil
+}
+
+func (r *ModHistoryRepository) UpdateStatus(id int, status string) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec(`UPDATE modhist SET status = ? WHERE id = ?`, status, id)
+	return err
 }

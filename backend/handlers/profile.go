@@ -48,6 +48,11 @@ func ProfileGet(c fiber.Ctx) error {
 		}
 	}
 
+	var profileMusicID int64
+	if targetUser.MusicID.Valid && targetUser.MusicID.Int64 > 0 {
+		profileMusicID = targetUser.MusicID.Int64
+	}
+
 	return Render(c, "pages/profile", fiber.Map{
 		"Title":          html.EscapeString(targetUser.DisplayName) + " (@" + html.EscapeString(targetUser.Username) + ") - VERTEXIA",
 		"ProfileUser":    targetUser,
@@ -56,5 +61,6 @@ func ProfileGet(c fiber.Ctx) error {
 		"FollowersCount": followers,
 		"FollowingCount": following,
 		"FriendStatus":   friendStatus,
+		"ProfileMusicID": profileMusicID,
 	}, "layouts/main")
 }

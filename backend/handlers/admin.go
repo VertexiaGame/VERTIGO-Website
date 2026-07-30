@@ -36,6 +36,11 @@ type AdminUserView struct {
 	Description  string `json:"description"`
 }
 
+type ModHistoryView struct {
+	*models.ModHistory
+	CanRetract bool
+}
+
 type AvatarItems struct {
 	HeadColor  string `json:"head_color"`
 	TorsoColor string `json:"torso_color"`
@@ -339,13 +344,23 @@ func AdminUserViewPage(c fiber.Ctx) error {
 
 	userView := formatUserForAdmin(targetUser, adminUser.Power)
 	avatarData := getAvatarItems(targetID)
+	canModerate := adminUser.HasPower(models.PowerModerator) && adminUser.Power > targetUser.Power && adminUser.ID != targetUser.ID
+
+	historyViews := make([]ModHistoryView, len(modHistory))
+	for i, entry := range modHistory {
+		historyViews[i] = ModHistoryView{
+			ModHistory: entry,
+			CanRetract: canModerate && entry.Status == models.StatusActive && (adminUser.Power >= entry.AdminPower || adminUser.ID == entry.AdminID),
+		}
+	}
 
 	return Render(c, "pages/admin_user", fiber.Map{
-		"Title":      fmt.Sprintf("Admin - User #%d - VERTEXIA", targetUser.ID),
-		"AdminUser":  adminUser,
-		"TargetUser": userView,
-		"ModHistory": modHistory,
-		"Avatar":     avatarData,
+		"Title":       fmt.Sprintf("Admin - User #%d - VERTEXIA", targetUser.ID),
+		"AdminUser":   adminUser,
+		"TargetUser":  userView,
+		"ModHistory":  historyViews,
+		"Avatar":      avatarData,
+		"CanModerate": canModerate,
 	}, "layouts/main")
 }
 
@@ -433,4 +448,96 @@ func AdminUserDetailAPI(c fiber.Ctx) error {
 	}
 
 	return c.JSON(formatUserForAdmin(targetUser, adminUser.Power))
+}
+
+func adminRedirectToUser(c fiber.Ctx, targetID int) error {
+	path := fmt.Sprintf("/admin/users/%d", targetID)
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", path)
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect().To(path)
+}
+
+func adminModerationError(c fiber.Ctx, msg string) error {
+	return c.Status(fiber.StatusBadRequest).SendString(msg)
+}
+
+func AdminScrubPost(c fiber.Ctx) error {
+	adminUser, err := getAdminUser(c)
+	if err != nil {
+		if err == fiber.ErrUnauthorized {
+			if c.Get("HX-Request") == "true" {
+				c.Set("HX-Redirect", "/login")
+				return c.SendStatus(fiber.StatusUnauthorized)
+			}
+			return c.Redirect().To("/login")
+		}
+		return c.Status(fiber.StatusForbidden).SendString("Access Denied")
+	}
+
+	targetID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || targetID <= 0 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
+	}
+
+	if service.ModHistory == nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Moderation service unavailable")
+	}
+
+	action := c.Params("action")
+	reason := c.FormValue("reason")
+
+	switch action {
+	case "description":
+		err = service.ModHistory.ScrubDescription(adminUser, targetID, reason)
+	case "username":
+		err = service.ModHistory.ScrubUsername(adminUser, targetID, reason)
+	case "displayname":
+		err = service.ModHistory.ScrubDisplayName(adminUser, targetID, reason)
+	case "pronouns":
+		err = service.ModHistory.ScrubPronouns(adminUser, targetID, reason)
+	default:
+		return adminModerationError(c, "Unknown scrub action")
+	}
+
+	if err != nil {
+		return adminModerationError(c, err.Error())
+	}
+
+	return adminRedirectToUser(c, targetID)
+}
+
+func AdminModhistRetractPost(c fiber.Ctx) error {
+	adminUser, err := getAdminUser(c)
+	if err != nil {
+		if err == fiber.ErrUnauthorized {
+			if c.Get("HX-Request") == "true" {
+				c.Set("HX-Redirect", "/login")
+				return c.SendStatus(fiber.StatusUnauthorized)
+			}
+			return c.Redirect().To("/login")
+		}
+		return c.Status(fiber.StatusForbidden).SendString("Access Denied")
+	}
+
+	targetID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || targetID <= 0 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
+	}
+
+	modHistID, err := strconv.Atoi(c.Params("mid"))
+	if err != nil || modHistID <= 0 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid moderation record ID")
+	}
+
+	if service.ModHistory == nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Moderation service unavailable")
+	}
+
+	if err := service.ModHistory.Retract(adminUser, modHistID); err != nil {
+		return adminModerationError(c, err.Error())
+	}
+
+	return adminRedirectToUser(c, targetID)
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -66,6 +67,11 @@ func SettingsGet(c fiber.Ctx) error {
 		changesLeft = left
 	}
 
+	var userMusicID int64
+	if user.MusicID.Valid && user.MusicID.Int64 > 0 {
+		userMusicID = user.MusicID.Int64
+	}
+
 	return Render(c, "pages/settings", fiber.Map{
 		"Title":               "Settings - VERTEXIA",
 		"Error":               c.Query("error"),
@@ -74,6 +80,7 @@ func SettingsGet(c fiber.Ctx) error {
 		"UserBio":             user.Description,
 		"UserPronouns":        user.Pronouns,
 		"UserSocials":         user.ParsedSocials(),
+		"UserMusicID":         userMusicID,
 		"CurUsername":         user.Username,
 		"CurDisplayName":      user.DisplayName,
 		"UsernameChangesLeft": changesLeft,
@@ -194,4 +201,33 @@ func SettingsSocialsPost(c fiber.Ctx) error {
 
 	err = service.User.UpdateSocials(user.ID, socialsMap)
 	return handleSettingsResponse(c, err, "Social links saved successfully", nil)
+}
+
+func SettingsMusicPost(c fiber.Ctx) error {
+	user, err := getSettingsUser(c)
+	if err != nil {
+		return handleSettingsResponse(c, err, "", nil)
+	}
+
+	trackIDStr := c.FormValue("track_id")
+	if trackIDStr == "" {
+		trackIDStr = c.FormValue("music_id")
+	}
+	trackID, err := strconv.ParseInt(trackIDStr, 10, 64)
+	if err != nil || trackID <= 0 {
+		return handleSettingsResponse(c, errors.New("Invalid track ID"), "", nil)
+	}
+
+	err = service.User.UpdateMusicID(user.ID, trackID)
+	return handleSettingsResponse(c, err, "Profile music updated successfully", fiber.Map{"music_id": trackID})
+}
+
+func SettingsMusicRemovePost(c fiber.Ctx) error {
+	user, err := getSettingsUser(c)
+	if err != nil {
+		return handleSettingsResponse(c, err, "", nil)
+	}
+
+	err = service.User.UpdateMusicID(user.ID, 0)
+	return handleSettingsResponse(c, err, "Profile music removed successfully", fiber.Map{"music_id": 0})
 }

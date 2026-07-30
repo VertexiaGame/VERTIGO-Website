@@ -25,6 +25,106 @@
     border-radius: 0 0 6px 0;
 }
 
+.frmsbar.regsbar {
+    width: 472px;
+    padding: 36px 0 0 0;
+    margin: 0;
+    background: transparent;
+    border-left: none;
+    border-radius: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    position: relative;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.regartwrap {
+    position: relative;
+    width: 472px;
+    height: 455px;
+    max-width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 0;
+}
+
+.regartbox {
+    position: relative;
+    width: 472px;
+    height: 455px;
+    max-width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    transform: scale(1);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.regartbox:hover {
+    transform: scale(1.03);
+}
+
+.regartbox:active {
+    transform: scale(0.98) rotateX(-15deg);
+    transition: transform 0.08s ease;
+}
+
+.regarttxt {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    transform: rotate(-7deg);
+    text-align: center;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #FFFFFF;
+    background: #7423CB;
+    padding: 8px 18px;
+    border-radius: 6px;
+    box-shadow: none;
+    user-select: none;
+    z-index: 3;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.regarttxt strong {
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+.regartimg {
+    position: relative;
+    z-index: 2;
+    width: 472px;
+    height: 455px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.regartwrap .ttptxt {
+    bottom: auto;
+    top: calc(100% + 8px);
+    transform-origin: top center;
+    transform: translateX(-50%) translateY(-5px) scale(0.8);
+}
+
+.regartwrap .ttptxt::after {
+    top: auto;
+    bottom: 100%;
+    border-color: transparent transparent #2b2b2b transparent;
+}
+
+.regartwrap .ttpcnt:hover .ttptxt {
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
 .frmttl {
     font-family: 'Ubuntu', sans-serif;
     font-size: 28px;
@@ -289,5 +389,33 @@ input[type="checkbox"]:checked::after,
     }
     .frmmain, .frmsbar {
         padding: 24px;
+    }
+    .frmsbar.regsbar {
+        width: 100%;
+        padding: 16px 0 0 0;
+        margin: 0;
+        border-top: none;
+        background: transparent;
+    }
+    .regartwrap {
+        width: 100%;
+        height: auto;
+        min-height: 300px;
+        margin: 0;
+    }
+    .regartbox {
+        width: 100%;
+        height: auto;
+    }
+    .regartimg {
+        width: 100%;
+        max-width: 472px;
+        height: auto;
+    }
+    .regarttxt {
+        font-size: 16px;
+        top: 10px;
+        left: 10px;
+        transform: rotate(-5deg);
     }
 }

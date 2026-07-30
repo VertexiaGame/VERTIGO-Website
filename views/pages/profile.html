@@ -106,4 +106,30 @@ window.switchProfileTab = function(tabName, event) {
     </div>
 </div>
 
+{{if .ProfileMusicID}}
+<div id="profileMusicWidget" class="prf-music-widget" data-music-id="{{.ProfileMusicID}}">
+    <div class="musplayer">
+        <img id="prfMusCover" src="" alt="" class="musplayer-cvr">
+        <div class="musplayer-meta">
+            <span id="prfMusTitle" class="musplayer-ttl">Loading track...</span>
+            <span id="prfMusArtist" class="musplayer-art">...</span>
+        </div>
+        <button type="button" id="prfMusPlayBtn" class="musplayer-plybtn" onclick="window.toggleProfileTrack()" title="Play/Pause">
+            <i id="prfMusPlayIcon" class="fa-solid fa-play"></i>
+        </button>
+        <div class="musplayer-seek">
+            <span id="prfMusCurTime" class="musplayer-time">0:00</span>
+            <div class="musplayer-barcnt" onclick="window.seekProfileTrack(event)">
+                <div id="prfMusBarFill" class="musplayer-barfill"></div>
+            </div>
+            <span id="prfMusDurTime" class="musplayer-time">0:30</span>
+        </div>
+        <button type="button" id="prfMusVolBtn" class="musplayer-volbtn" onclick="window.toggleMuteProfileTrack()" title="Mute/Unmute">
+            <i id="prfMusVolIcon" class="fa-solid fa-volume-high"></i>
+        </button>
+    </div>
+</div>
+{{end}}
+
+<script src="/static/js/elements/music.js"></script>
 <script type="module" src="/static/js/profile/profile.js"></script>

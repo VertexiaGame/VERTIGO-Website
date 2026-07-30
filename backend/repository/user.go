@@ -18,7 +18,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-const userSelectFields = "id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, '')"
+const userSelectFields = "id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, ''), music_id"
 
 type scannable interface {
 	Scan(dest ...any) error
@@ -31,7 +31,7 @@ func scanUser(s scannable) (*models.User, error) {
 		&u.Description, &u.Unikey, &u.Power, &u.PrimaryClan, &u.NameColor,
 		&u.CustomCSS, &u.Vermail, &u.Vermc, &u.Casom, &u.Bits,
 		&u.Bucks, &u.LastOnline, &u.CreationDate, &u.Views, &u.FeedCaptchas,
-		&u.EmailVerifyToken, &u.EmailVerifyExpiry, &u.Pronouns, &u.Socials,
+		&u.EmailVerifyToken, &u.EmailVerifyExpiry, &u.Pronouns, &u.Socials, &u.MusicID,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -137,6 +137,15 @@ func (r *UserRepository) IsOldUsername(username string) (bool, error) {
 	}
 	var exists bool
 	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM oldusernames WHERE ousername = ?)", username).Scan(&exists)
+	return exists, err
+}
+
+func (r *UserRepository) IsOldUsernameExceptUser(username string, userID int) (bool, error) {
+	if r.db == nil {
+		return false, nil
+	}
+	var exists bool
+	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM oldusernames WHERE ousername = ? AND uid != ?)", username, userID).Scan(&exists)
 	return exists, err
 }
 
@@ -323,6 +332,34 @@ func (r *UserRepository) UpdatePronouns(userID int, pronouns string) error {
 		return errors.New("database connection is offline")
 	}
 	_, err := r.db.Exec("UPDATE users SET pronouns = ? WHERE id = ?", pronouns, userID)
+	return err
+}
+
+func (r *UserRepository) UpdateMusicID(userID int, trackID int64) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	var val any
+	if trackID > 0 {
+		val = trackID
+	}
+	_, err := r.db.Exec("UPDATE users SET music_id = ? WHERE id = ?", val, userID)
+	return err
+}
+
+func (r *UserRepository) AdminSetUsername(userID int, username string) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec("UPDATE users SET username = ? WHERE id = ?", username, userID)
+	return err
+}
+
+func (r *UserRepository) AdminSetDisplayName(userID int, displayName string) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec("UPDATE users SET displayname = ? WHERE id = ?", displayName, userID)
 	return err
 }
 

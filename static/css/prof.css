@@ -282,6 +282,30 @@
     opacity: 0.8;
 }
 
+.prf-music-widget {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 9999 !important;
+    width: 300px !important;
+    max-width: calc(100vw - 32px) !important;
+    animation: prfMusicSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+}
+
+@keyframes prfMusicSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 @media (max-width: 768px) {
     .prfhdr {
         flex-direction: column;
