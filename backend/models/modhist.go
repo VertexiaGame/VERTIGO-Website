@@ -11,6 +11,8 @@ const (
 	ActionScrubUsername    = "scrub_username"
 	ActionScrubDisplayName = "scrub_displayname"
 	ActionScrubPronouns    = "scrub_pronouns"
+	ActionResetAvatar      = "reset_avatar"
+	ActionDeleteOutfit     = "delete_outfit"
 
 	StatusActive    = "active"
 	StatusRetracted = "retracted"
@@ -21,12 +23,13 @@ const (
 )
 
 func ScrubbedUsername(userID int) string {
-	return fmt.Sprintf("[ Content Removed [%d] ]", userID)
+	return fmt.Sprintf("[ Content Removed %d ]", userID)
 }
 
 type ModHistory struct {
 	ID           int
 	UID          int
+	TargetName   string
 	AdminID      int
 	AdminName    string
 	AdminPower   int
@@ -48,6 +51,10 @@ func (m *ModHistory) ActionLabel() string {
 		return "Scrub Display Name"
 	case ActionScrubPronouns:
 		return "Scrub Pronouns"
+	case ActionResetAvatar:
+		return "Reset Avatar"
+	case ActionDeleteOutfit:
+		return "Delete Outfit"
 	default:
 		return m.ActionType
 	}

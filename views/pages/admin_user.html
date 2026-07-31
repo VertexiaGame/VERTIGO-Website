@@ -44,6 +44,11 @@
                         <div class="adm-rendcrd">
                             <img src="/avatar/{{.TargetUser.ID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.TargetUser.Username}}" class="adm-rendimg">
                         </div>
+                        {{if .CanModerate}}
+                        <button type="button" class="happy hpydng hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/resetavatar" hx-include="#admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Reset this user's avatar to the default?">
+                            <span>Reset Avatar</span>
+                        </button>
+                        {{end}}
                     </div>
 
                     <div class="prfsec">
@@ -75,6 +80,28 @@
                 </div>
 
                 <div class="prfsec">
+                    <h2 class="prfboxttl">Saved Outfits</h2>
+                    <div class="adm-panel">
+                        <div class="adm-rowlst">
+                            {{range .Outfits}}
+                            <div class="adm-row adm-outfitrow">
+                                <img src="/avatar/outfit/{{.ID}}.png" alt="{{.Name}}" loading="lazy" class="adm-outfitimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                                <span class="adm-lbl">{{.Name}}</span>
+                                <span class="adm-val">#{{.ID}} • {{.CreatedAt.Format "Jan 02, 2006"}}</span>
+                                {{if $.CanModerate}}
+                                <button type="button" class="happy hpydng hpyinl hpysm" hx-post="/admin/users/{{$.TargetUser.ID}}/outfits/{{.ID}}/delete" hx-include="#admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Delete this outfit?">
+                                    <span>Delete</span>
+                                </button>
+                                {{end}}
+                            </div>
+                            {{else}}
+                            <div class="adm-row"><span class="adm-val">No saved outfits</span></div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prfsec">
                     <h2 class="prfboxttl">Account Details</h2>
                     <div class="adm-panel">
                         <div class="adm-rowlst-grid">
@@ -98,21 +125,22 @@
                 <div class="prfsec">
                     <h2 class="prfboxttl">Moderation Actions</h2>
                     <div class="adm-panel">
+                        <input type="hidden" name="csrf" value="{{.CSRF}}" id="admCsrf">
                         <div class="adm-modact">
                             <div class="setinbox adm-modreason">
                                 <input type="text" id="admModReason" name="reason" class="setin" placeholder="Reason (optional)" autocomplete="off">
                             </div>
                             <div class="adm-modbtns">
-                                <button type="button" class="happy hpywrn hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/description" hx-include="#admModReason" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's description?">
+                                <button type="button" class="happy hpywrn hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/description" hx-include="#admModReason, #admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's description?">
                                     <span>Scrub Description</span>
                                 </button>
-                                <button type="button" class="happy hpywrn hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/displayname" hx-include="#admModReason" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's display name?">
+                                <button type="button" class="happy hpywrn hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/displayname" hx-include="#admModReason, #admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's display name?">
                                     <span>Scrub Display Name</span>
                                 </button>
-                                <button type="button" class="happy hpywrn hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/pronouns" hx-include="#admModReason" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's pronouns?">
+                                <button type="button" class="happy hpywrn hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/pronouns" hx-include="#admModReason, #admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's pronouns?">
                                     <span>Scrub Pronouns</span>
                                 </button>
-                                <button type="button" class="happy hpydng hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/username" hx-include="#admModReason" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's username?">
+                                <button type="button" class="happy hpydng hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/scrub/username" hx-include="#admModReason, #admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Scrub this user's username?">
                                     <span>Scrub Username</span>
                                 </button>
                             </div>
@@ -155,7 +183,7 @@
                                     <td>{{.CreationDate.Format "Jan 02, 2006 15:04"}}</td>
                                     <td>
                                         {{if .CanRetract}}
-                                        <button type="button" class="happy hpyinf hpyinl hpysm" hx-post="/admin/users/{{$.TargetUser.ID}}/modhist/{{.ID}}/retract" hx-target="body" hx-push-url="true" hx-confirm="Retract this moderation action?">
+                                        <button type="button" class="happy hpyinf hpyinl hpysm" hx-post="/admin/users/{{$.TargetUser.ID}}/modhist/{{.ID}}/retract" hx-include="#admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Retract this moderation action?">
                                             <span>Retract</span>
                                         </button>
                                         {{end}}

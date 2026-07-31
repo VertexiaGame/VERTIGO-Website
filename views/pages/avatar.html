@@ -40,7 +40,35 @@
                                     <button type="button" class="happy hpyprim hpyinl hpysm" onclick="window.redrawAvatar(event)">
                                         <span>Redraw</span>
                                     </button>
+                                    <button type="button" class="happy hpysuc hpyinl hpysm" id="avtSaveBtn" onclick="window.openSaveOutfitModal(event)" disabled>
+                                        <span>Save</span>
+                                    </button>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="setcrd avtcrd">
+                            <h3 class="setttl">Saved Outfits</h3>
+                            <div class="avtwrng" id="avtOutfits">
+                                {{range .Outfits}}
+                                <div class="avtwchip" data-outfit-id="{{.ID}}">
+                                    <div class="avtwimg">
+                                        <img src="/avatar/outfit/{{.ID}}.png" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                                    </div>
+                                    <div class="avtwmeta">
+                                        <span class="avtwnm">{{.Name}}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 4px; align-items: center;">
+                                        <button type="button" class="happy hpyprim hpyinl hpysm avtoutfitwear" title="Wear Outfit">
+                                            <span>Wear</span>
+                                        </button>
+                                        <button type="button" class="avtwrmv avtoutfitdel" title="Delete Outfit" aria-label="Delete Outfit">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {{else}}
+                                <div class="feedemt">No saved outfits yet.</div>
+                                {{end}}
                             </div>
                         </div>
                         <div class="setcrd avtcrd">

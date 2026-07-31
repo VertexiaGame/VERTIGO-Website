@@ -28,6 +28,13 @@ func (s *ModHistoryService) GetByUserID(userID int) ([]*models.ModHistory, error
 	return s.modHistRepo.GetByUserID(userID)
 }
 
+func (s *ModHistoryService) GetAllLogs(limit, offset int) ([]*models.ModHistory, int, error) {
+	if s.modHistRepo == nil {
+		return nil, 0, nil
+	}
+	return s.modHistRepo.GetAll(limit, offset)
+}
+
 func (s *ModHistoryService) normalizeReason(reason string) string {
 	reason = strings.TrimSpace(reason)
 	if reason == "" {
@@ -112,6 +119,15 @@ func (s *ModHistoryService) ScrubUsername(admin *models.User, targetID int, reas
 		func(u *models.User) string { return u.Username },
 		func() string { return models.ScrubbedUsername(targetID) },
 		func(v string) error { return s.userRepo.AdminSetUsername(targetID, v) })
+}
+
+func (s *ModHistoryService) Record(admin *models.User, targetID int, actionType, reason, note string) error {
+	_, err := s.ensureCanModerate(admin, targetID)
+	if err != nil {
+		return err
+	}
+	_, err = s.modHistRepo.Create(targetID, admin.ID, actionType, s.normalizeReason(reason), note, models.StatusActive)
+	return err
 }
 
 func (s *ModHistoryService) restoreField(actionType string, uid int, note string) error {

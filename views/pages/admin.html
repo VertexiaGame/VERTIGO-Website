@@ -235,6 +235,57 @@
                             <div id="tab-logs" class="settabcntnt">
                                 <div class="setcrd">
                                     <h3 class="setttl">Logs</h3>
+
+                                    <div class="adm-tblcnt">
+                                        <table class="adm-usrtbl">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Admin</th>
+                                                    <th>Action</th>
+                                                    <th>Target</th>
+                                                    <th>Reason</th>
+                                                    <th>Status</th>
+                                                    <th>Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="admLogsBody">
+                                                {{range .Logs}}
+                                                <tr>
+                                                    <td>#{{.ID}}</td>
+                                                    <td>{{.AdminName}}</td>
+                                                    <td><strong class="adm-act">{{.ActionLabel}}</strong></td>
+                                                    <td>@{{.TargetName}} #{{.UID}}</td>
+                                                    <td>{{.Reason}}</td>
+                                                    <td>
+                                                        {{if eq .Status "active"}}
+                                                        <span class="adm-stat"><span class="adm-ind adm-ind-offline"></span>{{.StatusLabel}}</span>
+                                                        {{else}}
+                                                        <span class="adm-stat"><span class="adm-ind adm-ind-online"></span>{{.StatusLabel}}</span>
+                                                        {{end}}
+                                                    </td>
+                                                    <td>{{.CreationDate.Format "Jan 02, 2006 15:04"}}</td>
+                                                </tr>
+                                                {{else}}
+                                                <tr>
+                                                    <td colspan="7" class="adm-tblemt">No admin actions logged</td>
+                                                </tr>
+                                                {{end}}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="adm-pgncnt">
+                                        <span class="adm-pgntxt" id="admLogsPgnTxt">Page 1 of {{.TotalLogPages}}</span>
+                                        <div class="adm-pgnbtns">
+                                            <button type="button" class="happy hpyprim hpyinl hpysm" id="admLogsPrevBtn" onclick="window.fetchAdminLogs(currentAdminLogsPage - 1)" disabled>
+                                                <span>Prev</span>
+                                            </button>
+                                            <button type="button" class="happy hpyprim hpyinl hpysm" id="admLogsNextBtn" onclick="window.fetchAdminLogs(currentAdminLogsPage + 1)">
+                                                <span>Next</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

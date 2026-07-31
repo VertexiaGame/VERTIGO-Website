@@ -3,8 +3,10 @@ package service
 import (
 	"errors"
 	"fmt"
+	"html"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/repository"
@@ -80,4 +82,62 @@ func (s *AvatarService) GetEquippedItems(userID int) ([]*models.InventoryItem, e
 		return nil, errors.New("avatar repository uninitialized")
 	}
 	return s.avatarRepo.GetEquippedItems(userID)
+}
+
+func (s *AvatarService) GetOutfits(userID int) ([]*models.Outfit, error) {
+	if s.avatarRepo == nil {
+		return nil, errors.New("avatar repository uninitialized")
+	}
+	return s.avatarRepo.GetOutfits(userID)
+}
+
+func (s *AvatarService) CreateOutfit(userID int, name string) (*models.Outfit, error) {
+	if s.avatarRepo == nil {
+		return nil, errors.New("avatar repository uninitialized")
+	}
+	name = html.EscapeString(strings.TrimSpace(name))
+	if name == "" {
+		return nil, errors.New("outfit name cannot be empty")
+	}
+	if len(name) > 30 {
+		name = name[:30]
+	}
+	outfits, _ := s.avatarRepo.GetOutfits(userID)
+	if len(outfits) >= 20 {
+		return nil, errors.New("maximum limit of 20 saved outfits reached")
+	}
+	return s.avatarRepo.CreateOutfit(userID, name)
+}
+
+func (s *AvatarService) WearOutfit(userID, outfitID int) error {
+	if s.avatarRepo == nil {
+		return errors.New("avatar repository uninitialized")
+	}
+	err := s.avatarRepo.WearOutfit(userID, outfitID)
+	if err == nil {
+		s.InvalidateRenderCache(userID)
+	}
+	return err
+}
+
+func (s *AvatarService) DeleteOutfit(userID, outfitID int) error {
+	if s.avatarRepo == nil {
+		return errors.New("avatar repository uninitialized")
+	}
+	err := s.avatarRepo.DeleteOutfit(userID, outfitID)
+	if err == nil {
+		_ = os.Remove(filepath.Join("static", "renders", "outfits", fmt.Sprintf("%d.png", outfitID)))
+	}
+	return err
+}
+
+func (s *AvatarService) ResetAvatar(userID int) error {
+	if s.avatarRepo == nil {
+		return errors.New("avatar repository uninitialized")
+	}
+	err := s.avatarRepo.ResetAvatar(userID)
+	if err == nil {
+		s.InvalidateRenderCache(userID)
+	}
+	return err
 }

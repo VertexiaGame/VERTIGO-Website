@@ -14,7 +14,16 @@ func GetActiveUser(c fiber.Ctx) string {
 
 	usernameVal := sess.Get("username")
 	if usernameStr, ok := usernameVal.(string); ok && usernameStr != "" {
-		return usernameStr
+		if service.User == nil {
+			return usernameStr
+		}
+		u, err := service.User.GetUserByUsername(usernameStr)
+		if err != nil {
+			return usernameStr
+		}
+		if u != nil {
+			return usernameStr
+		}
 	}
 
 	cookieVal := c.Cookies("vertexia_remember")
@@ -49,12 +58,14 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		bits := 0
 		userID := 0
 		pendingFriends := 0
+		isAdmin := false
 		if service.User != nil {
 			u, err := service.User.GetUserByUsername(username)
 			if err == nil && u != nil {
 				bucks = u.Bucks
 				bits = u.Bits
 				userID = u.ID
+				isAdmin = u.HasAdminAccess()
 				if service.Friend != nil {
 					pendingFriends, _ = service.Friend.GetPendingRequestCount(u.ID)
 				}
@@ -63,6 +74,7 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		data["Bucks"] = bucks
 		data["Bits"] = bits
 		data["UserID"] = userID
+		data["IsAdmin"] = isAdmin
 		data["PendingFriendRequestsCount"] = pendingFriends
 	} else {
 		data["Username"] = ""
@@ -70,6 +82,7 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		data["Bucks"] = 0
 		data["Bits"] = 0
 		data["UserID"] = 0
+		data["IsAdmin"] = false
 		data["PendingFriendRequestsCount"] = 0
 	}
 

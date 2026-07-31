@@ -32,7 +32,9 @@
         <a href="/create" hx-get="/create" hx-target="body" hx-push-url="true" class="dropitm">Create ...</a>
         <a href="/redeem" hx-get="/redeem" hx-target="body" hx-push-url="true" class="dropitm">Redeem</a>
         <a href="/settings" hx-get="/settings" hx-target="body" hx-push-url="true" class="dropitm">Settings</a>
+        {{if .IsAdmin}}
         <a href="/admin" hx-get="/admin" hx-target="body" hx-push-url="true" class="dropitm">Admin</a>
+        {{end}}
         <a href="/logout" hx-get="/logout" hx-target="body" hx-push-url="true" class="dropitm droplgo">Log out</a>
     </div>
 </div>

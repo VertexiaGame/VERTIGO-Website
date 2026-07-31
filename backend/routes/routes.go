@@ -55,9 +55,13 @@ func Setup(app *fiber.App) {
 	app.Get("/avatar", handlers.AvatarEditorPage)
 	app.Get("/avatar/:id", handlers.AvatarGet)
 	app.Get("/avatar/shop/:type/:id", handlers.ShopRenderGet)
+	app.Get("/avatar/outfit/:id", handlers.AvatarOutfitGet)
 	app.Post("/avatar/color", handlers.AvatarUpdateColorsPost)
 	app.Post("/avatar/wear", handlers.AvatarWearItemPost)
 	app.Post("/avatar/unwear", handlers.AvatarUnwearItemPost)
+	app.Post("/avatar/outfit/save", handlers.AvatarSaveOutfitPost)
+	app.Post("/avatar/outfit/wear", handlers.AvatarWearOutfitPost)
+	app.Post("/avatar/outfit/delete", handlers.AvatarDeleteOutfitPost)
 	app.Post("/avatar/rerender", handlers.AvatarReRenderPost)
 	app.Post("/api/v1/feed", handlers.PostFeed)
 
@@ -86,6 +90,8 @@ func Setup(app *fiber.App) {
 	app.Get("/admin/users/:id", handlers.AdminUserViewPage)
 	app.Post("/admin/users/:id/scrub/:action", handlers.AdminScrubPost)
 	app.Post("/admin/users/:id/modhist/:mid/retract", handlers.AdminModhistRetractPost)
+	app.Post("/admin/users/:id/resetavatar", handlers.AdminResetAvatarPost)
+	app.Post("/admin/users/:id/outfits/:oid/delete", handlers.AdminOutfitDeletePost)
 
 	api := app.Group("/api/v1")
 	api.Get("/altcha", handlers.AltchaGet)
@@ -94,6 +100,8 @@ func Setup(app *fiber.App) {
 	api.Get("/avatar/data/:id", handlers.AvatarDataGet)
 	api.Get("/avatar/inventory", handlers.AvatarInventoryAPI)
 	api.Get("/avatar/wearing", handlers.AvatarWearingAPI)
+	api.Get("/avatar/outfits", handlers.AvatarOutfitsAPI)
+	api.Get("/avatar/outfit/:id", handlers.AvatarOutfitGet)
 	api.Get("/avatar/:id", handlers.AvatarGet)
 	api.Get("/avatar/headshots/:id", handlers.AvatarHeadshotGet)
 	api.Get("/avatar/headshot/:id", handlers.AvatarHeadshotGet)
@@ -109,6 +117,7 @@ func Setup(app *fiber.App) {
 	api.Get("/admin/status", handlers.AdminStatusAPI)
 	api.Get("/admin/users", handlers.AdminUsersAPI)
 	api.Get("/admin/users/:id", handlers.AdminUserDetailAPI)
+	api.Get("/admin/logs", handlers.AdminLogsAPI)
 
 	app.Get("/assets*", static.New("./assets", static.Config{
 		NotFoundHandler: func(c fiber.Ctx) error {
@@ -124,6 +133,7 @@ func Setup(app *fiber.App) {
 
 	app.Get("/static/renders/avatars/full/:id", handlers.AvatarGet)
 	app.Get("/static/renders/avatars/headshots/:id", handlers.AvatarHeadshotGet)
+	app.Get("/static/renders/outfits/:id", handlers.AvatarOutfitGet)
 
 	app.Get("/static*", static.New("./public", static.Config{
 		NotFoundHandler: func(c fiber.Ctx) error {
@@ -136,4 +146,6 @@ func Setup(app *fiber.App) {
 			return c.Next()
 		},
 	}))
+
+	app.Use(handlers.NotFoundHandler)
 }

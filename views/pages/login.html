@@ -64,46 +64,11 @@
 <script>
     (function() {
         var err = "{{.Error}}";
+        var field = "{{.ErrorField}}";
         if (!err) return;
         
-        var targetInput = null;
-        var errLower = err.toLowerCase();
-        
-        if (errLower.indexOf("username") !== -1 && errLower.indexOf("password") !== -1) {
-            var u = document.querySelector('input[name="identifier"]');
-            var p = document.querySelector('input[name="password"]');
-            if (u) u.classList.add('inerr');
-            if (p) p.classList.add('inerr');
-            showErrorUnder(p || u, err);
-        } else if (errLower.indexOf("username") !== -1 || errLower.indexOf("identifier") !== -1 || errLower.indexOf("credentials") !== -1) {
-            targetInput = document.querySelector('input[name="identifier"]');
-            if (targetInput) {
-                targetInput.classList.add('inerr');
-                showErrorUnder(targetInput, err);
-            }
-        } else if (errLower.indexOf("password") !== -1) {
-            targetInput = document.querySelector('input[name="password"]');
-            if (targetInput) {
-                targetInput.classList.add('inerr');
-                showErrorUnder(targetInput, err);
-            }
-        } else if (errLower.indexOf("captcha") !== -1) {
-            var widget = document.querySelector('altcha-widget');
-            if (widget) {
-                widget.style.border = "1px solid #ff3b30";
-                widget.style.borderRadius = "8px";
-                widget.style.padding = "4px";
-                showErrorUnder(widget, err);
-            }
-        } else {
-            targetInput = document.querySelector('.frmin');
-            if (targetInput) {
-                targetInput.classList.add('inerr');
-                showErrorUnder(targetInput, err);
-            }
-        }
-        
         function showErrorUnder(element, message) {
+            if (!element) return;
             var group = element.closest('.frmgrp') || element.parentElement;
             var errDiv = group.querySelector('.frminerr');
             if (!errDiv) {
@@ -115,6 +80,28 @@
             requestAnimationFrame(function() {
                 errDiv.classList.add('visible');
             });
+        }
+        
+        function markField(selector) {
+            var input = document.querySelector(selector);
+            if (input) input.classList.add('inerr');
+        }
+        
+        if (field === 'captcha') {
+            var widget = document.querySelector('altcha-widget');
+            if (widget) {
+                widget.style.border = "1px solid #ff3b30";
+                widget.style.borderRadius = "8px";
+                widget.style.padding = "4px";
+                showErrorUnder(widget, err);
+            }
+        } else if (field === 'credentials') {
+            markField('input[name="identifier"]');
+            markField('input[name="password"]');
+            showErrorUnder(document.querySelector('input[name="identifier"]'), err);
+        } else {
+            markField('input[name="identifier"]');
+            showErrorUnder(document.querySelector('input[name="identifier"]'), err);
         }
     })();
 </script>

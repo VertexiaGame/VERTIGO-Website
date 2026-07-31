@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"vertexia-frontend/backend/config"
@@ -39,6 +40,18 @@ type AdminUserView struct {
 type ModHistoryView struct {
 	*models.ModHistory
 	CanRetract bool
+}
+
+type AdminLogView struct {
+	ID          int    `json:"id"`
+	AdminName   string `json:"admin_name"`
+	TargetID    int    `json:"target_id"`
+	TargetName  string `json:"target_name"`
+	ActionLabel string `json:"action_label"`
+	Reason      string `json:"reason"`
+	Status      string `json:"status"`
+	StatusLabel string `json:"status_label"`
+	Date        string `json:"date"`
 }
 
 type AvatarItems struct {
@@ -76,6 +89,39 @@ func getAdminUser(c fiber.Ctx) (*models.User, error) {
 		return nil, fiber.ErrForbidden
 	}
 	return user, nil
+}
+
+func adminRedirectHome(c fiber.Ctx) error {
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", "/")
+		return c.SendStatus(fiber.StatusOK)
+	}
+	return c.Redirect().To("/")
+}
+
+func getCSRFToken(c fiber.Ctx) string {
+	sess := session.FromContext(c)
+	if sess == nil {
+		return ""
+	}
+	if token, _ := sess.Get("csrf").(string); token != "" {
+		return token
+	}
+	token, err := models.GenerateRandomString(32)
+	if err != nil {
+		return ""
+	}
+	sess.Set("csrf", token)
+	return token
+}
+
+func csrfValid(c fiber.Ctx) bool {
+	sess := session.FromContext(c)
+	if sess == nil {
+		return false
+	}
+	token, _ := sess.Get("csrf").(string)
+	return token != "" && token == c.FormValue("csrf")
 }
 
 func getSystemStats() (fiber.Map, runtime.MemStats) {
@@ -228,6 +274,10 @@ func formatUserForAdmin(u *models.User, adminPower int) AdminUserView {
 	return view
 }
 
+func canModerateTarget(adminUser, targetUser *models.User) bool {
+	return adminUser.HasPower(models.PowerModerator) && adminUser.Power > targetUser.Power && adminUser.ID != targetUser.ID
+}
+
 func AdminIndex(c fiber.Ctx) error {
 	user, err := getAdminUser(c)
 	if err != nil {
@@ -241,7 +291,7 @@ func AdminIndex(c fiber.Ctx) error {
 		if err == fiber.ErrInternalServerError {
 			return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
 		}
-		return c.Status(fiber.StatusForbidden).SendString("Access Denied: You do not have permission to access the admin panel.")
+		return adminRedirectHome(c)
 	}
 
 	stats, m := getSystemStats()
@@ -286,6 +336,12 @@ func AdminIndex(c fiber.Ctx) error {
 		userViews[i] = formatUserForAdmin(u, user.Power)
 	}
 
+	initialLogs, totalLogs, _ := service.ModHistory.GetAllLogs(15, 0)
+	totalLogPages := 1
+	if totalLogs > 0 {
+		totalLogPages = (totalLogs + 15 - 1) / 15
+	}
+
 	return Render(c, "pages/admin", fiber.Map{
 		"Title":           "Admin - VERTEXIA",
 		"AdminUser":       user,
@@ -318,6 +374,8 @@ func AdminIndex(c fiber.Ctx) error {
 		"LiveTimerActive": liveTimerActive,
 		"Users":           userViews,
 		"TotalUsers":      totalUsers,
+		"Logs":            initialLogs,
+		"TotalLogPages":   totalLogPages,
 	}, "layouts/main")
 }
 
@@ -334,7 +392,7 @@ func AdminUserViewPage(c fiber.Ctx) error {
 		if err == fiber.ErrInternalServerError {
 			return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
 		}
-		return c.Status(fiber.StatusForbidden).SendString("Access Denied: You do not have permission to access the admin panel.")
+		return adminRedirectHome(c)
 	}
 
 	targetID, err := strconv.Atoi(c.Params("id"))
@@ -354,7 +412,12 @@ func AdminUserViewPage(c fiber.Ctx) error {
 
 	userView := formatUserForAdmin(targetUser, adminUser.Power)
 	avatarData := getAvatarItems(targetID)
-	canModerate := adminUser.HasPower(models.PowerModerator) && adminUser.Power > targetUser.Power && adminUser.ID != targetUser.ID
+	canModerate := canModerateTarget(adminUser, targetUser)
+
+	var outfits []*models.Outfit
+	if service.Avatar != nil {
+		outfits, _ = service.Avatar.GetOutfits(targetID)
+	}
 
 	historyViews := make([]ModHistoryView, len(modHistory))
 	for i, entry := range modHistory {
@@ -370,7 +433,9 @@ func AdminUserViewPage(c fiber.Ctx) error {
 		"TargetUser":  userView,
 		"ModHistory":  historyViews,
 		"Avatar":      avatarData,
+		"Outfits":     outfits,
 		"CanModerate": canModerate,
+		"CSRF":        getCSRFToken(c),
 	}, "layouts/main")
 }
 
@@ -438,6 +503,60 @@ func AdminUsersAPI(c fiber.Ctx) error {
 	})
 }
 
+func AdminLogsAPI(c fiber.Ctx) error {
+	_, err := getAdminUser(c)
+	if err != nil {
+		if err == fiber.ErrForbidden {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Forbidden"})
+		}
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "15"))
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 15
+	}
+	offset := (page - 1) * limit
+
+	logs, total, err := service.ModHistory.GetAllLogs(limit, offset)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	views := make([]AdminLogView, len(logs))
+	for i, entry := range logs {
+		views[i] = AdminLogView{
+			ID:          entry.ID,
+			AdminName:   entry.AdminName,
+			TargetID:    entry.UID,
+			TargetName:  entry.TargetName,
+			ActionLabel: entry.ActionLabel(),
+			Reason:      entry.Reason,
+			Status:      entry.Status,
+			StatusLabel: entry.StatusLabel(),
+			Date:        entry.CreationDate.Format("Jan 02, 2006 15:04"),
+		}
+	}
+
+	totalPages := 1
+	if total > 0 {
+		totalPages = (total + limit - 1) / limit
+	}
+
+	return c.JSON(fiber.Map{
+		"logs":        views,
+		"total":       total,
+		"page":        page,
+		"limit":       limit,
+		"total_pages": totalPages,
+	})
+}
+
 func AdminUserDetailAPI(c fiber.Ctx) error {
 	adminUser, err := getAdminUser(c)
 	if err != nil {
@@ -483,7 +602,11 @@ func AdminScrubPost(c fiber.Ctx) error {
 			}
 			return c.Redirect().To("/login")
 		}
-		return c.Status(fiber.StatusForbidden).SendString("Access Denied")
+		return adminRedirectHome(c)
+	}
+
+	if !csrfValid(c) {
+		return c.Status(fiber.StatusForbidden).SendString("Forbidden")
 	}
 
 	targetID, err := strconv.Atoi(c.Params("id"))
@@ -528,7 +651,11 @@ func AdminModhistRetractPost(c fiber.Ctx) error {
 			}
 			return c.Redirect().To("/login")
 		}
-		return c.Status(fiber.StatusForbidden).SendString("Access Denied")
+		return adminRedirectHome(c)
+	}
+
+	if !csrfValid(c) {
+		return c.Status(fiber.StatusForbidden).SendString("Forbidden")
 	}
 
 	targetID, err := strconv.Atoi(c.Params("id"))
@@ -550,4 +677,93 @@ func AdminModhistRetractPost(c fiber.Ctx) error {
 	}
 
 	return adminRedirectToUser(c, targetID)
+}
+
+func adminTargetForAction(c fiber.Ctx) (*models.User, *models.User, error) {
+	adminUser, err := getAdminUser(c)
+	if err != nil {
+		if err == fiber.ErrUnauthorized {
+			if c.Get("HX-Request") == "true" {
+				c.Set("HX-Redirect", "/login")
+				return nil, nil, c.SendStatus(fiber.StatusUnauthorized)
+			}
+			return nil, nil, c.Redirect().To("/login")
+		}
+		return nil, nil, adminRedirectHome(c)
+	}
+
+	if !csrfValid(c) {
+		return nil, nil, c.Status(fiber.StatusForbidden).SendString("Forbidden")
+	}
+
+	targetID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || targetID <= 0 {
+		return nil, nil, c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
+	}
+
+	targetUser, err := service.User.GetUserByID(targetID)
+	if err != nil || targetUser == nil {
+		return nil, nil, c.Status(fiber.StatusNotFound).SendString("User not found")
+	}
+
+	return adminUser, targetUser, nil
+}
+
+func AdminResetAvatarPost(c fiber.Ctx) error {
+	adminUser, targetUser, err := adminTargetForAction(c)
+	if err != nil || adminUser == nil || targetUser == nil {
+		return err
+	}
+
+	if !canModerateTarget(adminUser, targetUser) {
+		return adminModerationError(c, "You do not have permission to reset this user's avatar")
+	}
+
+	if service.Avatar == nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Avatar service unavailable")
+	}
+
+	if err := service.Avatar.ResetAvatar(targetUser.ID); err != nil {
+		return adminModerationError(c, err.Error())
+	}
+
+	if service.ModHistory != nil {
+		if err := service.ModHistory.Record(adminUser, targetUser.ID, models.ActionResetAvatar, "Avatar reset", ""); err != nil {
+			return adminModerationError(c, err.Error())
+		}
+	}
+
+	return adminRedirectToUser(c, targetUser.ID)
+}
+
+func AdminOutfitDeletePost(c fiber.Ctx) error {
+	adminUser, targetUser, err := adminTargetForAction(c)
+	if err != nil || adminUser == nil || targetUser == nil {
+		return err
+	}
+
+	if !canModerateTarget(adminUser, targetUser) {
+		return adminModerationError(c, "You do not have permission to delete this user's outfits")
+	}
+
+	outfitID, err := strconv.Atoi(c.Params("oid"))
+	if err != nil || outfitID <= 0 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid outfit ID")
+	}
+
+	if service.Avatar == nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Avatar service unavailable")
+	}
+
+	if err := service.Avatar.DeleteOutfit(targetUser.ID, outfitID); err != nil {
+		return adminModerationError(c, err.Error())
+	}
+
+	if service.ModHistory != nil {
+		if err := service.ModHistory.Record(adminUser, targetUser.ID, models.ActionDeleteOutfit, fmt.Sprintf("Outfit #%d deleted", outfitID), ""); err != nil {
+			return adminModerationError(c, err.Error())
+		}
+	}
+
+	return adminRedirectToUser(c, targetUser.ID)
 }

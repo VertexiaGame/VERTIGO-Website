@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/template/html/v3"
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/database"
+	"vertexia-frontend/backend/handlers"
 	"vertexia-frontend/backend/renderer"
 	"vertexia-frontend/backend/routes"
 	"vertexia-frontend/backend/service"
@@ -38,6 +39,7 @@ func main() {
 		WriteTimeout: cfg.ServerWriteTimeout,
 		IdleTimeout:  cfg.ServerIdleTimeout,
 		ServerHeader: "",
+		ErrorHandler: handlers.ErrorHandler,
 	})
 
 	app.Use(recoverer.New())
@@ -47,7 +49,7 @@ func main() {
 		c.Set("X-Content-Type-Options", "nosniff")
 		c.Set("X-XSS-Protection", "1; mode=block")
 		c.Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		c.Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: wss:; frame-ancestors 'self';")
+		c.Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: wss:; worker-src 'self' blob:; frame-ancestors 'self';")
 		return c.Next()
 	})
 

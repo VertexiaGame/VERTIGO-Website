@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"vertexia-frontend/backend/models"
 )
@@ -378,4 +379,150 @@ func (r *AvatarRepository) GetEquippedItems(userID int) ([]*models.InventoryItem
 	addEquipped("gear", avatar.Tool)
 
 	return equipped, nil
+}
+
+func (r *AvatarRepository) GetOutfits(userID int) ([]*models.Outfit, error) {
+	if r.db == nil {
+		return []*models.Outfit{}, nil
+	}
+
+	query := `SELECT id, user_id, name, head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color,
+	                 hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face, created_at
+              FROM outfits WHERE user_id = ? ORDER BY id DESC`
+
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return []*models.Outfit{}, nil
+	}
+	defer rows.Close()
+
+	var outfits []*models.Outfit
+	for rows.Next() {
+		var o models.Outfit
+		if err := rows.Scan(
+			&o.ID, &o.UserID, &o.Name, &o.HeadColor, &o.LArmColor, &o.RArmColor, &o.TorsoColor, &o.LLegColor, &o.RLegColor,
+			&o.Hat1, &o.Hat2, &o.Hat3, &o.Hat4, &o.Hat5, &o.Tool, &o.Shirt, &o.TShirt, &o.Pants, &o.Face, &o.CreatedAt,
+		); err == nil {
+			outfits = append(outfits, &o)
+		}
+	}
+	return outfits, nil
+}
+
+func (r *AvatarRepository) GetOutfitByID(outfitID int) (*models.Outfit, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection is offline")
+	}
+
+	query := `SELECT id, user_id, name, head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color,
+	                 hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face, created_at
+              FROM outfits WHERE id = ?`
+
+	var o models.Outfit
+	err := r.db.QueryRow(query, outfitID).Scan(
+		&o.ID, &o.UserID, &o.Name, &o.HeadColor, &o.LArmColor, &o.RArmColor, &o.TorsoColor, &o.LLegColor, &o.RLegColor,
+		&o.Hat1, &o.Hat2, &o.Hat3, &o.Hat4, &o.Hat5, &o.Tool, &o.Shirt, &o.TShirt, &o.Pants, &o.Face, &o.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &o, nil
+}
+
+func (r *AvatarRepository) CreateOutfit(userID int, name string) (*models.Outfit, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection is offline")
+	}
+
+	av, err := r.GetAvatar(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := `INSERT INTO outfits (user_id, name, head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	res, err := r.db.Exec(query,
+		userID, name, av.HeadColor, av.LArmColor, av.RArmColor, av.TorsoColor, av.LLegColor, av.RLegColor,
+		av.Hat1, av.Hat2, av.Hat3, av.Hat4, av.Hat5, av.Tool, av.Shirt, av.TShirt, av.Pants, av.Face,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	outfitID, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.Outfit{
+		ID:         int(outfitID),
+		UserID:     userID,
+		Name:       name,
+		HeadColor:  av.HeadColor,
+		LArmColor:  av.LArmColor,
+		RArmColor:  av.RArmColor,
+		TorsoColor: av.TorsoColor,
+		LLegColor:  av.LLegColor,
+		RLegColor:  av.RLegColor,
+		Hat1:       av.Hat1,
+		Hat2:       av.Hat2,
+		Hat3:       av.Hat3,
+		Hat4:       av.Hat4,
+		Hat5:       av.Hat5,
+		Tool:       av.Tool,
+		Shirt:      av.Shirt,
+		TShirt:     av.TShirt,
+		Pants:      av.Pants,
+		Face:       av.Face,
+		CreatedAt:  time.Now(),
+	}, nil
+}
+
+func (r *AvatarRepository) WearOutfit(userID, outfitID int) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+
+	outfit, err := r.GetOutfitByID(outfitID)
+	if err != nil || outfit == nil {
+		return errors.New("outfit not found")
+	}
+
+	if outfit.UserID != userID {
+		return errors.New("unauthorized")
+	}
+
+	query := `UPDATE avatar SET 
+	          head_color = ?, larm_color = ?, rarm_color = ?, torso_color = ?, lleg_color = ?, rleg_color = ?,
+	          hat1 = ?, hat2 = ?, hat3 = ?, hat4 = ?, hat5 = ?, tool = ?, shirt = ?, tshirt = ?, pants = ?, face = ?
+	          WHERE id = ?`
+	_, err = r.db.Exec(query,
+		outfit.HeadColor, outfit.LArmColor, outfit.RArmColor, outfit.TorsoColor, outfit.LLegColor, outfit.RLegColor,
+		outfit.Hat1, outfit.Hat2, outfit.Hat3, outfit.Hat4, outfit.Hat5, outfit.Tool, outfit.Shirt, outfit.TShirt, outfit.Pants, outfit.Face,
+		userID,
+	)
+	return err
+}
+
+func (r *AvatarRepository) DeleteOutfit(userID, outfitID int) error {
+	if r.db == nil {
+		return nil
+	}
+	_, err := r.db.Exec("DELETE FROM outfits WHERE id = ? AND user_id = ?", outfitID, userID)
+	return err
+}
+
+func (r *AvatarRepository) ResetAvatar(userID int) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	query := `UPDATE avatar SET
+	          head_color = 'f3b700', larm_color = 'f3b700', rarm_color = 'f3b700', torso_color = 'c60000', lleg_color = '650013', rleg_color = '650013',
+	          hat1 = 0, hat2 = 0, hat3 = 0, hat4 = 0, hat5 = 0, tool = 0, shirt = 0, tshirt = 0, pants = 0, face = 0
+	          WHERE id = ?`
+	_, err := r.db.Exec(query, userID)
+	return err
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -9,6 +10,36 @@ import (
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/service"
 )
+
+func registerErrorField(msg string) string {
+	lower := strings.ToLower(msg)
+	switch {
+	case strings.Contains(lower, "captcha"):
+		return "captcha"
+	case strings.Contains(lower, "username"):
+		return "username"
+	case strings.Contains(lower, "email"):
+		return "email"
+	case strings.Contains(lower, "match"):
+		return "passwordconfirm"
+	case strings.Contains(lower, "password"):
+		return "password"
+	default:
+		return "form"
+	}
+}
+
+func loginErrorField(msg string) string {
+	lower := strings.ToLower(msg)
+	switch {
+	case strings.Contains(lower, "captcha"):
+		return "captcha"
+	case strings.Contains(lower, "password") || strings.Contains(lower, "invalid") || strings.Contains(lower, "required"):
+		return "credentials"
+	default:
+		return "identifier"
+	}
+}
 
 func SetHashedCookie(c fiber.Ctx, userID int) {
 	if service.Auth == nil {
@@ -62,8 +93,9 @@ func LoginPost(c fiber.Ctx) error {
 	altchaPayload := c.FormValue("altcha")
 	if err := service.Auth.VerifyAltcha(altchaPayload); err != nil {
 		return Render(c, "pages/login", fiber.Map{
-			"Title": "Log In - VERTEXIA",
-			"Error": err.Error(),
+			"Title":      "Log In - VERTEXIA",
+			"Error":      err.Error(),
+			"ErrorField": loginErrorField(err.Error()),
 		}, "layouts/main")
 	}
 
@@ -72,16 +104,18 @@ func LoginPost(c fiber.Ctx) error {
 
 	if identifier == "" || password == "" {
 		return Render(c, "pages/login", fiber.Map{
-			"Title": "Log In - VERTEXIA",
-			"Error": "Username/Email and Password are required",
+			"Title":      "Log In - VERTEXIA",
+			"Error":      "Username/Email and Password are required",
+			"ErrorField": "credentials",
 		}, "layouts/main")
 	}
 
 	user, err := service.Auth.AuthenticateUser(identifier, password)
 	if err != nil {
 		return Render(c, "pages/login", fiber.Map{
-			"Title": "Log In - VERTEXIA",
-			"Error": err.Error(),
+			"Title":      "Log In - VERTEXIA",
+			"Error":      err.Error(),
+			"ErrorField": loginErrorField(err.Error()),
 		}, "layouts/main")
 	}
 
@@ -122,9 +156,10 @@ func RegisterPost(c fiber.Ctx) error {
 	altchaPayload := c.FormValue("altcha")
 	if err := service.Auth.VerifyAltcha(altchaPayload); err != nil {
 		return Render(c, "pages/register", fiber.Map{
-			"Title":     "Register - VERTEXIA",
-			"Error":     err.Error(),
-			"UserCount": userCount,
+			"Title":      "Register - VERTEXIA",
+			"Error":      err.Error(),
+			"ErrorField": "captcha",
+			"UserCount":  userCount,
 		}, "layouts/main")
 	}
 
@@ -137,9 +172,10 @@ func RegisterPost(c fiber.Ctx) error {
 	user, err := service.Auth.RegisterUser(username, displayname, email, password, passwordConfirm)
 	if err != nil {
 		return Render(c, "pages/register", fiber.Map{
-			"Title":     "Register - VERTEXIA",
-			"Error":     err.Error(),
-			"UserCount": userCount,
+			"Title":      "Register - VERTEXIA",
+			"Error":      err.Error(),
+			"ErrorField": registerErrorField(err.Error()),
+			"UserCount":  userCount,
 		}, "layouts/main")
 	}
 

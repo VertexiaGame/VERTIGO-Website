@@ -1,6 +1,7 @@
 let adminUptimeTimer = null;
 let adminPollTimer = null;
 let currentAdminUserPage = 1;
+let currentAdminLogsPage = 1;
 
 if (typeof window.escapeHTML !== 'function') {
     window.escapeHTML = function(str) {
@@ -207,6 +208,71 @@ window.viewAdminUser = function(userId) {
     } else {
         window.location.href = `/admin/users/${userId}`;
     }
+};
+
+window.fetchAdminLogs = function(page = 1) {
+    currentAdminLogsPage = page;
+    const body = document.getElementById('admLogsBody');
+    if (!body) return;
+
+    fetch(`/api/v1/admin/logs?page=${page}&limit=15`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.error) return;
+            window.renderAdminLogsTable(data);
+        })
+        .catch(() => {});
+};
+
+window.renderAdminLogsTable = function(data) {
+    const body = document.getElementById('admLogsBody');
+    const pgnTxt = document.getElementById('admLogsPgnTxt');
+    const prevBtn = document.getElementById('admLogsPrevBtn');
+    const nextBtn = document.getElementById('admLogsNextBtn');
+
+    if (!body) return;
+
+    const page = data.page || 1;
+    const totalPages = Math.max(1, data.total_pages || 1);
+
+    if (!data.logs || data.logs.length === 0) {
+        body.innerHTML = '<tr><td colspan="7" class="adm-tblemt">No admin actions logged</td></tr>';
+        if (pgnTxt) pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = (page <= 1);
+        if (nextBtn) nextBtn.disabled = (page >= totalPages);
+        window.updateAdminViewportHeight();
+        return;
+    }
+
+    let html = '';
+    data.logs.forEach(log => {
+        const statusHtml = log.status === 'active'
+            ? `<span class="adm-stat"><span class="adm-ind adm-ind-offline"></span>${window.escapeHTML(log.status_label)}</span>`
+            : `<span class="adm-stat"><span class="adm-ind adm-ind-online"></span>${window.escapeHTML(log.status_label)}</span>`;
+
+        html += `
+            <tr>
+                <td>#${log.id}</td>
+                <td>${window.escapeHTML(log.admin_name)}</td>
+                <td><strong class="adm-act">${window.escapeHTML(log.action_label)}</strong></td>
+                <td>@${window.escapeHTML(log.target_name)} #${log.target_id}</td>
+                <td>${window.escapeHTML(log.reason)}</td>
+                <td>${statusHtml}</td>
+                <td>${window.escapeHTML(log.date)}</td>
+            </tr>
+        `;
+    });
+
+    body.innerHTML = html;
+
+    if (pgnTxt) {
+        pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+    }
+
+    if (prevBtn) prevBtn.disabled = (page <= 1);
+    if (nextBtn) nextBtn.disabled = (page >= totalPages);
+
+    window.updateAdminViewportHeight();
 };
 
 const initAdminPage = () => {

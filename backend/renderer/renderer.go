@@ -813,3 +813,43 @@ func RenderShopItem(itemType string, itemID int) ([]byte, error) {
 
 	return submitRenderJob(req, "shop render timeout")
 }
+
+func RenderOutfit(db *sql.DB, outfitID int) ([]byte, error) {
+	if db == nil {
+		return nil, errors.New("database is not connected")
+	}
+
+	var headColor, larmColor, rarmColor, torsoColor, llegColor, rlegColor string
+	var hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face int
+
+	query := "SELECT head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face FROM outfits WHERE id = ?"
+	err := db.QueryRow(query, outfitID).Scan(
+		&headColor, &larmColor, &rarmColor, &torsoColor, &llegColor, &rlegColor,
+		&hat1, &hat2, &hat3, &hat4, &hat5, &tool, &shirt, &tshirt, &pants, &face,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req := RenderRequest{
+		HeadColor:     headColor,
+		TorsoColor:    torsoColor,
+		LeftArmColor:  larmColor,
+		RightArmColor: rarmColor,
+		LeftLegColor:  llegColor,
+		RightLegColor: rlegColor,
+		IsTool:        tool > 0,
+		ToolID:        tool,
+		FaceID:        face,
+		ShirtID:       shirt,
+		PantsID:       pants,
+		TShirtID:      tshirt,
+		Hat1ID:        hat1,
+		Hat2ID:        hat2,
+		Hat3ID:        hat3,
+		Hat4ID:        hat4,
+		Hat5ID:        hat5,
+	}
+
+	return submitRenderJob(req, "outfit render timeout")
+}

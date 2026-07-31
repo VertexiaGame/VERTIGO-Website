@@ -107,6 +107,7 @@
     z-index: 3;
     display: flex;
     justify-content: center;
+    gap: 8px;
     opacity: 0;
     visibility: hidden;
     transform: scale(0.9) translateY(-2px);

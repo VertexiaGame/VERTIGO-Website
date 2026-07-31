@@ -90,6 +90,31 @@ func ShopRenderGet(c fiber.Ctx) error {
 	return c.Send(imgBytes)
 }
 
+func AvatarOutfitGet(c fiber.Ctx) error {
+	idParam := strings.TrimSuffix(c.Params("id"), ".png")
+	outfitID, err := strconv.Atoi(idParam)
+	if err != nil || outfitID <= 0 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid outfit ID")
+	}
+
+	cachePath := filepath.Join("static", "renders", "outfits", idParam+".png")
+	if imgBytes, err := os.ReadFile(cachePath); err == nil {
+		c.Set("Content-Type", "image/png")
+		return c.Send(imgBytes)
+	}
+
+	imgBytes, err := renderer.RenderOutfit(database.DB, outfitID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+	}
+
+	_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+	_ = os.WriteFile(cachePath, imgBytes, 0644)
+
+	c.Set("Content-Type", "image/png")
+	return c.Send(imgBytes)
+}
+
 func AvatarDataGet(c fiber.Ctx) error {
 	idParam := strings.TrimSuffix(c.Params("id"), ".png")
 	userID, err := strconv.Atoi(idParam)
@@ -166,9 +191,11 @@ func AvatarEditorPage(c fiber.Ctx) error {
 
 	var inventory []*models.InventoryItem
 	var equipped []*models.InventoryItem
+	var outfits []*models.Outfit
 	if service.Avatar != nil {
 		inventory, _ = service.Avatar.GetInventory(user.ID, "all", "")
 		equipped, _ = service.Avatar.GetEquippedItems(user.ID)
+		outfits, _ = service.Avatar.GetOutfits(user.ID)
 	}
 
 	return Render(c, "pages/avatar", fiber.Map{
@@ -177,6 +204,7 @@ func AvatarEditorPage(c fiber.Ctx) error {
 		"Avatar":     avatarData,
 		"Inventory":  inventory,
 		"Equipped":   equipped,
+		"Outfits":    outfits,
 		"ActiveCat":  "all",
 	}, "layouts/main")
 }
@@ -325,6 +353,117 @@ func AvatarWearingAPI(c fiber.Ctx) error {
 	}
 
 	return c.JSON(equipped)
+}
+
+func AvatarSaveOutfitPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	name := c.FormValue("name")
+	if service.Avatar == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Avatar service unavailable"})
+	}
+
+	outfit, err := service.Avatar.CreateOutfit(user.ID, name)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"outfit":  outfit,
+	})
+}
+
+func AvatarWearOutfitPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	outfitID, err := strconv.Atoi(c.FormValue("id"))
+	if err != nil || outfitID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid outfit ID"})
+	}
+
+	if service.Avatar == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Avatar service unavailable"})
+	}
+
+	if err := service.Avatar.WearOutfit(user.ID, outfitID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"success":    true,
+		"user_id":    user.ID,
+		"render_url": fmt.Sprintf("/avatar/%d.png", user.ID),
+	})
+}
+
+func AvatarDeleteOutfitPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	outfitID, err := strconv.Atoi(c.FormValue("id"))
+	if err != nil || outfitID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid outfit ID"})
+	}
+
+	if service.Avatar == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Avatar service unavailable"})
+	}
+
+	if err := service.Avatar.DeleteOutfit(user.ID, outfitID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"success":   true,
+		"outfit_id": outfitID,
+	})
+}
+
+func AvatarOutfitsAPI(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	if service.Avatar == nil {
+		return c.JSON([]*models.Outfit{})
+	}
+
+	outfits, err := service.Avatar.GetOutfits(user.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(outfits)
 }
 
 func AvatarReRenderPost(c fiber.Ctx) error {

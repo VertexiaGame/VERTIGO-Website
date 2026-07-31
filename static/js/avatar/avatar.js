@@ -3,6 +3,7 @@ window.avatarPartColors = {};
 window.avatarCategory = 'all';
 window.avatarSearchTimer = null;
 window.avatarColorPicker = null;
+window.avatarDirty = false;
 
 const avtEsc = function(str) {
     if (window.escapeHTML) return window.escapeHTML(String(str));
@@ -151,6 +152,45 @@ window.refreshAvatarWearing = async function() {
     } catch {}
 };
 
+window.avatarOutfitChipHTML = function(outfit) {
+    return `
+        <div class="avtwchip" data-outfit-id="${outfit.id}">
+            <div class="avtwimg">
+                <img src="/avatar/outfit/${outfit.id}.png?t=${Date.now()}" alt="${avtEsc(outfit.name)}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+            </div>
+            <div class="avtwmeta">
+                <span class="avtwnm">${avtEsc(outfit.name)}</span>
+            </div>
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <button type="button" class="happy hpyprim hpyinl hpysm avtoutfitwear" title="Wear Outfit">
+                    <span>Wear</span>
+                </button>
+                <button type="button" class="avtwrmv avtoutfitdel" title="Delete Outfit" aria-label="Delete Outfit">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+    `;
+};
+
+window.refreshAvatarOutfits = async function() {
+    const list = document.getElementById('avtOutfits');
+    if (!list) return;
+
+    try {
+        const res = await fetch('/api/v1/avatar/outfits', {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error('request failed');
+        const outfits = await res.json();
+        if (!Array.isArray(outfits) || !outfits.length) {
+            list.innerHTML = '<div class="feedemt">No saved outfits yet.</div>';
+            return;
+        }
+        list.innerHTML = outfits.map(window.avatarOutfitChipHTML).join('');
+    } catch {}
+};
+
 window.refreshAvatarPreview = function() {
     const img = document.getElementById('avtPreview');
     const box = document.getElementById('avtChrBox');
@@ -188,12 +228,23 @@ window.avatarShowError = function(message) {
     }
 };
 
+window.updateAvatarSaveBtn = function() {
+    const btn = document.getElementById('avtSaveBtn');
+    if (btn) btn.disabled = !window.avatarDirty;
+};
+
+window.markAvatarDirty = function() {
+    window.avatarDirty = true;
+    window.updateAvatarSaveBtn();
+};
+
 window.setAvatarItem = async function(type, id, wear, btn) {
     if (btn) btn.disabled = true;
     try {
         await window.avatarPost(wear ? '/avatar/wear' : '/avatar/unwear', { type: type, id: id });
         await Promise.all([window.fetchAvatarInventory(), window.refreshAvatarWearing()]);
         window.refreshAvatarPreview();
+        window.markAvatarDirty();
     } catch (e) {
         window.avatarShowError(e.message);
         if (btn) btn.disabled = false;
@@ -210,6 +261,104 @@ window.redrawAvatar = async function(event) {
         window.avatarShowError(e.message);
     }
     if (btn) btn.disabled = false;
+};
+
+window.openSaveOutfitModal = function() {
+    if (!window.showModal) return;
+    window.showModal({
+        title: 'Save Outfit',
+        subtitle: 'Save your current avatar setup',
+        body: `
+            <form action="javascript:void(0);" onsubmit="window.saveCurrentOutfit(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="setinbox">
+                    <input type="text" id="outfitNameInput" class="setin" placeholder="Outfit Name" maxlength="30" required autocomplete="off">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+                    <button type="button" class="happy hpyerr hpyinl hpysm" onclick="window.closeModal()">
+                        <span>Cancel</span>
+                    </button>
+                    <button type="submit" class="happy hpysuc hpyinl hpysm" id="saveOutfitSubmitBtn">
+                        <span>Save Outfit</span>
+                    </button>
+                </div>
+            </form>
+        `
+    });
+};
+
+window.saveCurrentOutfit = async function(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById('outfitNameInput');
+    const submitBtn = document.getElementById('saveOutfitSubmitBtn');
+    if (!input) return;
+
+    const name = input.value.trim();
+    if (!name) return;
+
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+        await window.avatarPost('/avatar/outfit/save', { name: name });
+        if (window.closeModal) window.closeModal();
+        await window.refreshAvatarOutfits();
+    } catch (e) {
+        window.avatarShowError(e.message);
+        if (submitBtn) submitBtn.disabled = false;
+    }
+};
+
+window.confirmWearOutfit = function(outfitId, btn, outfitName) {
+    if (!window.showModal) {
+        window.wearOutfit(outfitId, btn);
+        return;
+    }
+    const safeName = avtEsc(outfitName || 'this outfit');
+    window.showModal({
+        title: 'Wear Outfit',
+        bodyStyle: 'gap: 16px;',
+        body: `
+            <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">
+                Are you sure you want to wear <strong>${safeName}</strong>? This will replace your currently worn items and body colors.
+            </p>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+                <button type="button" class="happy hpyerr hpyinl hpysm" onclick="window.closeModal()">
+                    <span>Cancel</span>
+                </button>
+                <button type="button" class="happy hpyprim hpyinl hpysm" onclick="window.confirmedWearOutfit(${outfitId})">
+                    <span>Confirm</span>
+                </button>
+            </div>
+        `
+    });
+};
+
+window.confirmedWearOutfit = function(outfitId) {
+    window.closeModal();
+    window.wearOutfit(outfitId, null);
+};
+
+window.wearOutfit = async function(outfitId, btn) {
+    if (btn) btn.disabled = true;
+    try {
+        await window.avatarPost('/avatar/outfit/wear', { id: outfitId });
+        await Promise.all([window.fetchAvatarInventory(), window.refreshAvatarWearing()]);
+        window.refreshAvatarPreview();
+        window.markAvatarDirty();
+    } catch (e) {
+        window.avatarShowError(e.message);
+        if (btn) btn.disabled = false;
+    }
+};
+
+window.deleteOutfit = async function(outfitId, btn) {
+    if (btn) btn.disabled = true;
+    try {
+        await window.avatarPost('/avatar/outfit/delete', { id: outfitId });
+        await window.refreshAvatarOutfits();
+    } catch (e) {
+        window.avatarShowError(e.message);
+        if (btn) btn.disabled = false;
+    }
 };
 
 window.openAvatarColorPopover = function() {
@@ -315,6 +464,7 @@ window.applyAvatarColor = async function(hex) {
         }
 
         window.refreshAvatarPreview();
+        window.markAvatarDirty();
     } catch (e) {
         ['head', 'torso', 'larm', 'rarm', 'lleg', 'rleg'].forEach(p => {
             if (window.avatarPartColors[p]) window.paintAvatarFigure(p, window.avatarPartColors[p]);
@@ -339,6 +489,8 @@ const initAvatarPage = () => {
     });
 
     window.avatarCategory = 'all';
+    window.avatarDirty = false;
+    window.updateAvatarSaveBtn();
 
     window.initAvatarColorPicker();
     window.selectAvatarPart('all', 'All Parts', false);
@@ -389,11 +541,30 @@ const initAvatarPage = () => {
                 return;
             }
 
-            const removeBtn = event.target.closest('.avtwrmv');
+            const removeBtn = event.target.closest('.avtwrmv:not(.avtoutfitdel)');
             if (removeBtn) {
                 const chip = removeBtn.closest('.avtwchip');
-                if (chip) {
+                if (chip && chip.dataset.type) {
                     window.setAvatarItem(chip.dataset.type, chip.dataset.id, false, null);
+                }
+                return;
+            }
+
+            const outfitWearBtn = event.target.closest('.avtoutfitwear');
+            if (outfitWearBtn) {
+                const chip = outfitWearBtn.closest('.avtwchip');
+                if (chip && chip.dataset.outfitId) {
+                    const nameEl = chip.querySelector('.avtwnm');
+                    window.confirmWearOutfit(chip.dataset.outfitId, outfitWearBtn, nameEl ? nameEl.textContent : '');
+                }
+                return;
+            }
+
+            const outfitDelBtn = event.target.closest('.avtoutfitdel');
+            if (outfitDelBtn) {
+                const chip = outfitDelBtn.closest('.avtwchip');
+                if (chip && chip.dataset.outfitId) {
+                    window.deleteOutfit(chip.dataset.outfitId, outfitDelBtn);
                 }
                 return;
             }

@@ -73,6 +73,20 @@
     font-size: 13px !important;
 }
 
+.adm-outfitrow {
+    align-items: center !important;
+}
+
+.adm-outfitimg {
+    width: 56px !important;
+    height: 56px !important;
+    object-fit: contain !important;
+    background: #E0E0E0 !important;
+    border: 2px solid #C1C1C1 !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+}
+
 .adm-lbl {
     color: #718096 !important;
     font-weight: 400 !important;
