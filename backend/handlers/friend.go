@@ -8,6 +8,13 @@ import (
 	"vertexia-frontend/backend/service"
 )
 
+func isSafeRedirect(ref string) bool {
+	if ref == "" || strings.HasPrefix(ref, "//") || strings.HasPrefix(ref, "/\\") {
+		return false
+	}
+	return strings.HasPrefix(ref, "/")
+}
+
 func handleFriendAction(c fiber.Ctx, action func(userID, targetID int) error, fallbackPath string) error {
 	username := GetActiveUser(c)
 	if username == "" {
@@ -58,7 +65,7 @@ func handleFriendAction(c fiber.Ctx, action func(userID, targetID int) error, fa
 	}
 
 	ref := c.Get("Referer")
-	if ref != "" {
+	if isSafeRedirect(ref) {
 		return c.Redirect().To(ref)
 	}
 	if fallbackPath != "" {

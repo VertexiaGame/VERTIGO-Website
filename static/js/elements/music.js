@@ -10,6 +10,27 @@ function formatMusicTime(seconds) {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
+function setElementsText(ids, text) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    });
+}
+
+function setElementsWidth(ids, width) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.setProperty('width', width, 'important');
+    });
+}
+
+function setElementsClass(ids, className) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = className;
+    });
+}
+
 function initMusicPlayerEvents() {
     if (window.musicPlayerEventsInited) return;
     window.musicPlayerEventsInited = true;
@@ -18,80 +39,31 @@ function initMusicPlayerEvents() {
         const cur = window.currentAudio.currentTime || 0;
         let dur = window.currentAudio.duration;
         if (isNaN(dur) || dur <= 0) dur = 30;
-        const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
+        const pct = `${Math.min(100, Math.max(0, (cur / dur) * 100))}%`;
 
-        const fillModal = document.getElementById('musPlayerBarFill');
-        if (fillModal) fillModal.style.setProperty('width', `${pct}%`, 'important');
-
-        const fillSet = document.getElementById('setMusPlayerBarFill');
-        if (fillSet) fillSet.style.setProperty('width', `${pct}%`, 'important');
-
-        const fillPrf = document.getElementById('prfMusBarFill');
-        if (fillPrf) fillPrf.style.setProperty('width', `${pct}%`, 'important');
-
-        const curTimeModal = document.getElementById('musPlayerCurTime');
-        if (curTimeModal) curTimeModal.textContent = formatMusicTime(cur);
-
-        const curTimeSet = document.getElementById('setMusPlayerCurTime');
-        if (curTimeSet) curTimeSet.textContent = formatMusicTime(cur);
-
-        const curTimePrf = document.getElementById('prfMusCurTime');
-        if (curTimePrf) curTimePrf.textContent = formatMusicTime(cur);
-
-        const durTimeModal = document.getElementById('musPlayerDurTime');
-        if (durTimeModal) durTimeModal.textContent = formatMusicTime(dur);
-
-        const durTimeSet = document.getElementById('setMusPlayerDurTime');
-        if (durTimeSet) durTimeSet.textContent = formatMusicTime(dur);
-
-        const durTimePrf = document.getElementById('prfMusDurTime');
-        if (durTimePrf) durTimePrf.textContent = formatMusicTime(dur);
+        setElementsWidth(['musPlayerBarFill', 'setMusPlayerBarFill', 'prfMusBarFill'], pct);
+        setElementsText(['musPlayerCurTime', 'setMusPlayerCurTime', 'prfMusCurTime'], formatMusicTime(cur));
+        setElementsText(['musPlayerDurTime', 'setMusPlayerDurTime', 'prfMusDurTime'], formatMusicTime(dur));
     });
 
-    window.currentAudio.addEventListener('ended', () => {
-        updateMusicPlayerUI(false);
-    });
-
-    window.currentAudio.addEventListener('pause', () => {
-        updateMusicPlayerUI(false);
-    });
-
-    window.currentAudio.addEventListener('play', () => {
-        updateMusicPlayerUI(true);
-    });
+    window.currentAudio.addEventListener('ended', () => updateMusicPlayerUI(false));
+    window.currentAudio.addEventListener('pause', () => updateMusicPlayerUI(false));
+    window.currentAudio.addEventListener('play', () => updateMusicPlayerUI(true));
 }
 
 function updateMusicPlayerUI(isPlaying) {
-    const playIconModal = document.getElementById('musPlayerPlayIcon');
-    if (playIconModal) {
-        playIconModal.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
-    }
-
-    const playIconSet = document.getElementById('setMusPlayerPlayIcon');
-    if (playIconSet) {
-        playIconSet.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
-    }
-
-    const playIconPrf = document.getElementById('prfMusPlayIcon');
-    if (playIconPrf) {
-        playIconPrf.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
-    }
+    const iconClass = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+    setElementsClass(['musPlayerPlayIcon', 'setMusPlayerPlayIcon', 'prfMusPlayIcon'], iconClass);
 
     if (window.currentTrackData) {
         const activeTrackId = window.currentTrackData.id;
         document.querySelectorAll('.musitm').forEach(item => {
             const trackId = item.dataset.trackId;
             const btnIcon = item.querySelector('.musplybtn-sm i');
-            if (String(trackId) === String(activeTrackId)) {
-                item.classList.add('active');
-                if (btnIcon) {
-                    btnIcon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
-                }
-            } else {
-                item.classList.remove('active');
-                if (btnIcon) {
-                    btnIcon.className = 'fa-solid fa-play';
-                }
+            const isTarget = String(trackId) === String(activeTrackId);
+            item.classList.toggle('active', isTarget);
+            if (btnIcon) {
+                btnIcon.className = isTarget && isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
             }
         });
     }
@@ -108,11 +80,7 @@ window.stopCurrentMusic = function() {
 
 window.handleTrackPlayClick = function(btn) {
     if (!btn) return;
-    const id = btn.dataset.trackId;
-    const title = btn.dataset.title;
-    const artist = btn.dataset.artist;
-    const cover = btn.dataset.cover;
-    const preview = btn.dataset.preview;
+    const { trackId: id, title, artist, cover, preview } = btn.dataset;
     window.playTrackPreview(id, title, artist, cover, preview);
 };
 
@@ -144,11 +112,8 @@ window.playTrackPreview = function(id, title, artist, cover, preview) {
         coverEl.alt = title;
     }
 
-    const titleEl = document.getElementById('musPlayerTitle');
-    if (titleEl) titleEl.textContent = title;
-
-    const artistEl = document.getElementById('musPlayerArtist');
-    if (artistEl) artistEl.textContent = artist;
+    setElementsText(['musPlayerTitle'], title);
+    setElementsText(['musPlayerArtist'], artist);
 
     updateMusicPlayerUI(true);
 };
@@ -163,55 +128,28 @@ window.toggleCurrentTrack = function() {
     }
 };
 
-window.toggleSettingsTrack = function() {
-    window.toggleCurrentTrack();
-};
-
-window.toggleProfileTrack = function() {
-    window.toggleCurrentTrack();
-};
+window.toggleSettingsTrack = window.toggleCurrentTrack;
+window.toggleProfileTrack = window.toggleCurrentTrack;
 
 window.seekCurrentTrack = function(event) {
     if (!window.currentAudio || !window.currentAudio.duration || isNaN(window.currentAudio.duration)) return;
-    const bar = event.currentTarget;
-    const rect = bar.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    const rect = event.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
     window.currentAudio.currentTime = pct * window.currentAudio.duration;
 };
 
-window.seekSettingsTrack = function(event) {
-    window.seekCurrentTrack(event);
-};
-
-window.seekProfileTrack = function(event) {
-    window.seekCurrentTrack(event);
-};
+window.seekSettingsTrack = window.seekCurrentTrack;
+window.seekProfileTrack = window.seekCurrentTrack;
 
 window.toggleMuteCurrentTrack = function() {
     if (!window.currentAudio) return;
     window.currentAudio.muted = !window.currentAudio.muted;
-    const volIcon = document.getElementById('musPlayerVolIcon');
-    if (volIcon) {
-        volIcon.className = window.currentAudio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
-    }
-    const volIconSet = document.getElementById('setMusPlayerVolIcon');
-    if (volIconSet) {
-        volIconSet.className = window.currentAudio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
-    }
-    const volIconPrf = document.getElementById('prfMusVolIcon');
-    if (volIconPrf) {
-        volIconPrf.className = window.currentAudio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
-    }
+    const volClass = window.currentAudio.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+    setElementsClass(['musPlayerVolIcon', 'setMusPlayerVolIcon', 'prfMusVolIcon'], volClass);
 };
 
-window.toggleMuteSettingsTrack = function() {
-    window.toggleMuteCurrentTrack();
-};
-
-window.toggleMuteProfileTrack = function() {
-    window.toggleMuteCurrentTrack();
-};
+window.toggleMuteSettingsTrack = window.toggleMuteCurrentTrack;
+window.toggleMuteProfileTrack = window.toggleMuteCurrentTrack;
 
 window.updateProfileMusic = function() {
     if (!window.currentTrackData || !window.currentTrackData.id) return;
@@ -224,10 +162,7 @@ window.updateProfileMusic = function() {
     fetch('/settings/music', {
         method: 'POST',
         body: formData,
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(res => res.json())
     .then(data => {
@@ -254,18 +189,13 @@ window.updateProfileMusic = function() {
 window.removeProfileMusic = function() {
     fetch('/settings/music/remove', {
         method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
             const card = document.getElementById('settingsMusPlayerCard');
-            if (card) {
-                card.style.setProperty('display', 'none', 'important');
-            }
+            if (card) card.style.setProperty('display', 'none', 'important');
 
             const section = document.getElementById('settingsMusicSection');
             if (section) section.dataset.musicId = '0';
@@ -301,11 +231,8 @@ window.loadSettingsSavedMusic = function(musicId) {
                 coverEl.alt = track.title;
             }
 
-            const titleEl = document.getElementById('setMusPlayerTitle');
-            if (titleEl) titleEl.textContent = track.title;
-
-            const artistEl = document.getElementById('setMusPlayerArtist');
-            if (artistEl) artistEl.textContent = artist;
+            setElementsText(['setMusPlayerTitle'], track.title);
+            setElementsText(['setMusPlayerArtist'], artist);
 
             if (card) card.style.display = 'flex';
 
@@ -355,11 +282,8 @@ window.initProfileMusicPlayer = function() {
                 coverEl.alt = track.title;
             }
 
-            const titleEl = document.getElementById('prfMusTitle');
-            if (titleEl) titleEl.textContent = track.title;
-
-            const artistEl = document.getElementById('prfMusArtist');
-            if (artistEl) artistEl.textContent = artist;
+            setElementsText(['prfMusTitle'], track.title);
+            setElementsText(['prfMusArtist'], artist);
 
             initMusicPlayerEvents();
             window.currentTrackData = { id: track.id, title: track.title, artist, cover, preview };
@@ -369,22 +293,15 @@ window.initProfileMusicPlayer = function() {
 
             const playPromise = window.currentAudio.play();
             if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    updateMusicPlayerUI(true);
-                }).catch(() => {
+                playPromise.then(() => updateMusicPlayerUI(true)).catch(() => {
                     updateMusicPlayerUI(false);
                     const enableAutoplay = () => {
                         if (window.currentAudio && window.currentAudio.src && window.location.pathname.startsWith('/user/')) {
                             window.currentAudio.volume = 0.5;
-                            window.currentAudio.play().then(() => {
-                                updateMusicPlayerUI(true);
-                            }).catch(() => {});
+                            window.currentAudio.play().then(() => updateMusicPlayerUI(true)).catch(() => {});
                         }
                     };
-                    document.addEventListener('click', enableAutoplay, { once: true });
-                    document.addEventListener('keydown', enableAutoplay, { once: true });
-                    document.addEventListener('touchstart', enableAutoplay, { once: true });
-                    document.addEventListener('pointerdown', enableAutoplay, { once: true });
+                    ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(evt => document.addEventListener(evt, enableAutoplay, { once: true }));
                 });
             }
         })
@@ -459,9 +376,7 @@ window.closeMusicNoticeModal = function() {
         musicNoticeTimer = null;
     }
     const noticeModal = document.getElementById('musicNoticeModal');
-    if (noticeModal) {
-        noticeModal.classList.remove('active');
-    }
+    if (noticeModal) noticeModal.classList.remove('active');
 };
 
 window.closeMusicNoticeModalOnOverlay = function(event) {
@@ -487,12 +402,8 @@ window.proceedToMusicSearch = function() {
 
 window.closeMusicModal = function() {
     const modal = document.getElementById('musicModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-    if (window.currentAudio) {
-        window.currentAudio.pause();
-    }
+    if (modal) modal.classList.remove('active');
+    if (window.currentAudio) window.currentAudio.pause();
 };
 
 window.closeMusicModalOnOverlay = function(event) {
@@ -575,18 +486,6 @@ document.addEventListener('htmx:afterSettle', () => {
     window.initProfileMusicPlayer();
 });
 
-document.addEventListener('htmx:beforeTransition', () => {
-    window.stopCurrentMusic();
-});
-
-document.addEventListener('htmx:beforeSwap', () => {
-    window.stopCurrentMusic();
-});
-
-window.addEventListener('beforeunload', () => {
-    window.stopCurrentMusic();
-});
-
-window.addEventListener('pagehide', () => {
-    window.stopCurrentMusic();
+['htmx:beforeTransition', 'htmx:beforeSwap', 'beforeunload', 'pagehide'].forEach(evt => {
+    document.addEventListener(evt, () => window.stopCurrentMusic());
 });

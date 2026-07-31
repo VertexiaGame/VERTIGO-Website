@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -164,8 +165,9 @@ func fetchTexture(itemType string, id int, fallback string) (fauxgl.Texture, err
 		}
 		return nil, fmt.Errorf("invalid id")
 	}
-	url := fmt.Sprintf("%s/assets/uploads/shop/%s/%d.png?v=%d", bsurl, itemType, id, time.Now().UnixNano())
-	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s_%d.png", itemType, id))
+	cleanType := filepath.Base(strings.TrimSpace(itemType))
+	url := fmt.Sprintf("%s/assets/uploads/shop/%s/%d.png?v=%d", bsurl, cleanType, id, time.Now().UnixNano())
+	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s_%d.png", cleanType, id))
 
 	lock := getFileLock(tmpPath)
 	lock.Lock()
@@ -195,8 +197,9 @@ func fetchMesh(itemType string, id int) (*fauxgl.Mesh, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid id")
 	}
-	url := fmt.Sprintf("%s/assets/uploads/shop/%s/%d.obj?v=%d", bsurl, itemType, id, time.Now().UnixNano())
-	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s_%d.obj", itemType, id))
+	cleanType := filepath.Base(strings.TrimSpace(itemType))
+	url := fmt.Sprintf("%s/assets/uploads/shop/%s/%d.obj?v=%d", bsurl, cleanType, id, time.Now().UnixNano())
+	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s_%d.obj", cleanType, id))
 
 	lock := getFileLock(tmpPath)
 	lock.Lock()

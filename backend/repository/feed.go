@@ -14,22 +14,19 @@ func NewFeedRepository(db *sql.DB) *FeedRepository {
 	return &FeedRepository{db: db}
 }
 
-func (r *FeedRepository) GetRecentFeedPosts(limit, currentUserID int) ([]*models.FeedPost, error) {
-	return r.GetRecentFeedPostsPaginated(limit, 0, currentUserID)
+func scanFeedPost(rows *sql.Rows) (*models.FeedPost, error) {
+	var p models.FeedPost
+	if err := rows.Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted); err != nil {
+		return nil, err
+	}
+	return &p, nil
 }
 
-func (r *FeedRepository) GetRecentFeedPostsPaginated(limit, offset, currentUserID int) ([]*models.FeedPost, error) {
+func (r *FeedRepository) queryFeedPosts(query string, args ...any) ([]*models.FeedPost, error) {
 	if r.db == nil {
 		return nil, nil
 	}
-	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
-	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
-	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
-              FROM feed f 
-              INNER JOIN users u ON f.user_id = u.id 
-              WHERE f.removed = 'false' 
-              ORDER BY f.creation_date DESC, f.id DESC LIMIT ? OFFSET ?`
-	rows, err := r.db.Query(query, currentUserID, limit, offset)
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +34,54 @@ func (r *FeedRepository) GetRecentFeedPostsPaginated(limit, offset, currentUserI
 
 	var posts []*models.FeedPost
 	for rows.Next() {
-		var p models.FeedPost
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted); err != nil {
+		p, err := scanFeedPost(rows)
+		if err != nil {
 			return nil, err
 		}
-		posts = append(posts, &p)
+		posts = append(posts, p)
 	}
 	return posts, nil
+}
+
+func (r *FeedRepository) checkExists(query string, args ...any) (bool, error) {
+	if r.db == nil {
+		return false, nil
+	}
+	var exists bool
+	err := r.db.QueryRow(query, args...).Scan(&exists)
+	return exists, err
+}
+
+func (r *FeedRepository) execQuery(query string, args ...any) error {
+	if r.db == nil {
+		return nil
+	}
+	_, err := r.db.Exec(query, args...)
+	return err
+}
+
+func (r *FeedRepository) getCount(query string, args ...any) (int, error) {
+	if r.db == nil {
+		return 0, nil
+	}
+	var count int
+	err := r.db.QueryRow(query, args...).Scan(&count)
+	return count, err
+}
+
+func (r *FeedRepository) GetRecentFeedPosts(limit, currentUserID int) ([]*models.FeedPost, error) {
+	return r.GetRecentFeedPostsPaginated(limit, 0, currentUserID)
+}
+
+func (r *FeedRepository) GetRecentFeedPostsPaginated(limit, offset, currentUserID int) ([]*models.FeedPost, error) {
+	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
+	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
+	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
+              FROM feed f 
+              INNER JOIN users u ON f.user_id = u.id 
+              WHERE f.removed = 'false' 
+              ORDER BY f.creation_date DESC, f.id DESC LIMIT ? OFFSET ?`
+	return r.queryFeedPosts(query, currentUserID, limit, offset)
 }
 
 func (r *FeedRepository) CreatePost(userID int, content string) (int, error) {
@@ -60,37 +98,19 @@ func (r *FeedRepository) CreatePost(userID int, content string) (int, error) {
 }
 
 func (r *FeedRepository) HasUserReacted(userID, feedID int) (bool, error) {
-	if r.db == nil {
-		return false, nil
-	}
-	var exists bool
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM freact WHERE uid = ? AND fid = ?)", userID, feedID).Scan(&exists)
-	return exists, err
+	return r.checkExists("SELECT EXISTS(SELECT 1 FROM freact WHERE uid = ? AND fid = ?)", userID, feedID)
 }
 
 func (r *FeedRepository) AddReaction(userID, feedID int) error {
-	if r.db == nil {
-		return nil
-	}
-	_, err := r.db.Exec("INSERT INTO freact (uid, fid) VALUES (?, ?)", userID, feedID)
-	return err
+	return r.execQuery("INSERT INTO freact (uid, fid) VALUES (?, ?)", userID, feedID)
 }
 
 func (r *FeedRepository) RemoveReaction(userID, feedID int) error {
-	if r.db == nil {
-		return nil
-	}
-	_, err := r.db.Exec("DELETE FROM freact WHERE uid = ? AND fid = ?", userID, feedID)
-	return err
+	return r.execQuery("DELETE FROM freact WHERE uid = ? AND fid = ?", userID, feedID)
 }
 
 func (r *FeedRepository) GetReactionCount(feedID int) (int, error) {
-	if r.db == nil {
-		return 0, nil
-	}
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM freact WHERE fid = ?", feedID).Scan(&count)
-	return count, err
+	return r.getCount("SELECT COUNT(*) FROM freact WHERE fid = ?", feedID)
 }
 
 func (r *FeedRepository) GetRecentFriendsFeedPosts(limit, currentUserID int) ([]*models.FeedPost, error) {
@@ -98,9 +118,6 @@ func (r *FeedRepository) GetRecentFriendsFeedPosts(limit, currentUserID int) ([]
 }
 
 func (r *FeedRepository) GetRecentFriendsFeedPostsPaginated(limit, offset, currentUserID int) ([]*models.FeedPost, error) {
-	if r.db == nil {
-		return nil, nil
-	}
 	query := `SELECT f.id, f.userid, u.username, f.status, f.removed, f.edited, f.editdate, f.creationdate,
 	                 (SELECT COUNT(*) FROM ffreact r WHERE r.fid = f.id) AS reactions,
 	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
@@ -113,21 +130,7 @@ func (r *FeedRepository) GetRecentFriendsFeedPostsPaginated(limit, offset, curre
                     WHERE (uid = ? OR fid = ?) AND state = 'accepted'
                 ))
               ORDER BY f.creationdate DESC, f.id DESC LIMIT ? OFFSET ?`
-	rows, err := r.db.Query(query, currentUserID, currentUserID, currentUserID, currentUserID, currentUserID, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var posts []*models.FeedPost
-	for rows.Next() {
-		var p models.FeedPost
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted); err != nil {
-			return nil, err
-		}
-		posts = append(posts, &p)
-	}
-	return posts, nil
+	return r.queryFeedPosts(query, currentUserID, currentUserID, currentUserID, currentUserID, currentUserID, limit, offset)
 }
 
 func (r *FeedRepository) CreateFriendsPost(userID int, content string) (int, error) {
@@ -144,37 +147,19 @@ func (r *FeedRepository) CreateFriendsPost(userID int, content string) (int, err
 }
 
 func (r *FeedRepository) HasUserReactedFriends(userID, feedID int) (bool, error) {
-	if r.db == nil {
-		return false, nil
-	}
-	var exists bool
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM ffreact WHERE uid = ? AND fid = ?)", userID, feedID).Scan(&exists)
-	return exists, err
+	return r.checkExists("SELECT EXISTS(SELECT 1 FROM ffreact WHERE uid = ? AND fid = ?)", userID, feedID)
 }
 
 func (r *FeedRepository) AddReactionFriends(userID, feedID int) error {
-	if r.db == nil {
-		return nil
-	}
-	_, err := r.db.Exec("INSERT INTO ffreact (uid, fid) VALUES (?, ?)", userID, feedID)
-	return err
+	return r.execQuery("INSERT INTO ffreact (uid, fid) VALUES (?, ?)", userID, feedID)
 }
 
 func (r *FeedRepository) RemoveReactionFriends(userID, feedID int) error {
-	if r.db == nil {
-		return nil
-	}
-	_, err := r.db.Exec("DELETE FROM ffreact WHERE uid = ? AND fid = ?", userID, feedID)
-	return err
+	return r.execQuery("DELETE FROM ffreact WHERE uid = ? AND fid = ?", userID, feedID)
 }
 
 func (r *FeedRepository) GetReactionCountFriends(feedID int) (int, error) {
-	if r.db == nil {
-		return 0, nil
-	}
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM ffreact WHERE fid = ?", feedID).Scan(&count)
-	return count, err
+	return r.getCount("SELECT COUNT(*) FROM ffreact WHERE fid = ?", feedID)
 }
 
 func (r *FeedRepository) CreateComment(feedID, userID int, parentID *int, feedType, comment string) (int, error) {
@@ -225,35 +210,17 @@ func (r *FeedRepository) GetCommentsByFeedID(feedID int, feedType string, curren
 }
 
 func (r *FeedRepository) HasUserReactedComment(userID, commentID int) (bool, error) {
-	if r.db == nil {
-		return false, nil
-	}
-	var exists bool
-	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM creact WHERE uid = ? AND cid = ?)", userID, commentID).Scan(&exists)
-	return exists, err
+	return r.checkExists("SELECT EXISTS(SELECT 1 FROM creact WHERE uid = ? AND cid = ?)", userID, commentID)
 }
 
 func (r *FeedRepository) AddCommentReaction(userID, commentID int) error {
-	if r.db == nil {
-		return nil
-	}
-	_, err := r.db.Exec("INSERT INTO creact (uid, cid) VALUES (?, ?)", userID, commentID)
-	return err
+	return r.execQuery("INSERT INTO creact (uid, cid) VALUES (?, ?)", userID, commentID)
 }
 
 func (r *FeedRepository) RemoveCommentReaction(userID, commentID int) error {
-	if r.db == nil {
-		return nil
-	}
-	_, err := r.db.Exec("DELETE FROM creact WHERE uid = ? AND cid = ?", userID, commentID)
-	return err
+	return r.execQuery("DELETE FROM creact WHERE uid = ? AND cid = ?", userID, commentID)
 }
 
 func (r *FeedRepository) GetCommentReactionCount(commentID int) (int, error) {
-	if r.db == nil {
-		return 0, nil
-	}
-	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM creact WHERE cid = ?", commentID).Scan(&count)
-	return count, err
+	return r.getCount("SELECT COUNT(*) FROM creact WHERE cid = ?", commentID)
 }

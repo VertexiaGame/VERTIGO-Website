@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/database"
+	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/renderer"
 	"vertexia-frontend/backend/service"
 )
@@ -36,13 +38,9 @@ func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 		targetCache = cachePathHead
 	}
 
-	_, errFull := os.Stat(cachePathFull)
-	_, errHead := os.Stat(cachePathHead)
-	if errFull == nil && errHead == nil {
-		if imgBytes, err := os.ReadFile(targetCache); err == nil {
-			c.Set("Content-Type", "image/png")
-			return c.Send(imgBytes)
-		}
+	if imgBytes, err := os.ReadFile(targetCache); err == nil {
+		c.Set("Content-Type", "image/png")
+		return c.Send(imgBytes)
 	}
 
 	imgBytesFull, err := renderer.RenderUser(database.DB, userID)
@@ -99,34 +97,22 @@ func AvatarDataGet(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	var headColor, larmColor, rarmColor, torsoColor, llegColor, rlegColor string
-	var hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face int
-
-	if database.DB != nil {
-		query := "SELECT head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face FROM avatar WHERE id = ?"
-		_ = database.DB.QueryRow(query, userID).Scan(
-			&headColor, &larmColor, &rarmColor, &torsoColor, &llegColor, &rlegColor,
-			&hat1, &hat2, &hat3, &hat4, &hat5, &tool, &shirt, &tshirt, &pants, &face,
-		)
+	var avatarData *models.Avatar
+	if service.Avatar != nil {
+		avatarData, _ = service.Avatar.GetAvatar(userID)
 	}
 
-	if headColor == "" {
-		headColor = "f3b700"
-	}
-	if larmColor == "" {
-		larmColor = "f3b700"
-	}
-	if rarmColor == "" {
-		rarmColor = "f3b700"
-	}
-	if torsoColor == "" {
-		torsoColor = "c60000"
-	}
-	if llegColor == "" {
-		llegColor = "650013"
-	}
-	if rlegColor == "" {
-		rlegColor = "650013"
+	headColor, larmColor, rarmColor, torsoColor, llegColor, rlegColor := "f3b700", "f3b700", "f3b700", "c60000", "650013", "650013"
+	face := 0
+
+	if avatarData != nil {
+		if avatarData.HeadColor != "" { headColor = avatarData.HeadColor }
+		if avatarData.LArmColor != "" { larmColor = avatarData.LArmColor }
+		if avatarData.RArmColor != "" { rarmColor = avatarData.RArmColor }
+		if avatarData.TorsoColor != "" { torsoColor = avatarData.TorsoColor }
+		if avatarData.LLegColor != "" { llegColor = avatarData.LLegColor }
+		if avatarData.RLegColor != "" { rlegColor = avatarData.RLegColor }
+		face = avatarData.Face
 	}
 
 	formatColor := func(hex string) string {
@@ -144,5 +130,221 @@ func AvatarDataGet(c fiber.Ctx) error {
 		"lleg_color":  formatColor(llegColor),
 		"rleg_color":  formatColor(rlegColor),
 		"face_id":     face,
+	})
+}
+
+func AvatarEditorPage(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/login")
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+		return c.Redirect().To("/login")
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Redirect().To("/login")
+	}
+
+	var avatarData *models.Avatar
+	if service.Avatar != nil {
+		avatarData, _ = service.Avatar.GetAvatar(user.ID)
+	}
+	if avatarData == nil {
+		avatarData = &models.Avatar{
+			ID:         user.ID,
+			HeadColor:  "f3b700",
+			TorsoColor: "c60000",
+			LArmColor:  "f3b700",
+			RArmColor:  "f3b700",
+			LLegColor:  "650013",
+			RLegColor:  "650013",
+		}
+	}
+
+	var inventory []*models.InventoryItem
+	var equipped []*models.InventoryItem
+	if service.Avatar != nil {
+		inventory, _ = service.Avatar.GetInventory(user.ID, "all", "")
+		equipped, _ = service.Avatar.GetEquippedItems(user.ID)
+	}
+
+	return Render(c, "pages/avatar", fiber.Map{
+		"Title":      "Avatar Editor - VERTEXIA",
+		"User":       user,
+		"Avatar":     avatarData,
+		"Inventory":  inventory,
+		"Equipped":   equipped,
+		"ActiveCat":  "all",
+	}, "layouts/main")
+}
+
+func AvatarUpdateColorsPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	bodyPart := c.FormValue("part")
+	colorHex := c.FormValue("color")
+
+	if bodyPart == "" || colorHex == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Missing part or color"})
+	}
+
+	if service.Avatar != nil {
+		if err := service.Avatar.UpdateBodyColor(user.ID, bodyPart, colorHex); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"success":    true,
+		"user_id":    user.ID,
+		"part":       bodyPart,
+		"color":      colorHex,
+		"render_url": fmt.Sprintf("/avatar/%d.png", user.ID),
+	})
+}
+
+func AvatarWearItemPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	itemType := c.FormValue("type")
+	itemID, err := strconv.Atoi(c.FormValue("id"))
+	if err != nil || itemID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid item ID"})
+	}
+
+	if service.Avatar != nil {
+		if err := service.Avatar.EquipItem(user.ID, itemType, itemID); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"success":    true,
+		"user_id":    user.ID,
+		"item_type":  itemType,
+		"item_id":    itemID,
+		"render_url": fmt.Sprintf("/avatar/%d.png", user.ID),
+	})
+}
+
+func AvatarUnwearItemPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	itemType := c.FormValue("type")
+	itemID, err := strconv.Atoi(c.FormValue("id"))
+	if err != nil || itemID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid item ID"})
+	}
+
+	if service.Avatar != nil {
+		if err := service.Avatar.UnequipItem(user.ID, itemType, itemID); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"success":    true,
+		"user_id":    user.ID,
+		"item_type":  itemType,
+		"item_id":    itemID,
+		"render_url": fmt.Sprintf("/avatar/%d.png", user.ID),
+	})
+}
+
+func AvatarInventoryAPI(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	category := c.Query("category", "all")
+	search := c.Query("q", "")
+
+	if service.Avatar == nil {
+		return c.JSON([]*models.InventoryItem{})
+	}
+
+	inventory, err := service.Avatar.GetInventory(user.ID, category, search)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(inventory)
+}
+
+func AvatarWearingAPI(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	if service.Avatar == nil {
+		return c.JSON([]*models.InventoryItem{})
+	}
+
+	equipped, err := service.Avatar.GetEquippedItems(user.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(equipped)
+}
+
+func AvatarReRenderPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	if service.Avatar != nil {
+		service.Avatar.InvalidateRenderCache(user.ID)
+	}
+
+	return c.JSON(fiber.Map{
+		"success":    true,
+		"user_id":    user.ID,
+		"render_url": fmt.Sprintf("/avatar/%d.png", user.ID),
 	})
 }

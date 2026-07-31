@@ -178,7 +178,7 @@ const countTotalComments = commentsList => {
     return count;
 };
 
-const createCommentElement = (comment, parentUser, depth = 0) => {
+const createCommentElement = (comment, parentUser, depth = 0, includeReplies = true) => {
     const wrapper = document.createElement('div');
     wrapper.className = 'cmtitm';
     wrapper.dataset.commentId = comment.id;
@@ -239,13 +239,13 @@ const createCommentElement = (comment, parentUser, depth = 0) => {
     wrapper.appendChild(card);
     wrapper.appendChild(reactBdg);
 
-    if (comment.replies && comment.replies.length > 0) {
+    if (includeReplies && comment.replies && comment.replies.length > 0) {
         const childDepth = depth + 1;
         const nested = document.createElement('div');
         nested.className = childDepth > MAX_THREAD_DEPTH ? 'cmtnest cmtnest-max' : 'cmtnest';
         const childParent = { id: comment.user_id, username: comment.username };
         comment.replies.forEach(r => {
-            nested.appendChild(createCommentElement(r, childParent, childDepth));
+            nested.appendChild(createCommentElement(r, childParent, childDepth, true));
         });
         wrapper.appendChild(nested);
     }
@@ -262,14 +262,15 @@ const renderCommentsForPost = (postWrapper, comments, isFocused) => {
 
     if (isFocused) {
         comments.forEach(c => {
-            cmtList.appendChild(createCommentElement(c, null, 0));
+            cmtList.appendChild(createCommentElement(c, null, 0, true));
         });
         return;
     }
 
-    const displayCount = Math.min(3, comments.length);
+    const displayLimit = 2;
+    const displayCount = Math.min(displayLimit, comments.length);
     for (let i = 0; i < displayCount; i++) {
-        cmtList.appendChild(createCommentElement(comments[i], null, 0));
+        cmtList.appendChild(createCommentElement(comments[i], null, 0, false));
     }
 
     const totalCount = countTotalComments(comments);

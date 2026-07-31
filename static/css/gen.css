@@ -612,3 +612,87 @@ html.notreq .navdiv {
         opacity: 0.15;
     }
 }
+
+.glb-clrpick-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.glb-clrpick-wheel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.glb-clrpick-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.glb-clrpick-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+}
+
+.glb-clrpick-lbl {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #718096;
+    min-width: 32px;
+}
+
+.glb-clrpick-inbox {
+    height: 32px !important;
+    border-radius: 6px !important;
+    flex: 1;
+}
+
+.glb-clrpick-hex {
+    font-size: 13px !important;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 8px !important;
+}
+
+.glb-clrpick-rgbrw {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+.glb-clrpick-inbox-sm {
+    height: 32px !important;
+    border-radius: 6px !important;
+    flex: 1;
+    min-width: 0;
+}
+
+.glb-clrpick-r,
+.glb-clrpick-g,
+.glb-clrpick-b {
+    font-size: 13px !important;
+    text-align: center;
+    padding: 0 4px !important;
+    -moz-appearance: textfield;
+}
+
+.glb-clrpick-r::-webkit-outer-spin-button,
+.glb-clrpick-r::-webkit-inner-spin-button,
+.glb-clrpick-g::-webkit-outer-spin-button,
+.glb-clrpick-g::-webkit-inner-spin-button,
+.glb-clrpick-b::-webkit-outer-spin-button,
+.glb-clrpick-b::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}

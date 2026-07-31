@@ -112,21 +112,31 @@ func getSystemStats() (fiber.Map, runtime.MemStats) {
 }
 
 func getAvatarItems(userID int) *AvatarItems {
-	if database.DB == nil {
+	if service.Avatar == nil {
 		return nil
 	}
-	var a AvatarItems
-	query := `SELECT head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color,
-	                 hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face
-              FROM avatar WHERE id = ?`
-	err := database.DB.QueryRow(query, userID).Scan(
-		&a.HeadColor, &a.LArmColor, &a.RArmColor, &a.TorsoColor, &a.LLegColor, &a.RLegColor,
-		&a.Hat1, &a.Hat2, &a.Hat3, &a.Hat4, &a.Hat5, &a.Tool, &a.Shirt, &a.TShirt, &a.Pants, &a.Face,
-	)
-	if err != nil {
+	av, err := service.Avatar.GetAvatar(userID)
+	if err != nil || av == nil {
 		return nil
 	}
-	return &a
+	return &AvatarItems{
+		HeadColor:  av.HeadColor,
+		TorsoColor: av.TorsoColor,
+		LArmColor:  av.LArmColor,
+		RArmColor:  av.RArmColor,
+		LLegColor:  av.LLegColor,
+		RLegColor:  av.RLegColor,
+		Hat1:       av.Hat1,
+		Hat2:       av.Hat2,
+		Hat3:       av.Hat3,
+		Hat4:       av.Hat4,
+		Hat5:       av.Hat5,
+		Tool:       av.Tool,
+		Shirt:      av.Shirt,
+		TShirt:     av.TShirt,
+		Pants:      av.Pants,
+		Face:       av.Face,
+	}
 }
 
 func formatBytes(b uint64) string {

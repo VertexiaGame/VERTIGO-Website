@@ -42,6 +42,15 @@ func main() {
 
 	app.Use(recoverer.New())
 
+	app.Use(func(c fiber.Ctx) error {
+		c.Set("X-Frame-Options", "SAMEORIGIN")
+		c.Set("X-Content-Type-Options", "nosniff")
+		c.Set("X-XSS-Protection", "1; mode=block")
+		c.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: wss:; frame-ancestors 'self';")
+		return c.Next()
+	})
+
 	//We should not allow more than 100 requests X minute from same IP
 	app.Use(limiter.New(limiter.Config{
 		Max:        cfg.LimiterMax,

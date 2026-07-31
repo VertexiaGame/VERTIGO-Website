@@ -1,0 +1,139 @@
+<link rel="stylesheet" href="/static/css/forms.css">
+<link rel="stylesheet" href="/static/css/set.css">
+<link rel="stylesheet" href="/static/css/dash.css">
+<link rel="stylesheet" href="/static/css/avt.css">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Avatar Editor</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search" id="avtSearch" autocomplete="off">
+            </div>
+            <div class="barbtns">
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane">
+            <div class="avtlay" data-userid="{{.User.ID}}">
+                <div class="avttop">
+                    <div class="avtl">
+                        <div class="setcrd avtcrd">
+                            <h3 class="setttl">Preview</h3>
+                            <div class="avtchr loading" id="avtChrBox">
+                                <img src="/static/useful/idk/elipse.png" class="avtchrbg" alt="">
+                                <img src="/avatar/{{.User.ID}}.png" id="avtPreview" class="chrimg" alt="{{.User.Username}}">
+                                <div class="avtchrload">
+                                    <svg class="dmspn" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                        <rect class="sq sq-1" x="43" y="7" width="14" height="14"/>
+                                        <rect class="sq sq-2" x="25" y="25" width="14" height="14"/>
+                                        <rect class="sq sq-3" x="7" y="43" width="14" height="14"/>
+                                        <rect class="sq sq-4" x="25" y="61" width="14" height="14"/>
+                                        <rect class="sq sq-5" x="43" y="79" width="14" height="14"/>
+                                        <rect class="sq sq-6" x="61" y="61" width="14" height="14"/>
+                                        <rect class="sq sq-7" x="79" y="43" width="14" height="14"/>
+                                        <rect class="sq sq-8" x="61" y="25" width="14" height="14"/>
+                                    </svg>
+                                </div>
+                                <div class="avtredrawwrap">
+                                    <button type="button" class="happy hpyprim hpyinl hpysm" onclick="window.redrawAvatar(event)">
+                                        <span>Redraw</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setcrd avtcrd">
+                            <h3 class="setttl">Currently Wearing</h3>
+                            <div class="avtwrng" id="avtWearing">
+                                {{range .Equipped}}
+                                <div class="avtwchip" data-type="{{.Type}}" data-id="{{.ID}}">
+                                    <div class="avtwimg">
+                                        <img src="/api/v1/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                                    </div>
+                                    <div class="avtwmeta">
+                                        <span class="avtwnm">{{.Name}}</span>
+                                        <span class="avtwt">{{.TypeName}}</span>
+                                    </div>
+                                    <button type="button" class="avtwrmv" title="Take off" aria-label="Take off">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                                {{else}}
+                                <div class="feedemt">You are not wearing any items.</div>
+                                {{end}}
+                            </div>
+                        </div>
+                        <div class="setcrd avtcrd avtclrcrd">
+                            <h3 class="setttl">Body Colors</h3>
+                            <div class="avtbodywrap">
+                                <div class="avtpopover" id="avtColorPopover">
+                                    <div class="avtpophdr">
+                                        <span class="avtpoptline" id="avtPartName">Paint Part</span>
+                                        <button type="button" class="avtpopclose" onclick="window.closeAvatarColorPopover()" aria-label="Close">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                    <div class="avtpopbody">
+                                        <div class="avtclrpick" id="avtColorPicker"></div>
+                                    </div>
+                                </div>
+                                <div class="avtbody" id="avtBody">
+                                    <button type="button" class="avtpart avtphead" data-part="head" data-name="Head" data-color="#{{.Avatar.HeadColor}}" style="background: #{{.Avatar.HeadColor}};" aria-label="Head"></button>
+                                    <div class="avtprow">
+                                        <button type="button" class="avtpart avtparm" data-part="larm" data-name="Left Arm" data-color="#{{.Avatar.LArmColor}}" style="background: #{{.Avatar.LArmColor}};" aria-label="Left Arm"></button>
+                                        <button type="button" class="avtpart avtptorso" data-part="torso" data-name="Torso" data-color="#{{.Avatar.TorsoColor}}" style="background: #{{.Avatar.TorsoColor}};" aria-label="Torso"></button>
+                                        <button type="button" class="avtpart avtparm" data-part="rarm" data-name="Right Arm" data-color="#{{.Avatar.RArmColor}}" style="background: #{{.Avatar.RArmColor}};" aria-label="Right Arm"></button>
+                                    </div>
+                                    <div class="avtprow">
+                                        <button type="button" class="avtpart avtpleg" data-part="lleg" data-name="Left Leg" data-color="#{{.Avatar.LLegColor}}" style="background: #{{.Avatar.LLegColor}};" aria-label="Left Leg"></button>
+                                        <button type="button" class="avtpart avtpleg" data-part="rleg" data-name="Right Leg" data-color="#{{.Avatar.RLegColor}}" style="background: #{{.Avatar.RLegColor}};" aria-label="Right Leg"></button>
+                                    </div>
+                                </div>
+                                <button type="button" class="avtpart avtpall sel" data-part="all" data-name="All Parts">All Parts</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="avtr">
+                        <div class="tabcnt settabcnt" style="max-width: 100% !important;">
+                            <div class="tablst">
+                                <div class="tabind"></div>
+                                <button type="button" class="tabbtn active" data-cat="all" onclick="window.switchAvatarTab('all', event)">All</button>
+                                <button type="button" class="tabbtn" data-cat="hats" onclick="window.switchAvatarTab('hats', event)">Hats</button>
+                                <button type="button" class="tabbtn" data-cat="shirts" onclick="window.switchAvatarTab('shirts', event)">Shirts</button>
+                                <button type="button" class="tabbtn" data-cat="pants" onclick="window.switchAvatarTab('pants', event)">Pants</button>
+                                <button type="button" class="tabbtn" data-cat="tshirts" onclick="window.switchAvatarTab('tshirts', event)">T-Shirts</button>
+                                <button type="button" class="tabbtn" data-cat="faces" onclick="window.switchAvatarTab('faces', event)">Faces</button>
+                                <button type="button" class="tabbtn" data-cat="gear" onclick="window.switchAvatarTab('gear', event)">Gear</button>
+                            </div>
+                            <div class="setcrd avtitemscrd">
+                                <div class="avtgrd" id="avtGrid">
+                                    {{range .Inventory}}
+                                    <div class="avtitm{{if .IsEquipped}} worn{{end}}" data-type="{{.Type}}" data-id="{{.ID}}">
+                                        <div class="avtitmimg">
+                                            <img src="/api/v1/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                                            {{if .IsEquipped}}<span class="avtitmbdg">Worn</span>{{end}}
+                                        </div>
+                                        <div class="avtitmmeta">
+                                            <span class="avtitmnm">{{.Name}}</span>
+                                            <span class="avtitmcr">by {{.CreatorName}}</span>
+                                        </div>
+                                        <button type="button" class="happy {{if .IsEquipped}}hpydng{{else}}hpyprim{{end}} hpyinl hpysm avtitembtn">
+                                            <span>{{if .IsEquipped}}Take Off{{else}}Wear{{end}}</span>
+                                        </button>
+                                    </div>
+                                    {{else}}
+                                    <div class="feedemt">You don't own any items yet.</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/elements/modal.js"></script>
+<script src="/static/js/avatar/avatar.js"></script>
