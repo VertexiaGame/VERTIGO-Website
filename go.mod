@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/fogleman/fauxgl v0.0.0-20250110135958-abf826acbbbd
 	github.com/go-sql-driver/mysql v1.8.1
+	github.com/gofiber/contrib/v3/websocket v1.2.1
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/template/html/v3 v3.0.6
 	github.com/joho/godotenv v1.5.1
@@ -18,7 +19,6 @@ require (
 	github.com/fasthttp/websocket v1.5.12 // indirect
 	github.com/fogleman/simplify v0.0.0-20170216171241-d32f302d5046 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/gofiber/contrib/v3/websocket v1.2.1 // indirect
 	github.com/gofiber/schema v1.8.2 // indirect
 	github.com/gofiber/template/v2 v2.1.0 // indirect
 	github.com/gofiber/utils/v2 v2.2.0 // indirect

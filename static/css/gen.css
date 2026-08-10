@@ -197,14 +197,14 @@ body {
     background: rgba(61, 61, 61, 0.35);
 }
 
-.happy { 
+.primary {
     position: absolute;
     width: auto;
     min-width: 114px;
     height: 48px;
     left: 20px;
     top: 20px;
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), var(--accent, #7423CB);
     box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 4px rgba(255, 255, 255, 0.25);
     border-radius: 4px;
     border: none;
@@ -219,22 +219,22 @@ body {
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease;
 }
 
-.happy:hover {
+.primary:hover {
     transform: scale(1.04);
 }
 
-.happy:active {
+.primary:active {
     transform: scale(0.98) rotateX(-15deg);
     transition: transform 0.08s ease;
 }
 
-.happy:disabled {
+.primary:disabled {
     opacity: 0.6 !important;
     cursor: not-allowed !important;
     transform: none !important;
 }
 
-.happy span {
+.primary span {
     font-family: 'Ubuntu', sans-serif;
     font-style: normal;
     font-weight: 500;
@@ -253,35 +253,35 @@ body {
     flex-shrink: 0 !important;
 }
 
-.happy.hpyprim {
+.primary.hpyprim {
     background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
 }
 
-.happy.hpysuc {
+.primary.hpysuc {
     background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745;
 }
 
-.happy.hpywrn {
+.primary.hpywrn {
     background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22;
 }
 
-.happy.hpyerr,
-.happy.hpydng {
+.primary.hpyerr,
+.primary.hpydng {
     background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #DC3545;
 }
 
-.happy.hpyinf {
+.primary.hpyinf {
     background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8;
 }
 
-.happy.hpyinl {
+.primary.hpyinl {
     position: relative !important;
     left: auto !important;
     top: auto !important;
     display: inline-flex !important;
 }
 
-.happy.hpysm {
+.primary.hpysm {
     height: 36px !important;
     padding: 0 16px !important;
     min-width: 0 !important;
@@ -289,7 +289,7 @@ body {
     border-radius: 4px !important;
 }
 
-.happy.hpysm span {
+.primary.hpysm span {
     font-size: 15px !important;
     font-weight: 500 !important;
     line-height: 17px !important;

@@ -37,10 +37,10 @@
                                     </svg>
                                 </div>
                                 <div class="avtredrawwrap">
-                                    <button type="button" class="happy hpyprim hpyinl hpysm" onclick="window.redrawAvatar(event)">
+                                    <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.redrawAvatar(event)">
                                         <span>Redraw</span>
                                     </button>
-                                    <button type="button" class="happy hpysuc hpyinl hpysm" id="avtSaveBtn" onclick="window.openSaveOutfitModal(event)" disabled>
+                                    <button type="button" class="primary hpysuc hpyinl hpysm" id="avtSaveBtn" onclick="window.openSaveOutfitModal(event)" disabled>
                                         <span>Save</span>
                                     </button>
                                 </div>
@@ -58,7 +58,7 @@
                                         <span class="avtwnm">{{.Name}}</span>
                                     </div>
                                     <div style="display: flex; gap: 4px; align-items: center;">
-                                        <button type="button" class="happy hpyprim hpyinl hpysm avtoutfitwear" title="Wear Outfit">
+                                        <button type="button" class="primary hpyprim hpyinl hpysm avtoutfitwear" title="Wear Outfit">
                                             <span>Wear</span>
                                         </button>
                                         <button type="button" class="avtwrmv avtoutfitdel" title="Delete Outfit" aria-label="Delete Outfit">
@@ -146,7 +146,7 @@
                                             <span class="avtitmnm">{{.Name}}</span>
                                             <span class="avtitmcr">by {{.CreatorName}}</span>
                                         </div>
-                                        <button type="button" class="happy {{if .IsEquipped}}hpydng{{else}}hpyprim{{end}} hpyinl hpysm avtitembtn">
+                                        <button type="button" class="primary {{if .IsEquipped}}hpydng{{else}}hpyprim{{end}} hpyinl hpysm avtitembtn">
                                             <span>{{if .IsEquipped}}Take Off{{else}}Wear{{end}}</span>
                                         </button>
                                     </div>
