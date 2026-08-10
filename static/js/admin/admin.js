@@ -182,7 +182,7 @@ window.renderAdminUserTable = function(data) {
                     <span>Joined ${u.creation_date}</span>
                 </div>
                 <div class="frnact">
-                    <button type="button" class="happy hpyprim hpyinl hpysm" onclick="window.viewAdminUser(${u.id})">
+                    <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.viewAdminUser(${u.id})">
                         <span>View User</span>
                     </button>
                 </div>

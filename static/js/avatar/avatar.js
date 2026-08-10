@@ -66,7 +66,7 @@ window.avatarItemCardHTML = function(item) {
                 <span class="avtitmnm">${avtEsc(item.name)}</span>
                 <span class="avtitmcr">by ${avtEsc(item.creator_name)}</span>
             </div>
-            <button type="button" class="happy ${worn ? 'hpydng' : 'hpyprim'} hpyinl hpysm avtitembtn">
+            <button type="button" class="primary ${worn ? 'hpydng' : 'hpyprim'} hpyinl hpysm avtitembtn">
                 <span>${worn ? 'Take Off' : 'Wear'}</span>
             </button>
         </div>
@@ -162,7 +162,7 @@ window.avatarOutfitChipHTML = function(outfit) {
                 <span class="avtwnm">${avtEsc(outfit.name)}</span>
             </div>
             <div style="display: flex; gap: 4px; align-items: center;">
-                <button type="button" class="happy hpyprim hpyinl hpysm avtoutfitwear" title="Wear Outfit">
+                <button type="button" class="primary hpyprim hpyinl hpysm avtoutfitwear" title="Wear Outfit">
                     <span>Wear</span>
                 </button>
                 <button type="button" class="avtwrmv avtoutfitdel" title="Delete Outfit" aria-label="Delete Outfit">
@@ -274,10 +274,10 @@ window.openSaveOutfitModal = function() {
                     <input type="text" id="outfitNameInput" class="setin" placeholder="Outfit Name" maxlength="30" required autocomplete="off">
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
-                    <button type="button" class="happy hpyerr hpyinl hpysm" onclick="window.closeModal()">
+                    <button type="button" class="primary hpyerr hpyinl hpysm" onclick="window.closeModal()">
                         <span>Cancel</span>
                     </button>
-                    <button type="submit" class="happy hpysuc hpyinl hpysm" id="saveOutfitSubmitBtn">
+                    <button type="submit" class="primary hpysuc hpyinl hpysm" id="saveOutfitSubmitBtn">
                         <span>Save Outfit</span>
                     </button>
                 </div>
@@ -321,10 +321,10 @@ window.confirmWearOutfit = function(outfitId, btn, outfitName) {
                 Are you sure you want to wear <strong>${safeName}</strong>? This will replace your currently worn items and body colors.
             </p>
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
-                <button type="button" class="happy hpyerr hpyinl hpysm" onclick="window.closeModal()">
+                <button type="button" class="primary hpyerr hpyinl hpysm" onclick="window.closeModal()">
                     <span>Cancel</span>
                 </button>
-                <button type="button" class="happy hpyprim hpyinl hpysm" onclick="window.confirmedWearOutfit(${outfitId})">
+                <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.confirmedWearOutfit(${outfitId})">
                     <span>Confirm</span>
                 </button>
             </div>

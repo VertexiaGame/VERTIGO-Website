@@ -22,10 +22,10 @@ window.openUsernameModal = function(newUsername) {
                 Are you sure you want to change your username to <strong>${safeUsername}</strong> for <span class="vrthl"><img src="/static/useful/icons/verticec.png" class="vrtico" alt="">100 Vertices</span>? You have <strong>${changesLeft}</strong> username changes left for the next 3 days!
             </p>
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
-                <button type="button" class="happy hpyerr hpyinl hpysm" onclick="window.closeModal()">
+                <button type="button" class="primary hpyerr hpyinl hpysm" onclick="window.closeModal()">
                     <span>Cancel</span>
                 </button>
-                <button type="button" class="happy hpyprim hpyinl hpysm" onclick="window.confirmUsernameChange()">
+                <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.confirmUsernameChange()">
                     <span>Confirm</span>
                 </button>
             </div>
@@ -257,7 +257,7 @@ const setupSettingsFormListeners = () => {
         }
 
         if (form.action.includes('/settings/displayname') ||
-            form.action.includes('/settings/password') || 
+            form.action.includes('/settings/password') ||
             form.action.includes('/settings/bio') ||
             form.action.includes('/settings/pronouns') ||
             form.action.includes('/settings/socials')) {

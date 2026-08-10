@@ -53,7 +53,7 @@
                             <altcha-widget challengeurl="/api/v1/altcha" hidelogo="true"></altcha-widget>
                         </div>
                         <div>
-                            <button type="submit" class="happy" style="position: relative; left: auto; top: auto; display: inline-flex;">
+                            <button type="submit" class="primary" style="position: relative; left: auto; top: auto; display: inline-flex;">
                                 <span>Sign Up</span>
                             </button>
                         </div>
@@ -78,7 +78,7 @@
         var err = "{{.Error}}";
         var field = "{{.ErrorField}}";
         if (!err) return;
-        
+
         function showErrorUnder(element, message) {
             if (!element) return;
             var group = element.closest('.frmgrp') || element.parentElement;
@@ -93,12 +93,12 @@
                 errDiv.classList.add('visible');
             });
         }
-        
+
         function markField(selector) {
             var input = document.querySelector(selector);
             if (input) input.classList.add('inerr');
         }
-        
+
         if (field === 'username') {
             markField('input[name="username"]');
             showErrorUnder(document.querySelector('input[name="username"]'), err);

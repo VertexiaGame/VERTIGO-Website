@@ -84,7 +84,7 @@
     font-weight: 700;
     line-height: 1.2;
     color: #FFFFFF;
-    background: #7423CB;
+    background: var(--accent, #7423CB);
     padding: 8px 18px;
     border-radius: 6px;
     box-shadow: none;

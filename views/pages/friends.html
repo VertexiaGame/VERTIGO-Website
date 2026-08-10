@@ -52,10 +52,10 @@
                                                 </div>
                                             </div>
                                             <div class="frnact">
-                                                <button type="button" class="happy hpysuc hpyinl hpysm" hx-post="/friends/accept/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
+                                                <button type="button" class="primary hpysuc hpyinl hpysm" hx-post="/friends/accept/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
                                                     <span>Accept</span>
                                                 </button>
-                                                <button type="button" class="happy hpydng hpyinl hpysm" hx-post="/friends/decline/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
+                                                <button type="button" class="primary hpydng hpyinl hpysm" hx-post="/friends/decline/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
                                                     <span>Decline</span>
                                                 </button>
                                             </div>
@@ -85,7 +85,7 @@
                                                 </div>
                                             </div>
                                             <div class="frnact">
-                                                <button type="button" class="happy hpydng hpyinl hpysm" hx-post="/friends/cancel/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
+                                                <button type="button" class="primary hpydng hpyinl hpysm" hx-post="/friends/cancel/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
                                                     <span>Cancel Request</span>
                                                 </button>
                                             </div>
@@ -117,7 +117,7 @@
                                             </div>
                                             {{if $.IsOwnFriendsPage}}
                                             <div class="frnact">
-                                                <button type="button" class="happy hpydng hpyinl hpysm" hx-post="/friends/remove/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
+                                                <button type="button" class="primary hpydng hpyinl hpysm" hx-post="/friends/remove/{{.UserID}}" hx-target="closest .frncrd" hx-swap="outerHTML">
                                                     <span>Remove</span>
                                                 </button>
                                             </div>
