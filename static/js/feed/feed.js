@@ -794,7 +794,8 @@ const initFeed = () => {
         case 'new_comment': {
             const comment = data.comment;
             if (!comment) break;
-            const postWrapper = document.querySelector(`.pstitm[data-id="${comment.feed_id}"]`);
+            const postWrapper = document.querySelector(`.pstitm[data-id="${comment.feed_id}"][data-feed-type="${comment.feed_type}"]`) ||
+                            document.querySelector(`.pstitm[data-id="${comment.feed_id}"]`);
             if (postWrapper) {
                 loadPostComments(postWrapper, activeFocusedPostId === String(comment.feed_id));
             }

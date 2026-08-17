@@ -15,6 +15,7 @@ import (
 )
 
 func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
+	c.Set("Cache-Control", "no-cache")
 	idParam := strings.TrimSuffix(c.Params("id"), ".png")
 	userID, err := strconv.Atoi(idParam)
 	if err != nil {
@@ -127,16 +128,16 @@ func AvatarDataGet(c fiber.Ctx) error {
 		avatarData, _ = service.Avatar.GetAvatar(userID)
 	}
 
-	headColor, larmColor, rarmColor, torsoColor, llegColor, rlegColor := "f3b700", "f3b700", "f3b700", "c60000", "650013", "650013"
+	headColor, larmColor, rarmColor, torsoColor, llegColor, rlegColor := models.DefaultHeadColor, models.DefaultArmColor, models.DefaultArmColor, models.DefaultTorsoColor, models.DefaultLegColor, models.DefaultLegColor
 	face := 0
 
 	if avatarData != nil {
-		if avatarData.HeadColor != "" { headColor = avatarData.HeadColor }
-		if avatarData.LArmColor != "" { larmColor = avatarData.LArmColor }
-		if avatarData.RArmColor != "" { rarmColor = avatarData.RArmColor }
-		if avatarData.TorsoColor != "" { torsoColor = avatarData.TorsoColor }
-		if avatarData.LLegColor != "" { llegColor = avatarData.LLegColor }
-		if avatarData.RLegColor != "" { rlegColor = avatarData.RLegColor }
+		headColor = avatarData.HeadColor
+		larmColor = avatarData.LArmColor
+		rarmColor = avatarData.RArmColor
+		torsoColor = avatarData.TorsoColor
+		llegColor = avatarData.LLegColor
+		rlegColor = avatarData.RLegColor
 		face = avatarData.Face
 	}
 
@@ -178,15 +179,7 @@ func AvatarEditorPage(c fiber.Ctx) error {
 		avatarData, _ = service.Avatar.GetAvatar(user.ID)
 	}
 	if avatarData == nil {
-		avatarData = &models.Avatar{
-			ID:         user.ID,
-			HeadColor:  "f3b700",
-			TorsoColor: "c60000",
-			LArmColor:  "f3b700",
-			RArmColor:  "f3b700",
-			LLegColor:  "650013",
-			RLegColor:  "650013",
-		}
+		avatarData = models.DefaultAvatar(user.ID)
 	}
 
 	var inventory []*models.InventoryItem

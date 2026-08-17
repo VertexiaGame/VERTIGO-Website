@@ -1,7 +1,53 @@
 let musicNoticeTimer = null;
+let musicFadeTimer = null;
 window.currentAudio = new Audio();
 window.currentAudio.volume = 0.5;
 window.currentTrackData = null;
+window.currentMusicVolume = 0.5;
+
+const MUSIC_FADE_MS = 1200;
+const PROFILE_MUSIC_VOLUME = 0.25;
+
+function cancelMusicFade() {
+    if (musicFadeTimer) {
+        clearInterval(musicFadeTimer);
+        musicFadeTimer = null;
+    }
+}
+
+function fadeMusicVolume(target, onDone) {
+    cancelMusicFade();
+    const audio = window.currentAudio;
+    if (!audio || audio.volume === target) {
+        if (onDone) onDone();
+        return;
+    }
+    const start = audio.volume;
+    const steps = Math.max(1, Math.round(MUSIC_FADE_MS / 16));
+    let step = 0;
+    musicFadeTimer = setInterval(() => {
+        step++;
+        const t = Math.min(1, step / steps);
+        audio.volume = start + (target - start) * t;
+        if (t >= 1) {
+            cancelMusicFade();
+            if (onDone) onDone();
+        }
+    }, 16);
+}
+
+function playCurrentAudio() {
+    window.currentAudio.play().catch(() => {});
+    fadeMusicVolume(window.currentMusicVolume);
+}
+
+function pauseCurrentAudio() {
+    if (window.currentAudio.paused) {
+        cancelMusicFade();
+        return;
+    }
+    fadeMusicVolume(0, () => window.currentAudio.pause());
+}
 
 function formatMusicTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return '0:00';
@@ -70,9 +116,14 @@ function updateMusicPlayerUI(isPlaying) {
 }
 
 window.stopCurrentMusic = function() {
-    if (window.currentAudio) {
-        window.currentAudio.pause();
-        window.currentAudio.currentTime = 0;
+    if (window.currentAudio && !window.currentAudio.paused) {
+        fadeMusicVolume(0, () => {
+            window.currentAudio.pause();
+            window.currentAudio.currentTime = 0;
+        });
+    } else {
+        cancelMusicFade();
+        if (window.currentAudio) window.currentAudio.currentTime = 0;
     }
     window.currentTrackData = null;
     updateMusicPlayerUI(false);
@@ -89,19 +140,20 @@ window.playTrackPreview = function(id, title, artist, cover, preview) {
 
     if (window.currentTrackData && String(window.currentTrackData.id) === String(id)) {
         if (window.currentAudio.paused) {
-            window.currentAudio.volume = 0.5;
-            window.currentAudio.play().catch(() => {});
+            window.currentMusicVolume = 0.5;
+            playCurrentAudio();
         } else {
-            window.currentAudio.pause();
+            pauseCurrentAudio();
         }
         return;
     }
 
     window.currentTrackData = { id, title, artist, cover, preview };
+    window.currentMusicVolume = 0.5;
     window.currentAudio.src = preview;
-    window.currentAudio.volume = 0.5;
+    window.currentAudio.volume = 0;
     window.currentAudio.loop = false;
-    window.currentAudio.play().catch(() => {});
+    playCurrentAudio();
 
     const playerCard = document.getElementById('musPlayerCard');
     if (playerCard) playerCard.style.display = 'flex';
@@ -121,10 +173,9 @@ window.playTrackPreview = function(id, title, artist, cover, preview) {
 window.toggleCurrentTrack = function() {
     if (!window.currentTrackData || !window.currentAudio.src) return;
     if (window.currentAudio.paused) {
-        window.currentAudio.volume = 0.5;
-        window.currentAudio.play().catch(() => {});
+        playCurrentAudio();
     } else {
-        window.currentAudio.pause();
+        pauseCurrentAudio();
     }
 };
 
@@ -238,6 +289,7 @@ window.loadSettingsSavedMusic = function(musicId) {
 
             initMusicPlayerEvents();
             window.currentTrackData = { id: track.id, title: track.title, artist, cover, preview };
+            window.currentMusicVolume = 0.5;
             window.currentAudio.src = preview;
             window.currentAudio.volume = 0.5;
             window.currentAudio.loop = false;
@@ -287,18 +339,26 @@ window.initProfileMusicPlayer = function() {
 
             initMusicPlayerEvents();
             window.currentTrackData = { id: track.id, title: track.title, artist, cover, preview };
+            window.currentMusicVolume = PROFILE_MUSIC_VOLUME;
             window.currentAudio.src = preview;
-            window.currentAudio.volume = 0.5;
+            window.currentAudio.volume = 0;
             window.currentAudio.loop = true;
 
             const playPromise = window.currentAudio.play();
             if (playPromise !== undefined) {
-                playPromise.then(() => updateMusicPlayerUI(true)).catch(() => {
+                playPromise.then(() => {
+                    fadeMusicVolume(PROFILE_MUSIC_VOLUME);
+                    updateMusicPlayerUI(true);
+                }).catch(() => {
                     updateMusicPlayerUI(false);
                     const enableAutoplay = () => {
                         if (window.currentAudio && window.currentAudio.src && window.location.pathname.startsWith('/user/')) {
-                            window.currentAudio.volume = 0.5;
-                            window.currentAudio.play().then(() => updateMusicPlayerUI(true)).catch(() => {});
+                            window.currentMusicVolume = PROFILE_MUSIC_VOLUME;
+                            window.currentAudio.volume = 0;
+                            window.currentAudio.play().then(() => {
+                                fadeMusicVolume(PROFILE_MUSIC_VOLUME);
+                                updateMusicPlayerUI(true);
+                            }).catch(() => {});
                         }
                     };
                     ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(evt => document.addEventListener(evt, enableAutoplay, { once: true }));
@@ -403,7 +463,7 @@ window.proceedToMusicSearch = function() {
 window.closeMusicModal = function() {
     const modal = document.getElementById('musicModal');
     if (modal) modal.classList.remove('active');
-    if (window.currentAudio) window.currentAudio.pause();
+    pauseCurrentAudio();
 };
 
 window.closeMusicModalOnOverlay = function(event) {
@@ -486,6 +546,16 @@ document.addEventListener('htmx:afterSettle', () => {
     window.initProfileMusicPlayer();
 });
 
-['htmx:beforeTransition', 'htmx:beforeSwap', 'beforeunload', 'pagehide'].forEach(evt => {
-    document.addEventListener(evt, () => window.stopCurrentMusic());
+function stopMusicOnNavigation() {
+    window.stopCurrentMusic();
+}
+
+window.addEventListener('popstate', stopMusicOnNavigation);
+window.addEventListener('pagehide', stopMusicOnNavigation);
+window.addEventListener('beforeunload', stopMusicOnNavigation);
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) stopMusicOnNavigation();
 });
+
+document.addEventListener('htmx:beforeTransition', stopMusicOnNavigation);
+document.addEventListener('htmx:beforeSwap', stopMusicOnNavigation);

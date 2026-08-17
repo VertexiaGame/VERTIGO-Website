@@ -20,15 +20,7 @@ func NewAvatarRepository(db *sql.DB) *AvatarRepository {
 
 func (r *AvatarRepository) GetAvatar(userID int) (*models.Avatar, error) {
 	if r.db == nil {
-		return &models.Avatar{
-			ID:         userID,
-			HeadColor:  "f3b700",
-			TorsoColor: "c60000",
-			LArmColor:  "f3b700",
-			RArmColor:  "f3b700",
-			LLegColor:  "650013",
-			RLegColor:  "650013",
-		}, nil
+		return models.DefaultAvatar(userID), nil
 	}
 
 	query := `SELECT head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color,
@@ -43,13 +35,7 @@ func (r *AvatarRepository) GetAvatar(userID int) (*models.Avatar, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			a.HeadColor = "f3b700"
-			a.TorsoColor = "c60000"
-			a.LArmColor = "f3b700"
-			a.RArmColor = "f3b700"
-			a.LLegColor = "650013"
-			a.RLegColor = "650013"
-			return &a, nil
+			return models.DefaultAvatar(userID), nil
 		}
 		return nil, err
 	}

@@ -2,6 +2,25 @@ package models
 
 import "time"
 
+const (
+	DefaultHeadColor  = "f3b700"
+	DefaultArmColor   = "f3b700"
+	DefaultTorsoColor = "c60000"
+	DefaultLegColor   = "650013"
+)
+
+func DefaultAvatar(id int) *Avatar {
+	return &Avatar{
+		ID:         id,
+		HeadColor:  DefaultHeadColor,
+		TorsoColor: DefaultTorsoColor,
+		LArmColor:  DefaultArmColor,
+		RArmColor:  DefaultArmColor,
+		LLegColor:  DefaultLegColor,
+		RLegColor:  DefaultLegColor,
+	}
+}
+
 type Avatar struct {
 	ID         int    `json:"id"`
 	HeadColor  string `json:"head_color"`

@@ -1,5 +1,23 @@
 :root {
     --accent: #912ADF;
+    --accent-dark: #7423CB;
+    --accent-soft: rgba(145, 42, 223, 0.15);
+    --ink: #3D3D3D;
+    --ink-strong: #1A202C;
+    --ink-soft: #333333;
+    --muted: #718096;
+    --surface: #E0E0E0;
+    --surface-raised: #FAFAFA;
+    --line: #C1C1C1;
+    --border: #E0E0E0;
+    --success: #28A745;
+    --danger: #DC3545;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --ease-pop: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --ease-smooth: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 html, body {
@@ -18,8 +36,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
-/*TODO: Move the main container styles to a separate CSS files*/
 
 .wrap {
     display: flex;
@@ -435,6 +451,151 @@ body {
     background: #E0E0E0 !important;
 }
 
+select {
+    height: 30px;
+    background-color: #E0E0E0;
+    border: 2px solid rgba(61, 61, 61, 0.25);
+    border-radius: 6px;
+    padding: 0 24px 0 8px;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #3D3D3D;
+    outline: none;
+    cursor: pointer;
+    box-sizing: border-box;
+
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23718096%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 9px auto;
+}
+
+select:focus {
+    border-color: rgba(61, 61, 61, 0.25);
+}
+
+select option {
+    background-color: #FAFAFA;
+    color: #3D3D3D;
+}
+
+.glb-dropdown {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.glb-dropdown-trigger {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    background: #E0E0E0 !important;
+    border: 2px solid rgba(61, 61, 61, 0.25) !important;
+    border-radius: 6px !important;
+    padding: 0 8px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #3D3D3D !important;
+    cursor: pointer !important;
+    outline: none !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    text-align: left !important;
+    transition: background 0.15s ease !important;
+}
+
+.glb-dropdown-trigger:hover {
+    background: #D8D8D8 !important;
+    transform: none !important;
+}
+
+.glb-dropdown-trigger:active {
+    transform: none !important;
+}
+
+.glb-dropdown-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.glb-dropdown-arrow {
+    font-size: 10px !important;
+    color: #718096 !important;
+    flex-shrink: 0 !important;
+    margin-left: 6px !important;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.glb-dropdown.open .glb-dropdown-arrow,
+.glb-dropdown.active .glb-dropdown-arrow {
+    transform: rotate(180deg) !important;
+}
+
+.glb-dropdown-menu {
+    position: absolute !important;
+    top: calc(100% + 4px) !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    background: #FAFAFA !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+    z-index: 500 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateY(-8px) scale(0.95) !important;
+    transform-origin: top center !important;
+    transition: opacity 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s !important;
+}
+
+.glb-dropdown.open .glb-dropdown-menu,
+.glb-dropdown.active .glb-dropdown-menu {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateY(0) scale(1) !important;
+}
+
+.glb-dropdown-item {
+    padding: 6px 10px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #3D3D3D !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.glb-dropdown-item.active {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    color: #FFFFFF !important;
+}
+
 @media (max-width: 996px) {
     .wrap {
         padding-top: 80px;
@@ -667,15 +828,17 @@ html.notreq .navdiv {
 
 .glb-clrpick-rgbrw {
     display: flex;
-    gap: 4px;
-    flex: 1;
+    gap: 6px;
+    flex: 0 0 auto;
 }
 
 .glb-clrpick-inbox-sm {
     height: 32px !important;
     border-radius: 6px !important;
-    flex: 1;
-    min-width: 0;
+    width: 58px !important;
+    min-width: 58px !important;
+    flex: 0 0 58px;
+    box-sizing: border-box !important;
 }
 
 .glb-clrpick-r,
@@ -683,7 +846,7 @@ html.notreq .navdiv {
 .glb-clrpick-b {
     font-size: 13px !important;
     text-align: center;
-    padding: 0 4px !important;
+    padding: 0 6px !important;
     -moz-appearance: textfield;
 }
 

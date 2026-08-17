@@ -383,7 +383,7 @@ window.avatarConfirmedColor = function(part) {
     }
     const el = document.querySelector('.avtpart[data-part="' + part + '"]');
     if (el) {
-        const bg = el.dataset.color || el.style.backgroundColor || el.style.background;
+        const bg = el.dataset.color || el.style.fill || el.getAttribute('fill');
         if (bg) {
             const hex = rgbToHex(bg);
             window.avatarPartColors[part] = hex;
@@ -394,18 +394,20 @@ window.avatarConfirmedColor = function(part) {
 };
 
 window.paintAvatarFigure = function(part, hex) {
+    const paint = function(el) {
+        el.setAttribute('fill', hex);
+        el.dataset.color = hex;
+    };
     if (part === 'all') {
         document.querySelectorAll('.avtpart[data-part]').forEach(el => {
             if (el.dataset.part !== 'all') {
-                el.style.background = hex;
-                el.dataset.color = hex;
+                paint(el);
             }
         });
     } else {
         const el = document.querySelector('.avtpart[data-part="' + part + '"]');
         if (el) {
-            el.style.background = hex;
-            el.dataset.color = hex;
+            paint(el);
         }
     }
 };

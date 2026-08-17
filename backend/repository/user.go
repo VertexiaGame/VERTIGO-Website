@@ -187,7 +187,7 @@ func (r *UserRepository) CreateUser(u *models.User, torsoColor, legColor string)
 
 	avatarQuery := "INSERT INTO avatar (id, head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face, head, larm, rarm, torso, lleg, rleg, light_color, light_intensity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	_, err = r.db.Exec(avatarQuery,
-		u.ID, "f3b700", "f3b700", "f3b700", torsoColor, legColor, legColor,
+		u.ID, models.DefaultHeadColor, models.DefaultHeadColor, models.DefaultHeadColor, torsoColor, legColor, legColor,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "ffffff", 100,
 	)
 	return err

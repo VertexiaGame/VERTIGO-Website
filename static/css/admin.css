@@ -189,13 +189,14 @@
 }
 
 .adm-select {
-    height: 44px !important;
+    height: 30px !important;
     background: #E0E0E0 !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
-    border-radius: 8px !important;
-    padding: 0 12px !important;
+    border-radius: 6px !important;
+    padding: 0 24px 0 10px !important;
     font-family: 'Ubuntu', sans-serif !important;
-    font-size: 14px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
     color: #3D3D3D !important;
     outline: none !important;
     cursor: pointer !important;
@@ -204,7 +205,7 @@
 }
 
 .adm-select:focus {
-    border-color: #912ADF !important;
+    border-color: rgba(61, 61, 61, 0.25) !important;
 }
 
 .adm-panel {

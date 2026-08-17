@@ -27,6 +27,28 @@ func NewMusicService() *MusicService {
 
 var tagBracketRegex = regexp.MustCompile(`(?i)\b(artist|track|album|label):\s*\[([^\]]+)\]`)
 
+const deezerUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+func (s *MusicService) getJSON(apiURL string, dst any) error {
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", deezerUserAgent)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("deezer api returned status %d", resp.StatusCode)
+	}
+
+	return json.NewDecoder(resp.Body).Decode(dst)
+}
+
 func (s *MusicService) SearchTracks(query string) ([]models.DeezerTrack, error) {
 	if query == "" {
 		return []models.DeezerTrack{}, nil
@@ -43,24 +65,9 @@ func (s *MusicService) SearchTracks(query string) ([]models.DeezerTrack, error) 
 	})
 
 	apiURL := fmt.Sprintf("https://api.deezer.com/search?q=%s", url.QueryEscape(formattedQuery))
-	req, err := http.NewRequest("GET", apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("deezer api returned status %d", resp.StatusCode)
-	}
 
 	var deezerResp models.DeezerSearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&deezerResp); err != nil {
+	if err := s.getJSON(apiURL, &deezerResp); err != nil {
 		return nil, err
 	}
 
@@ -79,24 +86,9 @@ func (s *MusicService) GetTrackByID(trackID int64) (*models.DeezerTrack, error) 
 	}
 
 	apiURL := fmt.Sprintf("https://api.deezer.com/track/%d", trackID)
-	req, err := http.NewRequest("GET", apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("deezer api returned status %d", resp.StatusCode)
-	}
 
 	var track models.DeezerTrack
-	if err := json.NewDecoder(resp.Body).Decode(&track); err != nil {
+	if err := s.getJSON(apiURL, &track); err != nil {
 		return nil, err
 	}
 

@@ -1,0 +1,49 @@
+<div id="crt-asset" class="settabcntnt{{if eq .ActiveType "asset"}} active{{end}}">
+    <div class="setcrd">
+        <h3 class="setttl">Create Asset</h3>
+        <span class="setinf">Upload a reusable asset for games and creation</span>
+        <form class="crtformel" onsubmit="return window.submitAsset(event)">
+            <div class="crtfld">
+                <label class="crtlbl" for="crtAssetName">Name</label>
+                <div class="instk">
+                    <div class="instkrw">
+                        <div class="ttpcnt">
+                            <div class="setinbox">
+                                <input type="text" id="crtAssetName" name="name" class="setin" placeholder="Name your asset" required maxlength="60" autocomplete="off">
+                            </div>
+                            <span class="ttptxt">Maximum of 60 characters</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="crtfld">
+                <label class="crtlbl" for="crtAssetDesc">Description</label>
+                <div class="instk">
+                    <div class="instkrw">
+                        <div class="ttpcnt">
+                            <div class="setareabox">
+                                <textarea id="crtAssetDesc" name="description" class="setarea" placeholder="Tell us what this asset is for" maxlength="500"></textarea>
+                            </div>
+                            <span class="ttptxt">Maximum of 500 characters</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="crtfld">
+                <label class="crtlbl" for="crtAssetFile">Asset File</label>
+                <div class="ttpcnt">
+                    <label class="crtupload" for="crtAssetFile">
+                        <input type="file" id="crtAssetFile" name="file" onchange="window.handleAssetFile(event)" hidden>
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span class="crtupmsg" id="crtAssetFileMsg">Choose a file to upload</span>
+                        <span class="crtupname" id="crtAssetFileName"></span>
+                    </label>
+                    <span class="ttptxt">Any file type</span>
+                </div>
+            </div>
+            <button type="submit" class="primary hpyprim hpyinl hpysm">
+                <span>Upload Asset</span>
+            </button>
+        </form>
+    </div>
+</div>

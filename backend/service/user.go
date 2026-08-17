@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -186,6 +187,8 @@ func (s *UserService) UpdatePronouns(userID int, pronouns string) error {
 	return s.userRepo.UpdatePronouns(userID, escapedPronouns)
 }
 
+var AllowedSocialPlatforms = []string{"discord", "twitter", "youtube", "twitch", "github", "instagram", "tiktok", "steam"}
+
 func (s *UserService) UpdateSocials(userID int, socialsMap map[string]string) error {
 	if s.cooldown != nil {
 		key := fmt.Sprintf("action:socials:%d", userID)
@@ -194,21 +197,10 @@ func (s *UserService) UpdateSocials(userID int, socialsMap map[string]string) er
 		}
 	}
 
-	allowedPlatforms := map[string]bool{
-		"discord":   true,
-		"twitter":   true,
-		"youtube":   true,
-		"twitch":    true,
-		"github":    true,
-		"instagram": true,
-		"tiktok":    true,
-		"steam":     true,
-	}
-
 	cleanMap := make(map[string]string)
 	for platform, val := range socialsMap {
 		platform = strings.ToLower(strings.TrimSpace(platform))
-		if !allowedPlatforms[platform] {
+		if !slices.Contains(AllowedSocialPlatforms, platform) {
 			continue
 		}
 		val = html.EscapeString(strings.TrimSpace(val))

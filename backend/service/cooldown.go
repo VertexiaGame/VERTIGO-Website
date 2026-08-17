@@ -25,21 +25,6 @@ func NewCooldownService(defaultDuration time.Duration) *CooldownService {
 	return s
 }
 
-func (s *CooldownService) GetDefaultDuration() time.Duration {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.defaultDuration
-}
-
-func (s *CooldownService) SetDefaultDuration(d time.Duration) {
-	if d <= 0 {
-		return
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.defaultDuration = d
-}
-
 func (s *CooldownService) Allow(key string, customDuration ...time.Duration) (bool, time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -60,34 +45,6 @@ func (s *CooldownService) Allow(key string, customDuration ...time.Duration) (bo
 
 	s.lastAction[key] = now
 	return true, 0
-}
-
-func (s *CooldownService) Reset(key string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.lastAction, key)
-}
-
-func (s *CooldownService) GetRemaining(key string, customDuration ...time.Duration) time.Duration {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	duration := s.defaultDuration
-	if len(customDuration) > 0 && customDuration[0] > 0 {
-		duration = customDuration[0]
-	}
-
-	last, exists := s.lastAction[key]
-	if !exists {
-		return 0
-	}
-
-	elapsed := time.Since(last)
-	if elapsed >= duration {
-		return 0
-	}
-
-	return duration - elapsed
 }
 
 func (s *CooldownService) FormatRemaining(remaining time.Duration) string {

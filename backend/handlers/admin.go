@@ -91,6 +91,28 @@ func getAdminUser(c fiber.Ctx) (*models.User, error) {
 	return user, nil
 }
 
+func adminAuthError(c fiber.Ctx, err error) error {
+	switch err {
+	case fiber.ErrUnauthorized:
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/login")
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+		return c.Redirect().To("/login")
+	case fiber.ErrInternalServerError:
+		return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
+	default:
+		return adminRedirectHome(c)
+	}
+}
+
+func adminAPIError(c fiber.Ctx, err error) error {
+	if err == fiber.ErrForbidden {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Forbidden"})
+	}
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+}
+
 func adminRedirectHome(c fiber.Ctx) error {
 	if c.Get("HX-Request") == "true" {
 		c.Set("HX-Redirect", "/")
@@ -281,17 +303,7 @@ func canModerateTarget(adminUser, targetUser *models.User) bool {
 func AdminIndex(c fiber.Ctx) error {
 	user, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrUnauthorized {
-			if c.Get("HX-Request") == "true" {
-				c.Set("HX-Redirect", "/login")
-				return c.SendStatus(fiber.StatusUnauthorized)
-			}
-			return c.Redirect().To("/login")
-		}
-		if err == fiber.ErrInternalServerError {
-			return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
-		}
-		return adminRedirectHome(c)
+		return adminAuthError(c, err)
 	}
 
 	stats, m := getSystemStats()
@@ -382,17 +394,7 @@ func AdminIndex(c fiber.Ctx) error {
 func AdminUserViewPage(c fiber.Ctx) error {
 	adminUser, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrUnauthorized {
-			if c.Get("HX-Request") == "true" {
-				c.Set("HX-Redirect", "/login")
-				return c.SendStatus(fiber.StatusUnauthorized)
-			}
-			return c.Redirect().To("/login")
-		}
-		if err == fiber.ErrInternalServerError {
-			return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
-		}
-		return adminRedirectHome(c)
+		return adminAuthError(c, err)
 	}
 
 	targetID, err := strconv.Atoi(c.Params("id"))
@@ -442,10 +444,7 @@ func AdminUserViewPage(c fiber.Ctx) error {
 func AdminStatusAPI(c fiber.Ctx) error {
 	_, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrForbidden {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Forbidden"})
-		}
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		return adminAPIError(c, err)
 	}
 
 	stats, _ := getSystemStats()
@@ -460,10 +459,7 @@ func AdminStatusAPI(c fiber.Ctx) error {
 func AdminUsersAPI(c fiber.Ctx) error {
 	adminUser, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrForbidden {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Forbidden"})
-		}
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		return adminAPIError(c, err)
 	}
 
 	search := c.Query("q")
@@ -506,10 +502,7 @@ func AdminUsersAPI(c fiber.Ctx) error {
 func AdminLogsAPI(c fiber.Ctx) error {
 	_, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrForbidden {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Forbidden"})
-		}
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		return adminAPIError(c, err)
 	}
 
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -560,10 +553,7 @@ func AdminLogsAPI(c fiber.Ctx) error {
 func AdminUserDetailAPI(c fiber.Ctx) error {
 	adminUser, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrForbidden {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Forbidden"})
-		}
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		return adminAPIError(c, err)
 	}
 
 	targetID, err := strconv.Atoi(c.Params("id"))
@@ -595,14 +585,7 @@ func adminModerationError(c fiber.Ctx, msg string) error {
 func AdminScrubPost(c fiber.Ctx) error {
 	adminUser, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrUnauthorized {
-			if c.Get("HX-Request") == "true" {
-				c.Set("HX-Redirect", "/login")
-				return c.SendStatus(fiber.StatusUnauthorized)
-			}
-			return c.Redirect().To("/login")
-		}
-		return adminRedirectHome(c)
+		return adminAuthError(c, err)
 	}
 
 	if !csrfValid(c) {
@@ -644,14 +627,7 @@ func AdminScrubPost(c fiber.Ctx) error {
 func AdminModhistRetractPost(c fiber.Ctx) error {
 	adminUser, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrUnauthorized {
-			if c.Get("HX-Request") == "true" {
-				c.Set("HX-Redirect", "/login")
-				return c.SendStatus(fiber.StatusUnauthorized)
-			}
-			return c.Redirect().To("/login")
-		}
-		return adminRedirectHome(c)
+		return adminAuthError(c, err)
 	}
 
 	if !csrfValid(c) {
@@ -682,14 +658,7 @@ func AdminModhistRetractPost(c fiber.Ctx) error {
 func adminTargetForAction(c fiber.Ctx) (*models.User, *models.User, error) {
 	adminUser, err := getAdminUser(c)
 	if err != nil {
-		if err == fiber.ErrUnauthorized {
-			if c.Get("HX-Request") == "true" {
-				c.Set("HX-Redirect", "/login")
-				return nil, nil, c.SendStatus(fiber.StatusUnauthorized)
-			}
-			return nil, nil, c.Redirect().To("/login")
-		}
-		return nil, nil, adminRedirectHome(c)
+		return nil, nil, adminAuthError(c, err)
 	}
 
 	if !csrfValid(c) {

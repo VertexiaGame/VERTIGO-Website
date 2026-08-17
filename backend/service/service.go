@@ -17,6 +17,7 @@ var (
 	Friend     *FriendService
 	ModHistory *ModHistoryService
 	Avatar     *AvatarService
+	Shop       *ShopService
 )
 
 func Init(db *sql.DB) {
@@ -26,6 +27,7 @@ func Init(db *sql.DB) {
 	friendRepo := repository.NewFriendRepository(db)
 	modHistRepo := repository.NewModHistoryRepository(db)
 	avatarRepo := repository.NewAvatarRepository(db)
+	shopRepo := repository.NewShopRepository(db)
 
 	Cooldown = NewCooldownService(5 * time.Second)
 	Auth = NewAuthService(userRepo)
@@ -36,4 +38,5 @@ func Init(db *sql.DB) {
 	Friend = NewFriendService(friendRepo, userRepo, Cooldown)
 	ModHistory = NewModHistoryService(modHistRepo, userRepo)
 	Avatar = NewAvatarService(avatarRepo, userRepo)
+	Shop = NewShopService(shopRepo)
 }

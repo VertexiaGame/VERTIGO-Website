@@ -49,7 +49,7 @@ func main() {
 		c.Set("X-Content-Type-Options", "nosniff")
 		c.Set("X-XSS-Protection", "1; mode=block")
 		c.Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		c.Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: wss:; worker-src 'self' blob:; frame-ancestors 'self';")
+		c.Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob: wss:; worker-src 'self' blob:; frame-ancestors 'self';")
 		return c.Next()
 	})
 

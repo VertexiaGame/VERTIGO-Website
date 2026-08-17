@@ -52,6 +52,10 @@ func Setup(app *fiber.App) {
 	app.Post("/register", handlers.RegisterPost)
 	app.Get("/logout", handlers.Logout)
 	app.Get("/altcha", handlers.AltchaGet)
+	app.Get("/create", handlers.CreateGet)
+
+	app.Get("/shop", handlers.ShopGet)
+
 	app.Get("/avatar", handlers.AvatarEditorPage)
 	app.Get("/avatar/:id", handlers.AvatarGet)
 	app.Get("/avatar/shop/:type/:id", handlers.ShopRenderGet)
@@ -97,6 +101,8 @@ func Setup(app *fiber.App) {
 	api.Get("/altcha", handlers.AltchaGet)
 	api.Get("/feed", handlers.GetFeedPaginated)
 	api.Get("/feed/comments", handlers.GetFeedCommentsHandler)
+	api.Get("/shop/items", handlers.ShopItemsAPI)
+	api.Get("/shop/items/:id", handlers.ShopItemDetailAPI)
 	api.Get("/avatar/data/:id", handlers.AvatarDataGet)
 	api.Get("/avatar/inventory", handlers.AvatarInventoryAPI)
 	api.Get("/avatar/wearing", handlers.AvatarWearingAPI)
@@ -113,6 +119,7 @@ func Setup(app *fiber.App) {
 	api.Get("/music/search", handlers.MusicSearchGet)
 	api.Get("/music/track/:id", handlers.MusicTrackGet)
 	api.Post("/music/update", handlers.SettingsMusicPost)
+	api.Post("/create/preview", handlers.CreatePreviewPost)
 	api.Get("/livetimer", handlers.LiveTimerAPIGet)
 	api.Get("/admin/status", handlers.AdminStatusAPI)
 	api.Get("/admin/users", handlers.AdminUsersAPI)
@@ -134,12 +141,6 @@ func Setup(app *fiber.App) {
 	app.Get("/static/renders/avatars/full/:id", handlers.AvatarGet)
 	app.Get("/static/renders/avatars/headshots/:id", handlers.AvatarHeadshotGet)
 	app.Get("/static/renders/outfits/:id", handlers.AvatarOutfitGet)
-
-	app.Get("/static*", static.New("./public", static.Config{
-		NotFoundHandler: func(c fiber.Ctx) error {
-			return c.Next()
-		},
-	}))
 
 	app.Get("/*", static.New("./public", static.Config{
 		NotFoundHandler: func(c fiber.Ctx) error {

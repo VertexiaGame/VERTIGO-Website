@@ -107,16 +107,21 @@
                                     </div>
                                 </div>
                                 <div class="avtbody" id="avtBody">
-                                    <button type="button" class="avtpart avtphead" data-part="head" data-name="Head" data-color="#{{.Avatar.HeadColor}}" style="background: #{{.Avatar.HeadColor}};" aria-label="Head"></button>
-                                    <div class="avtprow">
-                                        <button type="button" class="avtpart avtparm" data-part="larm" data-name="Left Arm" data-color="#{{.Avatar.LArmColor}}" style="background: #{{.Avatar.LArmColor}};" aria-label="Left Arm"></button>
-                                        <button type="button" class="avtpart avtptorso" data-part="torso" data-name="Torso" data-color="#{{.Avatar.TorsoColor}}" style="background: #{{.Avatar.TorsoColor}};" aria-label="Torso"></button>
-                                        <button type="button" class="avtpart avtparm" data-part="rarm" data-name="Right Arm" data-color="#{{.Avatar.RArmColor}}" style="background: #{{.Avatar.RArmColor}};" aria-label="Right Arm"></button>
-                                    </div>
-                                    <div class="avtprow">
-                                        <button type="button" class="avtpart avtpleg" data-part="lleg" data-name="Left Leg" data-color="#{{.Avatar.LLegColor}}" style="background: #{{.Avatar.LLegColor}};" aria-label="Left Leg"></button>
-                                        <button type="button" class="avtpart avtpleg" data-part="rleg" data-name="Right Leg" data-color="#{{.Avatar.RLegColor}}" style="background: #{{.Avatar.RLegColor}};" aria-label="Right Leg"></button>
-                                    </div>
+                                    <svg class="avtfig" width="180" height="238" viewBox="0 0 574 759" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <g clip-path="url(#clip0_2086_27)">
+                                            <rect class="avtpart" data-part="larm" data-name="Left Arm" data-color="#{{.Avatar.LArmColor}}" y="183" width="133" height="281" rx="14" fill="#{{.Avatar.LArmColor}}"/>
+                                            <rect class="avtpart" data-part="rarm" data-name="Right Arm" data-color="#{{.Avatar.RArmColor}}" x="441" y="183" width="133" height="281" rx="14" fill="#{{.Avatar.RArmColor}}"/>
+                                            <rect class="avtpart" data-part="rleg" data-name="Right Leg" data-color="#{{.Avatar.RLegColor}}" x="294" y="478" width="133" height="281" rx="14" fill="#{{.Avatar.RLegColor}}"/>
+                                            <rect class="avtpart" data-part="lleg" data-name="Left Leg" data-color="#{{.Avatar.LLegColor}}" x="147" y="478" width="133" height="281" rx="14" fill="#{{.Avatar.LLegColor}}"/>
+                                            <path class="avtpart" data-part="head" data-name="Head" data-color="#{{.Avatar.HeadColor}}" d="M377 88.5C377 167 367 177 288 177C209 177 199 167 199 88.5C199 10 209 0 288 0C367 0 377 10 377 88.5Z" fill="#{{.Avatar.HeadColor}}"/>
+                                            <path class="avtpart" data-part="torso" data-name="Torso" data-color="#{{.Avatar.TorsoColor}}" d="M399 183C412.199 183 418.799 183 422.899 187.101C427 191.201 427 197.801 427 211V436C427 449.199 427 455.799 422.899 459.899C418.799 464 412.199 464 399 464H175C161.801 464 155.201 464 151.101 459.899C147 455.799 147 449.199 147 436V211C147 197.801 147 191.201 151.101 187.101C155.201 183 161.801 183 175 183H202.232C205.126 183 206.573 183 207.979 183.066C211.715 183.242 209.283 183.025 212.991 183.513C214.387 183.696 222.355 185.128 238.29 187.99C251.666 190.393 268.19 191 288 191C307.81 191 324.334 190.393 337.71 187.99C353.645 185.128 361.613 183.696 363.009 183.513C366.717 183.025 364.285 183.242 368.021 183.066C369.427 183 370.874 183 373.768 183H399Z" fill="#{{.Avatar.TorsoColor}}"/>
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip0_2086_27">
+                                                <rect width="574" height="759" fill="white"/>
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
                                 </div>
                                 <button type="button" class="avtpart avtpall sel" data-part="all" data-name="All Parts">All Parts</button>
                             </div>

@@ -434,10 +434,10 @@ html.mobmode .avtredrawwrap {
     gap: 6px;
 }
 
-.avtprow {
-    display: flex;
-    justify-content: center;
-    gap: 4px;
+.avtfig {
+    display: block;
+    max-width: 100%;
+    height: auto;
 }
 
 .avtpart {
@@ -460,24 +460,23 @@ html.mobmode .avtredrawwrap {
     box-shadow: 0 0 0 3px rgba(145, 42, 223, 0.35);
 }
 
-.avtphead {
-    width: 64px;
-    height: 64px;
+svg.avtfig .avtpart {
+    cursor: pointer;
+    transform: none;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: filter 0.15s ease;
 }
 
-.avtparm {
-    width: 46px;
-    height: 96px;
+svg.avtfig .avtpart:hover {
+    transform: none;
+    filter: brightness(1.05);
 }
 
-.avtptorso {
-    width: 104px;
-    height: 96px;
-}
-
-.avtpleg {
-    width: 50px;
-    height: 96px;
+svg.avtfig .avtpart.sel {
+    stroke: #912ADF;
+    stroke-width: 10;
+    stroke-linejoin: round;
 }
 
 .avtpall {

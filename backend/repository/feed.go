@@ -191,7 +191,7 @@ func (r *FeedRepository) GetCommentsByFeedID(feedID int, feedType string, curren
               FROM feed_comments c
               INNER JOIN users u ON c.user_id = u.id
               WHERE c.feed_id = ? AND c.feed_type = ? AND c.removed = 'false'
-              ORDER BY c.creation_date ASC, c.id ASC`
+              ORDER BY c.creation_date DESC, c.id DESC`
 	rows, err := r.db.Query(query, currentUserID, feedID, feedType)
 	if err != nil {
 		return nil, err

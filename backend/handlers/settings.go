@@ -188,8 +188,7 @@ func SettingsSocialsPost(c fiber.Ctx) error {
 			socialsMap[reqPlatform] = reqValue
 		}
 	} else {
-		platforms := []string{"discord", "twitter", "youtube", "twitch", "github", "instagram", "tiktok", "steam"}
-		for _, p := range platforms {
+		for _, p := range service.AllowedSocialPlatforms {
 			val := strings.TrimSpace(c.FormValue(p))
 			if val != "" {
 				socialsMap[p] = val

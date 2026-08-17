@@ -30,6 +30,7 @@ export class AvatarViewer {
         this.initialPinchDistance = null;
         this.animationId = null;
         this.spinnerEl = null;
+        this.autoRotate = true;
 
         this.initScene();
         this.initRenderer();
@@ -198,7 +199,7 @@ export class AvatarViewer {
     }
 
     updateCameraPosition() {
-        if (!this.isDragging && (!this.activePointers || this.activePointers.size === 0)) {
+        if (this.autoRotate && !this.isDragging && (!this.activePointers || this.activePointers.size === 0)) {
             this.spherical.theta += AUTO_ROTATE_SPEED;
         }
 
