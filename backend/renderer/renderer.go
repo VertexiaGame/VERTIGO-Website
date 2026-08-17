@@ -18,16 +18,16 @@ const (
 	Width          = 330
 	Height         = 330
 	ScaleFactor    = 8
-	Brightness     = 0.45
-	Roughness      = 1.0
+	Brightness     = 0.52
+	Roughness      = 0.6
 	CamPosX        = 2.0
 	CamPosY        = 3.8
 	CamPosZ        = 5.3
 	CamLookX       = 0.0
 	CamLookY       = 1.6
 	CamLookZ       = 0.0
-	BaseFOV        = 65.0
-	DefaultZoom    = 1.05
+	BaseFOV        = 95.0
+	DefaultZoom    = 2.2
 	AutoZoomMargin = 1.20
 	AssetPath      = "./assets/char/"
 	FacePath       = "./assets/faces/"
@@ -232,12 +232,12 @@ func RenderUserWithPreviewType(db *sql.DB, userID int, previewType string) ([]by
 
 func RenderShopItem(itemType string, itemID int) ([]byte, error) {
 	req := RenderRequest{
-		HeadColor:     "f3b700",
-		TorsoColor:    "0000ff",
-		LeftArmColor:  "f3b700",
-		RightArmColor: "f3b700",
-		LeftLegColor:  "a4bd47",
-		RightLegColor: "a4bd47",
+		HeadColor:     "B3B3B3",
+		TorsoColor:    "B3B3B3",
+		LeftArmColor:  "B3B3B3",
+		RightArmColor: "B3B3B3",
+		LeftLegColor:  "B3B3B3",
+		RightLegColor: "B3B3B3",
 		PreviewType:   itemType,
 	}
 
@@ -262,14 +262,21 @@ func RenderShopItem(itemType string, itemID int) ([]byte, error) {
 
 func RenderCreatePreview(category string, filePath string, texturePath string) ([]byte, error) {
 	req := RenderRequest{
-		HeadColor:     "f3b700",
+		HeadColor:     "B3B3B3",
+		TorsoColor:    "B3B3B3",
+		LeftArmColor:  "B3B3B3",
+		RightArmColor: "B3B3B3",
+		LeftLegColor:  "B3B3B3",
+		RightLegColor: "B3B3B3",
+	}
+        /*
+        HeadColor:     "f3b700",
 		TorsoColor:    "0000ff",
 		LeftArmColor:  "f3b700",
 		RightArmColor: "f3b700",
 		LeftLegColor:  "a4bd47",
 		RightLegColor: "a4bd47",
-	}
-
+        */
 	switch category {
 	case "hat", "face":
 		req.PreviewType = "hat"

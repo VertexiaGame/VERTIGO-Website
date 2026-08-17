@@ -121,7 +121,7 @@ export class AvatarViewer {
     }
 
     initLights() {
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x888888, 0.6);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x888888, 0.8);
         this.scene.add(hemiLight);
 
         const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -343,7 +343,7 @@ export class AvatarViewer {
                 const headTex = await this.createHeadTexture(part.color, faceUrl);
                 material = new THREE.MeshStandardMaterial({
                     map: headTex,
-                    roughness: 0.9,
+                    roughness: 0.6,
                     metalness: 0.0,
                     emissive: new THREE.Color(0xffffff),
                     emissiveMap: headTex,
@@ -352,7 +352,7 @@ export class AvatarViewer {
             } else {
                 material = new THREE.MeshStandardMaterial({
                     color: new THREE.Color(part.color),
-                    roughness: 0.9,
+                    roughness: 0.6,
                     metalness: 0.0,
                     emissive: new THREE.Color(part.color),
                     emissiveIntensity: 0.2
