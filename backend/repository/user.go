@@ -131,6 +131,39 @@ func (r *UserRepository) SearchAdminUsers(search string, powerFilter int, limit,
 	return users, total, nil
 }
 
+func (r *UserRepository) SearchUsers(query string, limit int) ([]*models.User, error) {
+	if r.db == nil {
+		return []*models.User{}, nil
+	}
+
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []*models.User{}, nil
+	}
+
+	if limit <= 0 || limit > 50 {
+		limit = 10
+	}
+
+	pattern := "%" + query + "%"
+	q := "SELECT " + userSelectFields + " FROM users WHERE (username LIKE ? OR displayname LIKE ?) ORDER BY CASE WHEN username = ? THEN 0 WHEN username LIKE ? THEN 1 ELSE 2 END, id ASC LIMIT ?"
+	rows, err := r.db.Query(q, pattern, pattern, query, query+"%", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
 func (r *UserRepository) IsOldUsername(username string) (bool, error) {
 	if r.db == nil {
 		return false, nil

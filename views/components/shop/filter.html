@@ -54,7 +54,9 @@
                         {{else if eq .Filter.Sort "price_desc"}}Price: High to Low
                         {{else}}Newest{{end}}
                     </span>
-                    <i class="fa-solid fa-chevron-down glb-dropdown-arrow"></i>
+                    <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4">
+                        <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                    </svg>
                 </button>
                 <div class="glb-dropdown-menu" id="shopSortMenu">
                     <div class="glb-dropdown-item{{if or (eq .Filter.Sort "newest") (eq .Filter.Sort "")}} active{{end}}" data-value="newest" onclick="window.selectGlobalDropdownOption('shopSortDropdown', 'newest', 'Newest')">Newest</div>

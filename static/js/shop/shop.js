@@ -171,7 +171,7 @@ window.shopItemCardHTML = function(item) {
     return `
         <div class="shp-card" data-id="${item.id}">
             <div class="avtitmimg${isOffsale ? ' shp-offimg' : ''}">
-                <img src="/api/v1/avatar/shop/${encodeURIComponent(safeType)}/${item.id}" alt="${safeName}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                <img src="/api/v1/avatar/shop/${encodeURIComponent(safeType)}/${item.id}" alt="${safeName}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
                 ${badgeHtml}
             </div>
             ${ribbonHtml}
@@ -304,6 +304,9 @@ window.fetchShopItems = function(page = 1, append = false) {
                             img.classList.add('ld');
                             window.checkViewportFill();
                         });
+                        img.addEventListener('error', () => {
+                            img.classList.add('ld');
+                        });
                     }
                 });
 
@@ -429,6 +432,19 @@ const initShopPage = () => {
 
     if (barSearch) barSearch.oninput = handleSearchInput;
     if (sideSearch) sideSearch.oninput = handleSearchInput;
+
+    const markLoaded = function(event) {
+        const img = event.target;
+        if (img && img.tagName === 'IMG' && img.classList.contains('avtldimg')) {
+            img.classList.add('ld');
+        }
+    };
+    document.addEventListener('load', markLoaded, true);
+    document.addEventListener('error', markLoaded, true);
+
+    document.querySelectorAll('.avtldimg').forEach(img => {
+        if (img.complete) img.classList.add('ld');
+    });
 
     window.removeEventListener('scroll', window.handleShopScroll);
     window.addEventListener('scroll', window.handleShopScroll);

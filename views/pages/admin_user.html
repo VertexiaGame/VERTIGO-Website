@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="/static/css/forms.css">
+<link rel="stylesheet" href="/static/css/inputs.css">
 <link rel="stylesheet" href="/static/css/set.css">
 <link rel="stylesheet" href="/static/css/dash.css">
 <link rel="stylesheet" href="/static/css/frn.css">
@@ -28,7 +29,7 @@
                             <span>{{.TargetUser.DisplayName}}</span>
                             {{if .TargetUser.Pronouns}}<span class="prfprn">({{.TargetUser.Pronouns}})</span>{{end}}
                         </h1>
-                        <span class="prfun">@{{.TargetUser.Username}} • #{{.TargetUser.ID}}</span>
+                        <span class="prfun">@{{.TargetUser.Username}} #{{.TargetUser.ID}}</span>
                         <div class="prfsts">
                             <span class="adm-badge adm-badge-{{if eq .TargetUser.RoleName "head manager"}}head-manager{{else if eq .TargetUser.RoleName "vertexia-team"}}vertexia-team{{else}}{{.TargetUser.RoleName}}{{end}}">{{.TargetUser.RoleDisplay}}</span>
                             <span class="prfst">Power <strong>{{.TargetUser.Power}}</strong></span>
@@ -87,7 +88,7 @@
                             <div class="adm-row adm-outfitrow">
                                 <img src="/avatar/outfit/{{.ID}}.png" alt="{{.Name}}" loading="lazy" class="adm-outfitimg" onerror="this.src='/static/useful/temp/pfp.png';">
                                 <span class="adm-lbl">{{.Name}}</span>
-                                <span class="adm-val">#{{.ID}} • {{.CreatedAt.Format "Jan 02, 2006"}}</span>
+                                <span class="adm-val">#{{.ID}} {{.CreatedAt.Format "Jan 02, 2006"}}</span>
                                 {{if $.CanModerate}}
                                 <button type="button" class="primary hpydng hpyinl hpysm" hx-post="/admin/users/{{$.TargetUser.ID}}/outfits/{{.ID}}/delete" hx-include="#admCsrf" hx-target="body" hx-push-url="true" hx-confirm="Delete this outfit?">
                                     <span>Delete</span>

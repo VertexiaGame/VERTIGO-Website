@@ -18,7 +18,7 @@ window.selectGlobalDropdownOption = function(dropdown, value, label, callback) {
     const target = typeof dropdown === 'string' ? document.getElementById(dropdown) : dropdown;
     if (!target) return;
 
-    const labelEl = target.querySelector('.glb-dropdown-label, .shp-dropdown-label, #shopSortLabel');
+    const labelEl = target.querySelector('.glb-dropdown-label, .shp-dropdown-label, #shopSortLabel, #admRoleLabel');
     const inputEl = target.querySelector('input[type="hidden"]');
 
     if (labelEl) labelEl.textContent = label;
@@ -35,8 +35,10 @@ window.selectGlobalDropdownOption = function(dropdown, value, label, callback) {
 
     if (typeof callback === 'function') {
         callback(value, label);
-    } else if (typeof window.fetchShopItems === 'function') {
+    } else if (target.id === 'shopSortDropdown' && typeof window.fetchShopItems === 'function') {
         window.fetchShopItems(1, false);
+    } else if (target.id === 'admRoleDropdown' && typeof window.fetchAdminUsers === 'function') {
+        window.fetchAdminUsers(1);
     }
 };
 

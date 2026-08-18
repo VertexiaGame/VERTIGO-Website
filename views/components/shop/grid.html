@@ -2,7 +2,7 @@
     {{range $idx, $item := .Items}}
     <div class="shp-card" data-id="{{$item.ID}}">
         <div class="avtitmimg{{if or (eq $item.OnSale "false") (eq $item.OffSale "true")}} shp-offimg{{end}}">
-            <img src="/api/v1/avatar/shop/{{$item.Type}}/{{$item.ID}}" alt="{{$item.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+            <img src="/api/v1/avatar/shop/{{$item.Type}}/{{$item.ID}}" alt="{{$item.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
             {{if and (ne $item.OnSale "false") (ne $item.OffSale "true") (ne $item.Special "true") (eq $item.Bucks 0) (eq $item.Bits 0)}}
                 <span class="avtitmbdg" style="background: rgba(40, 167, 69, 0.85);">Free</span>
             {{end}}

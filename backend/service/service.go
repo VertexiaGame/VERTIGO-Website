@@ -18,6 +18,7 @@ var (
 	ModHistory *ModHistoryService
 	Avatar     *AvatarService
 	Shop       *ShopService
+	Asset      *AssetService
 )
 
 func Init(db *sql.DB) {
@@ -28,6 +29,7 @@ func Init(db *sql.DB) {
 	modHistRepo := repository.NewModHistoryRepository(db)
 	avatarRepo := repository.NewAvatarRepository(db)
 	shopRepo := repository.NewShopRepository(db)
+	assetRepo := repository.NewAssetRepository(db)
 
 	Cooldown = NewCooldownService(5 * time.Second)
 	Auth = NewAuthService(userRepo)
@@ -39,4 +41,5 @@ func Init(db *sql.DB) {
 	ModHistory = NewModHistoryService(modHistRepo, userRepo)
 	Avatar = NewAvatarService(avatarRepo, userRepo)
 	Shop = NewShopService(shopRepo)
+	Asset = NewAssetService(assetRepo)
 }

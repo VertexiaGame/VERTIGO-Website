@@ -130,6 +130,28 @@ func (s *ModHistoryService) Record(admin *models.User, targetID int, actionType,
 	return err
 }
 
+func (s *ModHistoryService) RecordAssetReview(admin *models.User, targetUID, assetID int, assetName, actionType, note string) error {
+	if admin == nil {
+		return errors.New("Unauthorized")
+	}
+	if !admin.HasAdminAccess() {
+		return errors.New("Insufficient permission")
+	}
+	if s.modHistRepo == nil {
+		return errors.New("moderation service unavailable")
+	}
+	reason := strings.TrimSpace(note)
+	if reason == "" {
+		if actionType == models.ActionApproveAsset {
+			reason = fmt.Sprintf("Asset #%d (%s) approved", assetID, assetName)
+		} else {
+			reason = fmt.Sprintf("Asset #%d (%s) rejected", assetID, assetName)
+		}
+	}
+	_, err := s.modHistRepo.Create(targetUID, admin.ID, actionType, s.normalizeReason(reason), fmt.Sprintf("Asset #%d (%s)", assetID, assetName), models.StatusActive)
+	return err
+}
+
 func (s *ModHistoryService) restoreField(actionType string, uid int, note string) error {
 	switch actionType {
 	case models.ActionScrubDescription:

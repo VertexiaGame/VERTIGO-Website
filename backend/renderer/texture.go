@@ -16,7 +16,7 @@ import (
 
 var (
 	bsurl         = "https://vertexia.xyz"
-	httpClient    = &http.Client{Timeout: 15 * time.Second}
+	httpClient    = &http.Client{Timeout: 5 * time.Second}
 	downloadMutex sync.Mutex
 	fileLocks     = make(map[string]*sync.Mutex)
 )
@@ -79,6 +79,7 @@ func downloadFile(url string, dest string) error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("status code error: %d", resp.StatusCode)
 	}
+	_ = os.MkdirAll(filepath.Dir(dest), 0755)
 	out, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -96,6 +97,22 @@ func fetchTexture(itemType string, id int, fallback string) (fauxgl.Texture, err
 		return nil, fmt.Errorf("invalid id")
 	}
 	cleanType := filepath.Base(strings.TrimSpace(itemType))
+
+	localCandidates := []string{
+		filepath.Join("assets", "uploads", "shop", cleanType, fmt.Sprintf("%d.png", id)),
+		filepath.Join("assets", "shop", cleanType, fmt.Sprintf("%d.png", id)),
+		filepath.Join("static", "uploads", "shop", cleanType, fmt.Sprintf("%d.png", id)),
+		filepath.Join("uploads", "shop", cleanType, fmt.Sprintf("%d.png", id)),
+	}
+
+	for _, localPath := range localCandidates {
+		if _, err := os.Stat(localPath); err == nil {
+			if tex, err := fauxgl.LoadTexture(localPath); err == nil {
+				return tex, nil
+			}
+		}
+	}
+
 	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s_%d.png", cleanType, id))
 
 	lock := getFileLock(tmpPath)
@@ -127,6 +144,22 @@ func fetchMesh(itemType string, id int) (*fauxgl.Mesh, error) {
 		return nil, fmt.Errorf("invalid id")
 	}
 	cleanType := filepath.Base(strings.TrimSpace(itemType))
+
+	localCandidates := []string{
+		filepath.Join("assets", "uploads", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
+		filepath.Join("assets", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
+		filepath.Join("static", "uploads", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
+		filepath.Join("uploads", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
+	}
+
+	for _, localPath := range localCandidates {
+		if _, err := os.Stat(localPath); err == nil {
+			if mesh, err := fauxgl.LoadOBJ(localPath); err == nil && mesh != nil && len(mesh.Triangles) > 0 {
+				return mesh, nil
+			}
+		}
+	}
+
 	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s_%d.obj", cleanType, id))
 
 	lock := getFileLock(tmpPath)

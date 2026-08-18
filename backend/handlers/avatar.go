@@ -15,7 +15,6 @@ import (
 )
 
 func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
-	c.Set("Cache-Control", "no-cache")
 	idParam := strings.TrimSuffix(c.Params("id"), ".png")
 	userID, err := strconv.Atoi(idParam)
 	if err != nil {
@@ -41,6 +40,7 @@ func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 
 	if imgBytes, err := os.ReadFile(targetCache); err == nil {
 		c.Set("Content-Type", "image/png")
+		c.Set("Cache-Control", "public, max-age=86400")
 		return c.Send(imgBytes)
 	}
 
@@ -60,6 +60,7 @@ func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 	_ = os.WriteFile(cachePathHead, imgBytesHead, 0644)
 
 	c.Set("Content-Type", "image/png")
+	c.Set("Cache-Control", "public, max-age=86400")
 	if isHeadshot {
 		return c.Send(imgBytesHead)
 	}
@@ -75,19 +76,35 @@ func AvatarHeadshotGet(c fiber.Ctx) error {
 }
 
 func ShopRenderGet(c fiber.Ctx) error {
-	itemType := c.Params("type")
-	idParam := c.Params("id")
+	rawType := c.Params("type")
+	normType, _ := models.NormalizeShopCategory(rawType)
+	if normType == "all" {
+		normType = strings.ToLower(filepath.Clean(rawType))
+	}
+
+	idParam := strings.TrimSuffix(c.Params("id"), ".png")
 	itemID, err := strconv.Atoi(idParam)
-	if err != nil {
+	if err != nil || itemID <= 0 {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid item ID")
 	}
 
-	imgBytes, err := renderer.RenderShopItem(itemType, itemID)
+	cachePath := filepath.Join("static", "renders", "shop", normType, idParam+".png")
+	if imgBytes, err := os.ReadFile(cachePath); err == nil {
+		c.Set("Content-Type", "image/png")
+		c.Set("Cache-Control", "public, max-age=86400")
+		return c.Send(imgBytes)
+	}
+
+	imgBytes, err := renderer.RenderShopItem(normType, itemID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
+	_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+	_ = os.WriteFile(cachePath, imgBytes, 0644)
+
 	c.Set("Content-Type", "image/png")
+	c.Set("Cache-Control", "public, max-age=86400")
 	return c.Send(imgBytes)
 }
 
@@ -101,6 +118,7 @@ func AvatarOutfitGet(c fiber.Ctx) error {
 	cachePath := filepath.Join("static", "renders", "outfits", idParam+".png")
 	if imgBytes, err := os.ReadFile(cachePath); err == nil {
 		c.Set("Content-Type", "image/png")
+		c.Set("Cache-Control", "public, max-age=86400")
 		return c.Send(imgBytes)
 	}
 
@@ -113,6 +131,7 @@ func AvatarOutfitGet(c fiber.Ctx) error {
 	_ = os.WriteFile(cachePath, imgBytes, 0644)
 
 	c.Set("Content-Type", "image/png")
+	c.Set("Cache-Control", "public, max-age=86400")
 	return c.Send(imgBytes)
 }
 

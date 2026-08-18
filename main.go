@@ -35,6 +35,7 @@ func main() {
 
 	app := fiber.New(fiber.Config{
 		Views:        engine,
+		BodyLimit:    25 * 1024 * 1024,
 		ReadTimeout:  cfg.ServerReadTimeout,
 		WriteTimeout: cfg.ServerWriteTimeout,
 		IdleTimeout:  cfg.ServerIdleTimeout,

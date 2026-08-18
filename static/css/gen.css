@@ -531,10 +531,16 @@ select option {
 }
 
 .glb-dropdown-arrow {
-    font-size: 10px !important;
+    width: 8px !important;
+    height: 8px !important;
+    min-width: 8px !important;
+    min-height: 8px !important;
     color: #718096 !important;
+    fill: currentColor !important;
     flex-shrink: 0 !important;
     margin-left: 6px !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
     transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
 }
 

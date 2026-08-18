@@ -35,8 +35,22 @@ func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
 	return s.userRepo.GetByUsername(username)
 }
 
+func (s *UserService) GetUserByUnikey(unikey string) (*models.User, error) {
+	if s.userRepo == nil {
+		return nil, errors.New("user repository uninitialized")
+	}
+	return s.userRepo.GetByUnikey(unikey)
+}
+
 func (s *UserService) SearchAdminUsers(search string, powerFilter int, limit, offset int) ([]*models.User, int, error) {
 	return s.userRepo.SearchAdminUsers(search, powerFilter, limit, offset)
+}
+
+func (s *UserService) SearchUsers(query string, limit int) ([]*models.User, error) {
+	if s.userRepo == nil {
+		return []*models.User{}, nil
+	}
+	return s.userRepo.SearchUsers(query, limit)
 }
 
 func (s *UserService) GetUserCount() (int, error) {

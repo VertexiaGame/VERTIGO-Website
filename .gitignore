@@ -34,5 +34,6 @@ go.work.sum
 # .vscode/
 
 
-/static/renders/avatars/
-/static/renders/outfits/
+/static/renders/*
+
+/uploads/*

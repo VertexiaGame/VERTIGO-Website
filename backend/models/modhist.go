@@ -13,6 +13,8 @@ const (
 	ActionScrubPronouns    = "scrub_pronouns"
 	ActionResetAvatar      = "reset_avatar"
 	ActionDeleteOutfit     = "delete_outfit"
+	ActionApproveAsset     = "approve_asset"
+	ActionRejectAsset      = "reject_asset"
 
 	StatusActive    = "active"
 	StatusRetracted = "retracted"
@@ -55,6 +57,10 @@ func (m *ModHistory) ActionLabel() string {
 		return "Reset Avatar"
 	case ActionDeleteOutfit:
 		return "Delete Outfit"
+	case ActionApproveAsset:
+		return "Approve Asset"
+	case ActionRejectAsset:
+		return "Reject Asset"
 	default:
 		return m.ActionType
 	}

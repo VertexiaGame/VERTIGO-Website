@@ -5,9 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/renderer"
+	"vertexia-frontend/backend/service"
 )
 
 var createCategoryNames = map[string]string{
@@ -35,30 +37,74 @@ func normalizeCreateCategory(value string) (string, string) {
 	return "hat", "Hat"
 }
 
+func normalizeAssetCategory(value string) string {
+	switch value {
+	case "image", "mesh", "sound":
+		return value
+	default:
+		return "image"
+	}
+}
+
 func CreateGet(c fiber.Ctx) error {
-	if username := GetActiveUser(c); username == "" {
+	username := GetActiveUser(c)
+	if username == "" {
 		return c.Redirect().To("/login")
 	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Redirect().To("/login")
+	}
+
+	accountAge := time.Since(user.CreationDate)
+	canUploadImage := user.HasAdminAccess() || accountAge >= 3*24*time.Hour
+	canUploadMeshSound := user.HasAdminAccess() || accountAge >= 7*24*time.Hour
+	canUploadClothing := user.HasAdminAccess() || accountAge >= 1*24*time.Hour
+	canUploadAccessories := user.HasAdminAccess() || accountAge >= 3*24*time.Hour
 
 	activeType := normalizeCreateType(c.Query("type", "shop"))
 	activeCat, activeCatName := normalizeCreateCategory(c.Query("cat", "hat"))
 
 	return Render(c, "pages/create", fiber.Map{
-		"Title":         "Create - VERTEXIA",
-		"ActiveType":    activeType,
-		"ActiveCat":     activeCat,
-		"ActiveCatName": activeCatName,
+		"Title":                "Create - VERTEXIA",
+		"ActiveType":           activeType,
+		"ActiveCat":            activeCat,
+		"ActiveCatName":        activeCatName,
+		"ActiveAssetType":      normalizeAssetCategory(c.Query("asset", "image")),
+		"CanUploadImage":       canUploadImage,
+		"CanUploadMeshSound":   canUploadMeshSound,
+		"CanUploadClothing":    canUploadClothing,
+		"CanUploadAccessories": canUploadAccessories,
+		"AccountAgeDays":       int(accountAge.Hours() / 24),
 	}, "layouts/main")
 }
 
 func CreatePreviewPost(c fiber.Ctx) error {
-	if username := GetActiveUser(c); username == "" {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+	}
+
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 	}
 
 	category := c.FormValue("category", "")
 	if _, ok := createCategoryNames[category]; !ok {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid category")
+	}
+
+	accountAge := time.Since(user.CreationDate)
+	if category == "shirt" || category == "pants" || category == "tshirt" {
+		if accountAge < 1*24*time.Hour && !user.HasAdminAccess() {
+			return c.Status(fiber.StatusForbidden).SendString("Your account must be at least 1 day old to create clothing")
+		}
+	} else if category == "hat" || category == "tool" || category == "face" {
+		if accountAge < 3*24*time.Hour && !user.HasAdminAccess() {
+			return c.Status(fiber.StatusForbidden).SendString("Your account must be at least 3 days old to create hats, tools or faces")
+		}
 	}
 
 	fileHeader, err := c.FormFile("file")

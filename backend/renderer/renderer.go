@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -78,6 +79,8 @@ type RenderRequest struct {
 	PreviewType    string
 	PreviewTexture string
 	PreviewObj     string
+	MeshPath       string
+	TexturePath    string
 }
 
 type RenderJob struct {
@@ -133,7 +136,13 @@ func worker(id int) {
 					job.Error <- fmt.Errorf("render panic: %v", r)
 				}
 			}()
-			data, err := renderav(job.Req)
+			var data []byte
+			var err error
+			if job.Req.MeshPath != "" {
+				data, err = rendermesh(job.Req.MeshPath, job.Req.TexturePath)
+			} else {
+				data, err = renderav(job.Req)
+			}
 			if err != nil {
 				job.Error <- err
 			} else {
@@ -145,7 +154,7 @@ func worker(id int) {
 
 func submitRenderJob(req RenderRequest, timeoutMsg string) ([]byte, error) {
 	for gettheload() >= loadThreshold {
-		time.Sleep(time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	resultChan := make(chan []byte, 1)
@@ -238,23 +247,30 @@ func RenderShopItem(itemType string, itemID int) ([]byte, error) {
 		RightArmColor: "B3B3B3",
 		LeftLegColor:  "B3B3B3",
 		RightLegColor: "B3B3B3",
-		PreviewType:   itemType,
 	}
 
-	switch itemType {
-	case "hat":
+	switch strings.ToLower(strings.TrimSpace(itemType)) {
+	case "hat", "hats":
+		req.PreviewType = "hat"
 		req.Hat1ID = itemID
-	case "shirts":
+	case "shirt", "shirts":
+		req.PreviewType = "shirts"
 		req.ShirtID = itemID
-	case "pants":
+	case "pant", "pants":
+		req.PreviewType = "pants"
 		req.PantsID = itemID
-	case "tshirts":
+	case "tshirt", "tshirts":
+		req.PreviewType = "tshirts"
 		req.TShirtID = itemID
-	case "faces":
+	case "face", "faces":
+		req.PreviewType = "faces"
 		req.FaceID = itemID
-	case "gear":
+	case "gear", "tool", "tools":
+		req.PreviewType = "gear"
 		req.IsTool = true
 		req.ToolID = itemID
+	default:
+		req.PreviewType = itemType
 	}
 
 	return submitRenderJob(req, "shop render timeout")

@@ -354,11 +354,32 @@ func AdminIndex(c fiber.Ctx) error {
 		totalLogPages = (totalLogs + 15 - 1) / 15
 	}
 
+	var initialAssets []*models.Asset
+	totalAssets := 0
+	totalAssetPages := 1
+	if service.Asset != nil {
+		initialAssets, totalAssets, _ = service.Asset.GetQueue("", 1, 12)
+		if totalAssets > 0 {
+			totalAssetPages = (totalAssets + 12 - 1) / 12
+		}
+	}
+	if initialAssets == nil {
+		initialAssets = []*models.Asset{}
+	}
+
+	activeTab := c.Query("tab", "status")
+	switch activeTab {
+	case "status", "users", "reports", "assets", "logs":
+	default:
+		activeTab = "status"
+	}
+
 	return Render(c, "pages/admin", fiber.Map{
 		"Title":           "Admin - VERTEXIA",
 		"AdminUser":       user,
 		"RoleName":        user.RoleName(),
 		"RoleDisplayName": user.RoleDisplayName(),
+		"ActiveTab":       activeTab,
 		"StartTimeMs":     startTime.UnixMilli(),
 		"Uptime":          stats["uptime"],
 		"StartTime":       startTime.Format("Jan 02, 2006 15:04"),
@@ -388,6 +409,10 @@ func AdminIndex(c fiber.Ctx) error {
 		"TotalUsers":      totalUsers,
 		"Logs":            initialLogs,
 		"TotalLogPages":   totalLogPages,
+		"Assets":          initialAssets,
+		"TotalAssets":     totalAssets,
+		"TotalAssetPages": totalAssetPages,
+		"CSRF":            getCSRFToken(c),
 	}, "layouts/main")
 }
 
