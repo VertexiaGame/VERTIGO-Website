@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      DEPLOY_HOST: ${{ vars.DEPLOY_HOST || 'beta1.vertexia.xyz' }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST || 'beta2.vertexia.xyz' }}
       DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
       DEPLOY_PATH: /www/wwwroot/beta1.vertexia.xyz/
