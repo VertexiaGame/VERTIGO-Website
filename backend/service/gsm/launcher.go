@@ -1,6 +1,7 @@
 package gsm
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -69,7 +71,11 @@ func processRunning(pid int) bool {
 	if err != nil {
 		return false
 	}
-	return proc.Signal(os.Interrupt) == nil
+	err = proc.Signal(syscall.Signal(0))
+	if err == nil {
+		return true
+	}
+	return errors.Is(err, syscall.EPERM)
 }
 
 func (l *ProcessLauncher) logPath(id string) string {
