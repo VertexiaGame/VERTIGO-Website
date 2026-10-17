@@ -15,6 +15,7 @@ func createGouraudShader(matrixcm fauxgl.Matrix, eye fauxgl.Vector, objColor fau
 	shader.DiffuseColor = fauxgl.Color{R: 0.35, G: 0.35, B: 0.35, A: 1}
 	specularIntensity := math.Max(0, 1.0-Roughness)
 	shader.SpecularColor = fauxgl.Color{R: specularIntensity, G: specularIntensity, B: specularIntensity, A: 1}
+	shader.SpecularPower = math.Max(1, (1.0-Roughness)*80)
 	shader.ObjectColor = objColor
 	shader.Texture = texture
 	return shader

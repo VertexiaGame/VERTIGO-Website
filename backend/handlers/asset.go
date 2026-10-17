@@ -37,6 +37,8 @@ var assetSizeLimits = map[string]int64{
 	models.AssetTypeSound: 15 << 20,
 }
 
+const assetMeshMaxTriangles = 16384
+
 func assetContentType(ext string) string {
 	switch strings.ToLower(ext) {
 	case ".png":
@@ -100,6 +102,58 @@ func validateAssetContent(assetType, ext string, header []byte) error {
 		}
 	}
 	return nil
+}
+
+func wantsAssetJSON(c fiber.Ctx) bool {
+	accept := c.Get("Accept")
+	if strings.Contains(accept, "application/json") {
+		return true
+	}
+	if c.Get("X-Requested-With") == "XMLHttpRequest" {
+		return true
+	}
+	return c.Get("HX-Request") == "true"
+}
+
+func isOwnerOrAdminForAsset(c fiber.Ctx, asset *models.Asset) bool {
+	providedUkey := c.Query("ukey")
+	if providedUkey == "" {
+		providedUkey = c.Query("unikey")
+	}
+	if providedUkey == "" {
+		providedUkey = c.Query("user_key")
+	}
+	if providedUkey == "" {
+		providedUkey = c.Get("X-User-Key")
+	}
+	if providedUkey == "" {
+		providedUkey = c.Get("X-Unikey")
+	}
+	if providedUkey == "" {
+		providedUkey = c.Get("X-Ukey")
+	}
+	providedUkey = strings.Trim(strings.TrimSpace(providedUkey), "\"")
+
+	if providedUkey != "" && service.User != nil {
+		user, err := service.User.GetUserByUnikey(providedUkey)
+		if err == nil && user != nil {
+			if user.ID == asset.UID || user.HasAdminAccess() {
+				return true
+			}
+		}
+	}
+
+	username := GetActiveUser(c)
+	if username != "" && service.User != nil {
+		user, err := service.User.GetUserByUsername(username)
+		if err == nil && user != nil {
+			if user.ID == asset.UID || user.HasAdminAccess() {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func isAuthorizedForAsset(c fiber.Ctx, asset *models.Asset) bool {
@@ -202,13 +256,21 @@ func AssetsPage(c fiber.Ctx) error {
 }
 
 func AssetUploadPost(c fiber.Ctx) error {
+	jsonResponse := wantsAssetJSON(c)
+
 	username := GetActiveUser(c)
 	if username == "" {
+		if jsonResponse {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Your session expired. Please log in again, then retry the upload."})
+		}
 		return c.Redirect().To("/login")
 	}
 
 	user, err := service.User.GetUserByUsername(username)
 	if err != nil || user == nil {
+		if jsonResponse {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Your session expired. Please log in again, then retry the upload."})
+		}
 		return c.Redirect().To("/login")
 	}
 
@@ -218,42 +280,56 @@ func AssetUploadPost(c fiber.Ctx) error {
 		return c.Redirect().To("/create?type=asset&asset=" + assetType + "&error=" + url.QueryEscape(msg))
 	}
 
+	fail := func(msg string, status int) error {
+		if jsonResponse {
+			return c.Status(status).JSON(fiber.Map{"error": msg})
+		}
+		return redirectError(msg)
+	}
+
+	succeed := func(assetID int) error {
+		if jsonResponse {
+			return c.JSON(fiber.Map{"success": true, "id": assetID})
+		}
+		return c.Redirect().To("/create/assets")
+	}
+
 	accountAge := time.Since(user.CreationDate)
 	if assetType == models.AssetTypeImage {
 		if accountAge < 3*24*time.Hour && !user.HasAdminAccess() {
-			return redirectError("Your account must be at least 3 days old to upload image assets")
+			return fail("Your account must be at least 3 days old to upload image assets", fiber.StatusForbidden)
 		}
 	} else if assetType == models.AssetTypeMesh || assetType == models.AssetTypeSound {
 		if accountAge < 7*24*time.Hour && !user.HasAdminAccess() {
-			return redirectError("Your account must be at least 7 days old to upload " + models.AssetTypeNames[assetType] + " assets")
+			return fail("Your account must be at least 7 days old to upload "+models.AssetTypeNames[assetType]+" assets", fiber.StatusForbidden)
 		}
 	}
 
 	extensions, ok := assetTypeExtensions[assetType]
 	if !ok {
-		return redirectError("Invalid asset type")
+		return fail("Invalid asset type", fiber.StatusBadRequest)
 	}
 
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		return redirectError("Missing file")
+		return fail("Missing file", fiber.StatusBadRequest)
 	}
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	if !extensions[ext] {
-		return redirectError("Invalid file type for " + models.AssetTypeNames[assetType])
+		return fail("Invalid file type for "+models.AssetTypeNames[assetType], fiber.StatusBadRequest)
 	}
 
 	if fileHeader.Size <= 0 {
-		return redirectError("Empty file")
+		return fail("Empty file", fiber.StatusBadRequest)
 	}
 	if fileHeader.Size > assetSizeLimits[assetType] {
-		return redirectError("File is too large")
+		return fail("File is too large", fiber.StatusBadRequest)
 	}
 
 	src, err := fileHeader.Open()
 	if err != nil {
-		return redirectError("Could not read upload")
+		return fail("Could not read upload", fiber.StatusBadRequest)
 	}
 	defer src.Close()
 
@@ -261,34 +337,34 @@ func AssetUploadPost(c fiber.Ctx) error {
 	n, _ := io.ReadFull(src, header)
 	header = header[:n]
 	if _, err := src.Seek(0, io.SeekStart); err != nil {
-		return redirectError("Could not read upload")
+		return fail("Could not read upload", fiber.StatusBadRequest)
 	}
 
 	if err := validateAssetContent(assetType, ext, header); err != nil {
-		return redirectError(err.Error())
+		return fail(err.Error(), fiber.StatusBadRequest)
 	}
 
 	fileName, err := models.GenerateRandomString(24)
 	if err != nil {
-		return redirectError("Could not save upload")
+		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 
 	dir := filepath.Join(assetUploadDir, strconv.Itoa(user.ID))
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return redirectError("Could not save upload")
+		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 
 	relPath := filepath.Join(strconv.Itoa(user.ID), fileName+ext)
 	fullSavedPath := filepath.Join(assetUploadDir, relPath)
 	dst, err := os.Create(fullSavedPath)
 	if err != nil {
-		return redirectError("Could not save upload")
+		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 
 	if _, err := io.Copy(dst, src); err != nil {
 		dst.Close()
 		os.Remove(fullSavedPath)
-		return redirectError("Could not save upload")
+		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 	dst.Close()
 
@@ -318,12 +394,30 @@ func AssetUploadPost(c fiber.Ctx) error {
 		}
 	}
 
+	if assetType == models.AssetTypeMesh {
+		triangles, err := renderer.MeshTriangleCount(fullSavedPath)
+		if err != nil || triangles == 0 {
+			os.Remove(fullSavedPath)
+			if relTexPath != "" {
+				os.Remove(filepath.Join(assetUploadDir, relTexPath))
+			}
+			return fail("Invalid mesh file", fiber.StatusBadRequest)
+		}
+		if triangles > assetMeshMaxTriangles {
+			os.Remove(fullSavedPath)
+			if relTexPath != "" {
+				os.Remove(filepath.Join(assetUploadDir, relTexPath))
+			}
+			return fail("Mesh has too many triangles (max 16384)", fiber.StatusBadRequest)
+		}
+	}
+
 	if service.Asset == nil {
 		os.Remove(fullSavedPath)
 		if relTexPath != "" {
 			os.Remove(filepath.Join(assetUploadDir, relTexPath))
 		}
-		return redirectError("Asset service unavailable")
+		return fail("Asset service unavailable", fiber.StatusInternalServerError)
 	}
 
 	assetID, err := service.Asset.CreateAsset(user.ID, c.FormValue("name"), c.FormValue("description"), assetType, relPath)
@@ -332,22 +426,29 @@ func AssetUploadPost(c fiber.Ctx) error {
 		if relTexPath != "" {
 			os.Remove(filepath.Join(assetUploadDir, relTexPath))
 		}
-		return redirectError(err.Error())
+		return fail(err.Error(), fiber.StatusBadRequest)
 	}
 
 	if assetType == models.AssetTypeMesh {
-		var fullTexPath string
+		meshPath := fullSavedPath
+		texPath := ""
 		if relTexPath != "" {
-			fullTexPath = filepath.Join(assetUploadDir, relTexPath)
+			texPath = filepath.Join(assetUploadDir, relTexPath)
 		}
-		if imgBytes, err := renderer.RenderMeshWithTexture(fullSavedPath, fullTexPath); err == nil && len(imgBytes) > 0 {
-			cachePath := filepath.Join("static", "renders", "meshes", strconv.Itoa(assetID)+".png")
-			_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
-			_ = os.WriteFile(cachePath, imgBytes, 0644)
-		}
+		go func() {
+			var fullTexPath string
+			if texPath != "" {
+				fullTexPath = texPath
+			}
+			if imgBytes, err := renderer.RenderMeshWithTexture(meshPath, fullTexPath); err == nil && len(imgBytes) > 0 {
+				cachePath := filepath.Join("static", "renders", "meshes", strconv.Itoa(assetID)+".png")
+				_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+				_ = os.WriteFile(cachePath, imgBytes, 0644)
+			}
+		}()
 	}
 
-	return c.Redirect().To("/create/assets")
+	return succeed(assetID)
 }
 
 func AssetFileGet(c fiber.Ctx) error {
@@ -372,12 +473,16 @@ func AssetFileGet(c fiber.Ctx) error {
 	if asset.ApprovalState == models.AssetApprovalRejected {
 		c.Set("Content-Type", "image/png")
 		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		c.Set("X-Asset-Status", models.AssetApprovalRejected)
+		c.Set("X-Asset-Fallback", "true")
 		return c.SendFile(fallbackRejectPath)
 	}
 
-	if asset.ApprovalState != models.AssetApprovalApproved {
+	if asset.ApprovalState != models.AssetApprovalApproved && !isOwnerOrAdminForAsset(c, asset) {
 		c.Set("Content-Type", "image/png")
 		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		c.Set("X-Asset-Status", models.AssetApprovalPending)
+		c.Set("X-Asset-Fallback", "true")
 		return c.SendFile(fallbackTimePath)
 	}
 
@@ -388,7 +493,31 @@ func AssetFileGet(c fiber.Ctx) error {
 
 	c.Set("Content-Type", assetContentType(filepath.Ext(asset.FilePath)))
 	c.Set("Cache-Control", "public, max-age=86400")
+	c.Set("X-Asset-Status", asset.ApprovalState)
 	return c.SendFile(path)
+}
+
+func AssetStatusGet(c fiber.Ctx) error {
+	assetID, err := parseAssetID(c.Params("id"))
+	if err != nil || assetID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid asset ID"})
+	}
+
+	if service.Asset == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Asset service unavailable"})
+	}
+
+	asset, err := service.Asset.GetByID(assetID)
+	if err != nil || asset == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Asset not found"})
+	}
+
+	return c.JSON(fiber.Map{
+		"id":             asset.ID,
+		"type":           asset.Type,
+		"approval_state": asset.ApprovalState,
+		"uid":            asset.UID,
+	})
 }
 
 func AssetRenderGet(c fiber.Ctx) error {
@@ -413,12 +542,16 @@ func AssetRenderGet(c fiber.Ctx) error {
 	if asset.ApprovalState == models.AssetApprovalRejected {
 		c.Set("Content-Type", "image/png")
 		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		c.Set("X-Asset-Status", models.AssetApprovalRejected)
+		c.Set("X-Asset-Fallback", "true")
 		return c.SendFile(fallbackRejectPath)
 	}
 
-	if asset.ApprovalState != models.AssetApprovalApproved {
+	if asset.ApprovalState != models.AssetApprovalApproved && !isOwnerOrAdminForAsset(c, asset) {
 		c.Set("Content-Type", "image/png")
 		c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		c.Set("X-Asset-Status", models.AssetApprovalPending)
+		c.Set("X-Asset-Fallback", "true")
 		return c.SendFile(fallbackTimePath)
 	}
 
@@ -431,10 +564,12 @@ func AssetRenderGet(c fiber.Ctx) error {
 	}
 
 	cachePath := filepath.Join("static", "renders", "meshes", strconv.Itoa(assetID)+".png")
-	if imgBytes, err := os.ReadFile(cachePath); err == nil {
-		c.Set("Content-Type", "image/png")
-		c.Set("Cache-Control", "public, max-age=86400")
-		return c.Send(imgBytes)
+	if fi, err := os.Stat(cachePath); err == nil && fi.Size() > 0 {
+		if imgBytes, err := os.ReadFile(cachePath); err == nil && len(imgBytes) > 0 {
+			c.Set("Content-Type", "image/png")
+			c.Set("Cache-Control", "public, max-age=86400")
+			return c.Send(imgBytes)
+		}
 	}
 
 	fullPath := filepath.Join(assetUploadDir, filepath.Clean(asset.FilePath))
@@ -457,8 +592,15 @@ func AssetRenderGet(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
-	_ = os.WriteFile(cachePath, imgBytes, 0644)
+	if len(imgBytes) > 0 {
+		_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+		tmpPath := cachePath + ".tmp"
+		if err := os.WriteFile(tmpPath, imgBytes, 0644); err == nil {
+			_ = os.Rename(tmpPath, cachePath)
+		} else {
+			_ = os.Remove(tmpPath)
+		}
+	}
 
 	c.Set("Content-Type", "image/png")
 	c.Set("Cache-Control", "public, max-age=86400")

@@ -1,13 +1,14 @@
 package renderer
 
 import (
-	"bytes"
-	"image/png"
+	"errors"
 	"log"
 	"math"
 
 	"github.com/fogleman/fauxgl"
 )
+
+const maxPreviewTriangles = 8192
 
 const toolArmFile = LArmFile + "Tool"
 
@@ -99,7 +100,13 @@ func transformMesh(m *fauxgl.Mesh, mat fauxgl.Matrix) *fauxgl.Mesh {
 }
 
 func meshCorners(m *fauxgl.Mesh, mat fauxgl.Matrix) []fauxgl.Vector {
+	if m == nil {
+		return nil
+	}
 	b := m.BoundingBox()
+	if !finiteVec(b.Min) || !finiteVec(b.Max) {
+		return nil
+	}
 	return []fauxgl.Vector{
 		mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Min.Y, Z: b.Min.Z}),
 		mat.MulPosition(fauxgl.Vector{X: b.Min.X, Y: b.Min.Y, Z: b.Max.Z}),
@@ -119,8 +126,14 @@ func renderav(req RenderRequest) ([]byte, error) {
 	context.ClearDepthBuffer()
 	context.AlphaBlend = true
 
-	hats := loadHats(req)
-	toolMesh, toolTex := loadTool(req)
+	hats, err := loadHats(req)
+	if err != nil {
+		return nil, err
+	}
+	toolMesh, toolTex, err := loadTool(req)
+	if err != nil {
+		return nil, err
+	}
 
 	eye, look := cameraFor(req, hats.box)
 	fov := fitFov(req, hats, toolMesh, eye, look)
@@ -131,23 +144,33 @@ func renderav(req RenderRequest) ([]byte, error) {
 	textures := loadBodyTextures(req)
 	drawAvatar(context, matrixcm, eye, req, hats, toolMesh, toolTex, textures)
 
-	img := downsample(context.ColorBuffer, ScaleFactor)
-
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return encodePNG(downsample(context.ColorBuffer, ScaleFactor))
 }
 
-func loadHats(req RenderRequest) hatSet {
+func loadPreviewMesh(path string) (*fauxgl.Mesh, error) {
+	m, err := loadMeshCached(path)
+	if err != nil {
+		return nil, errors.New("could not parse model, make sure it is a valid OBJ file")
+	}
+	if m == nil || len(m.Triangles) == 0 {
+		return nil, errors.New("model has no geometry")
+	}
+	if len(m.Triangles) > maxPreviewTriangles {
+		return nil, errors.New("model is too complex for preview, reduce the triangle count")
+	}
+	return m, nil
+}
+
+func loadHats(req RenderRequest) (hatSet, error) {
 	var hs hatSet
 
 	if req.PreviewType == "hat" {
 		if req.PreviewObj != "" {
-			if m, err := fauxgl.LoadOBJ(req.PreviewObj); err == nil {
-				hs.preview = m
+			m, err := loadPreviewMesh(req.PreviewObj)
+			if err != nil {
+				return hs, err
 			}
+			hs.preview = m
 		} else if req.Hat1ID > 0 {
 			if m, err := fetchMesh("hat", req.Hat1ID); err == nil {
 				hs.preview = m
@@ -168,7 +191,7 @@ func loadHats(req RenderRequest) hatSet {
 			mesh = hs.preview
 		} else {
 			m, err := fetchMesh("hat", hid)
-			if err != nil && m == nil {
+			if m == nil {
 				log.Printf("failed loading hat mesh %d: %v", hid, err)
 				continue
 			}
@@ -180,33 +203,39 @@ func loadHats(req RenderRequest) hatSet {
 		}
 		hs.hats = append(hs.hats, LoadedHat{Mesh: mesh, Tex: tex, ID: hid})
 	}
-	return hs
+	return hs, nil
 }
 
-func loadTool(req RenderRequest) (*fauxgl.Mesh, fauxgl.Texture) {
+func loadTool(req RenderRequest) (*fauxgl.Mesh, fauxgl.Texture, error) {
 	if req.PreviewType == "gear" && req.PreviewObj != "" {
-		m, err := fauxgl.LoadOBJ(req.PreviewObj)
+		m, err := loadPreviewMesh(req.PreviewObj)
 		if err != nil {
-			return nil, nil
+			return nil, nil, err
 		}
 		if req.PreviewTexture != "" {
-			tex, err := fauxgl.LoadTexture(req.PreviewTexture)
+			tex, err := loadTextureCached(req.PreviewTexture)
 			if err != nil {
-				return nil, nil
+				log.Printf("failed loading preview tool texture: %v", err)
+				return m, nil, nil
 			}
-			return m, tex
+			return m, tex, nil
 		}
-		return m, nil
+		return m, nil, nil
 	}
 	if req.ToolID > 0 {
 		m, err := fetchMesh("gear", req.ToolID)
 		if err != nil {
-			return nil, nil
+			return nil, nil, nil
 		}
 		tex, _ := fetchTexture("gear", req.ToolID, "")
-		return m, tex
+		return m, tex, nil
 	}
-	return nil, nil
+	return nil, nil, nil
+}
+
+func finiteVec(v fauxgl.Vector) bool {
+	return !math.IsNaN(v.X) && !math.IsNaN(v.Y) && !math.IsNaN(v.Z) &&
+		!math.IsInf(v.X, 0) && !math.IsInf(v.Y, 0) && !math.IsInf(v.Z, 0)
 }
 
 func cameraFor(req RenderRequest, hatBox *fauxgl.Box) (fauxgl.Vector, fauxgl.Vector) {
@@ -218,9 +247,13 @@ func cameraFor(req RenderRequest, hatBox *fauxgl.Box) (fauxgl.Vector, fauxgl.Vec
 	if req.PreviewType == "hat" && hatBox != nil {
 		c := hatBox.Center()
 		s := hatBox.Size()
-		maxS := math.Max(s.X, math.Max(s.Y, s.Z))
-		look = fauxgl.Vector{X: c.X * 0.5, Y: c.Y - 1.0, Z: c.Z * 0.5}
-		eye = fauxgl.Vector{X: c.X + 1.2 + maxS*0.5, Y: c.Y + 0.5 + maxS*0.2, Z: c.Z + 2.5 + maxS*1.2}
+		if finiteVec(c) && finiteVec(s) {
+			maxS := math.Max(s.X, math.Max(s.Y, s.Z))
+			if !math.IsNaN(maxS) && !math.IsInf(maxS, 0) && maxS >= 0 && maxS < 1000 {
+				look = fauxgl.Vector{X: c.X * 0.5, Y: c.Y - 1.0, Z: c.Z * 0.5}
+				eye = fauxgl.Vector{X: c.X + 1.2 + maxS*0.5, Y: c.Y + 0.5 + maxS*0.2, Z: c.Z + 2.5 + maxS*1.2}
+			}
+		}
 	} else if req.PreviewType == "face" || req.PreviewType == "faces" {
 		look = fauxgl.Vector{X: 0.0, Y: 3.0, Z: 0.0}
 		eye = fauxgl.Vector{X: 1.0, Y: 3.2, Z: 2.5}
@@ -237,7 +270,7 @@ func fitFov(req RenderRequest, hs hatSet, toolMesh *fauxgl.Mesh, eye, look fauxg
 	view := fauxgl.LookAt(eye, look, fauxgl.Vector{X: 0, Y: 1, Z: 0})
 	matrixcm := fauxgl.Perspective(defaultFov, float64(Width)/float64(Height), 0.1, 1000).Mul(view)
 
-	corners := make([]fauxgl.Vector, 0, 56+8*len(hs.hats)+8)
+	corners := make([]fauxgl.Vector, 0, 56+8)
 	for _, name := range []string{HeadFile, TorsoFile, RArmFile, LLegFile, RLegFile, TShirtFile} {
 		if part, ok := bodyParts[name]; ok && part != nil {
 			corners = append(corners, part.Corners...)
@@ -250,17 +283,17 @@ func fitFov(req RenderRequest, hs hatSet, toolMesh *fauxgl.Mesh, eye, look fauxg
 	if part, ok := bodyParts[armName]; ok && part != nil {
 		corners = append(corners, part.Corners...)
 	}
-	for _, h := range hs.hats {
-		corners = append(corners, meshCorners(h.Mesh, mHead)...)
-	}
 	if toolMesh != nil {
 		corners = append(corners, meshCorners(toolMesh, mTool)...)
 	}
 
 	maxNDC := 0.0
 	for _, p := range corners {
+		if !finiteVec(p) {
+			continue
+		}
 		nx, ny, _, w := getNDC(matrixcm, p)
-		if w <= 0.01 {
+		if w <= 0.01 || math.IsNaN(nx) || math.IsNaN(ny) || math.IsInf(nx, 0) || math.IsInf(ny, 0) {
 			continue
 		}
 		if math.Abs(nx) > maxNDC {
@@ -272,8 +305,15 @@ func fitFov(req RenderRequest, hs hatSet, toolMesh *fauxgl.Mesh, eye, look fauxg
 	}
 	if maxNDC > 0.99 {
 		factor := maxNDC * AutoZoomMargin
+		if factor > maxAutoZoomFactor {
+			factor = maxAutoZoomFactor
+		}
 		newTan := (math.Tan(BaseFOV*math.Pi/360.0) / DefaultZoom) * factor
-		return 2 * math.Atan(newTan) * 180.0 / math.Pi
+		fov := 2 * math.Atan(newTan) * 180.0 / math.Pi
+		if fov > maxFov {
+			fov = maxFov
+		}
+		return fov
 	}
 	return defaultFov
 }
@@ -281,12 +321,12 @@ func fitFov(req RenderRequest, hs hatSet, toolMesh *fauxgl.Mesh, eye, look fauxg
 func loadBodyTextures(req RenderRequest) bodyTextures {
 	var textures bodyTextures
 	if (req.PreviewType == "face" || req.PreviewType == "faces") && req.PreviewTexture != "" {
-		textures.face, _ = fauxgl.LoadTexture(req.PreviewTexture)
+		textures.face, _ = loadTextureCached(req.PreviewTexture)
 	} else {
-		textures.face, _ = fetchTexture("faces", req.FaceID, FacePath+"0.png")
+		textures.face, _ = fetchTexture("faces", req.FaceID, FacePath+"def.png")
 	}
 	if (req.PreviewType == "shirt" || req.PreviewType == "shirts") && req.PreviewTexture != "" {
-		textures.shirt, _ = fauxgl.LoadTexture(req.PreviewTexture)
+		textures.shirt, _ = loadTextureCached(req.PreviewTexture)
 	} else if req.ShirtID > 0 {
 		var err error
 		textures.shirt, err = fetchTexture("shirts", req.ShirtID, "")
@@ -295,7 +335,7 @@ func loadBodyTextures(req RenderRequest) bodyTextures {
 		}
 	}
 	if (req.PreviewType == "pant" || req.PreviewType == "pants") && req.PreviewTexture != "" {
-		textures.pants, _ = fauxgl.LoadTexture(req.PreviewTexture)
+		textures.pants, _ = loadTextureCached(req.PreviewTexture)
 	} else if req.PantsID > 0 {
 		var err error
 		textures.pants, err = fetchTexture("pants", req.PantsID, "")
@@ -304,7 +344,7 @@ func loadBodyTextures(req RenderRequest) bodyTextures {
 		}
 	}
 	if (req.PreviewType == "tshirt" || req.PreviewType == "tshirts") && req.PreviewTexture != "" {
-		textures.tshirt, _ = fauxgl.LoadTexture(req.PreviewTexture)
+		textures.tshirt, _ = loadTextureCached(req.PreviewTexture)
 	} else if req.TShirtID > 0 {
 		var err error
 		textures.tshirt, err = fetchTexture("tshirts", req.TShirtID, "")
@@ -317,7 +357,7 @@ func loadBodyTextures(req RenderRequest) bodyTextures {
 
 func drawAvatar(context *fauxgl.Context, matrixcm fauxgl.Matrix, eye fauxgl.Vector, req RenderRequest, hs hatSet, toolMesh *fauxgl.Mesh, toolTex fauxgl.Texture, textures bodyTextures) {
 	drawPart := func(part *BodyPart, colorHex string, texture fauxgl.Texture) {
-		if part == nil {
+		if part == nil || part.Mesh == nil {
 			return
 		}
 		context.Shader = createGouraudShader(matrixcm, eye, parsec(colorHex), texture)
@@ -331,6 +371,9 @@ func drawAvatar(context *fauxgl.Context, matrixcm fauxgl.Matrix, eye fauxgl.Vect
 	drawPart(bodyParts[HeadFile], req.HeadColor, headTex)
 
 	for _, h := range hs.hats {
+		if h.Mesh == nil {
+			continue
+		}
 		hatMesh := h.Mesh.Copy()
 		context.Shader = createGouraudShader(matrixcm, eye, parsec("#FFFFFF"), h.Tex)
 		hatMesh.Transform(mHead)
@@ -340,7 +383,7 @@ func drawAvatar(context *fauxgl.Context, matrixcm fauxgl.Matrix, eye fauxgl.Vect
 	if req.PreviewType == "hat" && req.PreviewObj != "" && hs.preview != nil {
 		var hatTex fauxgl.Texture
 		if req.PreviewTexture != "" {
-			hatTex, _ = fauxgl.LoadTexture(req.PreviewTexture)
+			hatTex, _ = loadTextureCached(req.PreviewTexture)
 		}
 		previewMesh := hs.preview.Copy()
 		context.Shader = createGouraudShader(matrixcm, eye, parsec("#FFFFFF"), hatTex)

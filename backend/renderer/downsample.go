@@ -2,7 +2,6 @@ package renderer
 
 import (
 	"image"
-	"image/color"
 )
 
 func downsample(img *image.NRGBA, scaleFactor int) *image.NRGBA {
@@ -14,26 +13,39 @@ func downsample(img *image.NRGBA, scaleFactor int) *image.NRGBA {
 	ow := w / scaleFactor
 	oh := h / scaleFactor
 	out := image.NewNRGBA(image.Rect(0, 0, ow, oh))
+	src := img.Pix
+	dst := out.Pix
+	sw := img.Stride
+	n := uint32(scaleFactor * scaleFactor)
 	for y := 0; y < oh; y++ {
 		for x := 0; x < ow; x++ {
-			var r, g, b, a uint32
+			var rs, gs, bs, as uint32
+			base := y*scaleFactor*sw + x*scaleFactor*4
 			for dy := 0; dy < scaleFactor; dy++ {
+				o := base + dy*sw
 				for dx := 0; dx < scaleFactor; dx++ {
-					c := img.NRGBAAt(x*scaleFactor+dx, y*scaleFactor+dy)
-					cr, cg, cb, ca := c.RGBA()
-					r += cr
-					g += cg
-					b += cb
-					a += ca
+					a := uint32(src[o+3])
+					if a != 0 {
+						rs += uint32(src[o]) * a
+						gs += uint32(src[o+1]) * a
+						bs += uint32(src[o+2]) * a
+					}
+					as += a
+					o += 4
 				}
 			}
-			n := uint32(scaleFactor * scaleFactor)
-			out.SetNRGBA(x, y, color.NRGBA{
-				R: uint8((r / n) >> 8),
-				G: uint8((g / n) >> 8),
-				B: uint8((b / n) >> 8),
-				A: uint8((a / n) >> 8),
-			})
+			d := (y*out.Stride + x*4)
+			if as == 0 {
+				dst[d] = 0
+				dst[d+1] = 0
+				dst[d+2] = 0
+				dst[d+3] = 0
+			} else {
+				dst[d] = uint8((rs + as/2) / as)
+				dst[d+1] = uint8((gs + as/2) / as)
+				dst[d+2] = uint8((bs + as/2) / as)
+				dst[d+3] = uint8(as / n)
+			}
 		}
 	}
 	return out

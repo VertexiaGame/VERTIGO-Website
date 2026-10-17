@@ -5,8 +5,8 @@ import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 
 const THREE = window.THREE;
 
-const LIMB_ORDER = ['head', 'torso', 'larm', 'rarm', 'lleg', 'rleg'];
 const HIT_RADIUS = 28;
+const HIT_RADIUS_TOUCH = 72;
 
 const raycaster = new THREE.Raycaster();
 const dragPlane = new THREE.Plane();
@@ -19,36 +19,15 @@ function defaultTransform() {
     };
 }
 
-const SNAPS = {
-    'head-top': { limb: 'head', surface: 'top' },
-    'head-front': { limb: 'head', surface: 'front' },
-    'torso-top': { limb: 'torso', surface: 'top' },
-    'torso-front': { limb: 'torso', surface: 'front' },
-    'larm-top': { limb: 'larm', surface: 'top' },
-    'larm-hand': { limb: 'larm', surface: 'hand' },
-    'rarm-top': { limb: 'rarm', surface: 'top' },
-    'rarm-hand': { limb: 'rarm', surface: 'hand' },
-    'lleg-top': { limb: 'lleg', surface: 'top' },
-    'lleg-foot': { limb: 'lleg', surface: 'foot' },
-    'rleg-top': { limb: 'rleg', surface: 'top' },
-    'rleg-foot': { limb: 'rleg', surface: 'foot' }
-};
-
-function defaultSnap() {
-    return 'none';
-}
-
-function getCurrentUserId() {
-    const img = document.querySelector('.pfpimg');
-    if (img) {
-        const m = img.src.match(/\/headshot\/(\d+)\.png/);
-        if (m) return parseInt(m[1], 10);
-    }
-    return 0;
+function currentCreateCategory(fallback) {
+    if (fallback) return fallback;
+    const catTab = document.querySelector('.crtshoptabs .tabbtn.active');
+    if (catTab && catTab.dataset.cat) return catTab.dataset.cat;
+    return null;
 }
 
 function makeDefaultMaterial() {
-    return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0.05 });
+    return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.05 });
 }
 
 function intersectRayPlane(ray, plane, target) {
@@ -104,18 +83,17 @@ class ModelPreview {
     constructor(options = {}) {
         this.viewer = null;
         this.pivot = null;
-        this.limbAnchors = {};
-        this.limbParts = {};
+        this.bodyBoxes = [];
         this.container = null;
         this.dragState = null;
         this.transform = null;
-        this.snap = null;
         this.modelFile = null;
         this.textureFile = null;
         this.cat = null;
         this.showError = options.showError || null;
         this.refreshTimer = null;
         this.refreshSeq = 0;
+        this.previewAbort = null;
 
         this.onViewPointerDown = e => this.handlePointerDown(e);
         this.onWindowPointerMove = e => this.handlePointerMove(e);
@@ -170,20 +148,6 @@ class ModelPreview {
         return this.viewer ? this.viewer.renderer.domElement : null;
     }
 
-    get snapValue() {
-        return this.snap || defaultSnap();
-    }
-
-    get weld() {
-        const info = SNAPS[this.snapValue];
-        return info ? info.limb : 'head';
-    }
-
-    setSnapValue(value) {
-        const sel = document.getElementById('crt3dSnap');
-        if (sel) sel.value = value;
-    }
-
     syncInputs() {
         const t = this.getTransform();
         const set = (id, v) => {
@@ -220,28 +184,10 @@ class ModelPreview {
         return t;
     }
 
-    getAttachmentPosition(snap) {
-        if (snap === 'none') return { x: 0, y: 0, z: 0 };
-        const info = SNAPS[snap] || SNAPS[defaultSnap()];
-        const limb = this.limbAnchors[info.limb] || this.limbAnchors.head;
-        if (!limb) return { x: 0, y: 0, z: 0 };
-        const surface = info.surface;
-        if (surface === 'top') {
-            return { x: limb.center.x, y: limb.max.y, z: limb.center.z };
-        }
-        if (surface === 'hand' || surface === 'foot') {
-            const end = limb.end || new THREE.Vector3(limb.center.x, limb.min.y, limb.center.z);
-            return { x: end.x, y: end.y, z: end.z };
-        }
-        return { x: limb.center.x, y: limb.center.y, z: limb.center.z + limb.size.z * 0.35 };
-    }
-
     applyTransform() {
         if (!this.pivot) return;
         const t = this.getTransform();
-        const base = this.getAttachmentPosition(this.snapValue);
         const baseScale = this.pivot.userData.baseScale || 1;
-        const lift = this.snapValue === 'none' ? 0 : (this.pivot.userData.lift || 0);
 
         this.pivot.scale.set(
             baseScale * t.scale.x,
@@ -253,11 +199,7 @@ class ModelPreview {
             THREE.MathUtils.degToRad(t.rotation.y),
             THREE.MathUtils.degToRad(t.rotation.z)
         );
-        this.pivot.position.set(
-            base.x + t.position.x,
-            base.y + lift * t.scale.y + t.position.y,
-            base.z + t.position.z
-        );
+        this.pivot.position.set(t.position.x, t.position.y, t.position.z);
     }
 
     scheduleRefresh() {
@@ -298,7 +240,7 @@ class ModelPreview {
         }
     }
 
-    async refreshPreview() {
+    async refreshPreview(showError) {
         const img = document.getElementById('crtShopPreviewImg');
         if (!img) return;
 
@@ -312,51 +254,64 @@ class ModelPreview {
         }
         if (!cat) return;
 
-        const isModel = cat === 'hat' || cat === 'face' || cat === 'tool';
-        if (!isModel && cat !== 'shirt' && cat !== 'tshirt' && cat !== 'pants') return;
-        if (isModel && !this.modelFile) return;
-        if (!isModel && !this.textureFile) return;
+        const isModel = cat === 'hat' || cat === 'tool';
+        if (!isModel && cat !== 'shirt' && cat !== 'tshirt' && cat !== 'pants' && cat !== 'face') return;
+        const baseOnly = (isModel && !this.modelFile) || (!isModel && !this.textureFile);
 
         const seq = ++this.refreshSeq;
+        if (this.previewAbort) {
+            try { this.previewAbort.abort(); } catch {}
+            this.previewAbort = null;
+        }
+        const aborter = new AbortController();
+        this.previewAbort = aborter;
         this.showPreviewSpinner(true);
 
         let file = null;
         let textureFile = null;
-        if (isModel) {
+        if (!baseOnly && isModel) {
             try {
-                const model = await loadModelFile(this.modelFile);
-                const t = this.getTransform();
-                const wrapper = new THREE.Group();
-                wrapper.add(model);
-                wrapper.position.set(t.position.x, t.position.y, t.position.z);
-                wrapper.rotation.set(
-                    THREE.MathUtils.degToRad(t.rotation.x),
-                    THREE.MathUtils.degToRad(t.rotation.y),
-                    THREE.MathUtils.degToRad(t.rotation.z)
-                );
-                wrapper.scale.set(t.scale.x, t.scale.y, t.scale.z);
-                wrapper.updateMatrixWorld(true);
-                file = new File([new OBJExporter().parse(wrapper)], 'model.obj', { type: 'text/plain' });
-                textureFile = this.textureFile || (await extractModelTexture(model));
+                const exported = await this.exportModel();
+                if (seq !== this.refreshSeq) return;
+                if (!exported) return;
+                file = exported.file;
+                textureFile = exported.textureFile;
+                if (seq !== this.refreshSeq) return;
             } catch {
-                this.showPreviewSpinner(false);
+                if (seq === this.refreshSeq) this.showPreviewSpinner(false);
                 return;
             }
-        } else {
+        } else if (!baseOnly) {
             file = this.textureFile;
         }
 
         const formData = new FormData();
         formData.append('category', cat);
-        formData.append('file', file);
-        if (textureFile) formData.append('texture', textureFile);
+        if (file) formData.append('file', file, file.name || 'model.obj');
+        if (textureFile) {
+            const texName = (textureFile.name && textureFile.name.indexOf('.') !== -1) ? textureFile.name : 'texture.png';
+            const texToSend = textureFile.name ? textureFile : new File([textureFile], texName, { type: textureFile.type || 'image/png' });
+            formData.append('texture', texToSend, texToSend.name || texName);
+        }
 
         img.classList.remove('ld');
 
         try {
-            const res = await fetch('/api/v1/create/preview', { method: 'POST', body: formData });
+            const res = await fetch('/api/v1/create/preview', { method: 'POST', body: formData, signal: aborter.signal });
             if (!res.ok) {
                 img.classList.add('ld');
+                if ((res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504) && seq === this.refreshSeq) {
+                    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+                    this.refreshTimer = setTimeout(() => {
+                        this.refreshTimer = null;
+                        this.refreshPreview();
+                    }, 1500);
+                } else if (showError && this.showError && (res.status === 400 || res.status === 413 || res.status === 500) && seq === this.refreshSeq) {
+                    try {
+                        const msg = (await res.text()).trim().substring(0, 200);
+                        if (msg) this.showError(msg);
+                    } catch {}
+                }
                 return;
             }
             const blob = await res.blob();
@@ -367,103 +322,120 @@ class ModelPreview {
                 URL.revokeObjectURL(url);
             };
             img.src = url;
-        } catch {
+        } catch (e) {
+            if (e && e.name === 'AbortError') return;
             img.classList.add('ld');
             return;
         } finally {
-            if (seq === this.refreshSeq) this.showPreviewSpinner(false);
-        }
-    }
-
-    computeLimbAnchors() {
-        this.limbAnchors = {};
-        this.limbParts = {};
-        const group = this.viewer.avatarGroup;
-        group.updateWorldMatrix(true, true);
-        const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
-        const parts = group.children.filter(child => child !== this.pivot);
-
-        if (parts.length >= 6) {
-            this.buildAnchors(this.computeBoxes(parts, inv));
-        } else {
-            this.buildFallbackAnchors(parts, inv);
-        }
-
-        this.computeEndpoints();
-    }
-
-    computeBoxes(parts, inv) {
-        const boxes = {};
-        parts.slice(0, 6).forEach((part, i) => {
-            const box = new THREE.Box3().setFromObject(part).applyMatrix4(inv);
-            if (box.isEmpty()) return;
-            const key = LIMB_ORDER[i];
-            part.userData.limbKey = key;
-            this.limbParts[key] = part;
-            boxes[key] = box;
-        });
-        return boxes;
-    }
-
-    buildAnchors(boxes) {
-        for (const [key, box] of Object.entries(boxes)) {
-            this.limbAnchors[key] = {
-                center: box.getCenter(new THREE.Vector3()),
-                size: box.getSize(new THREE.Vector3()),
-                min: box.min.clone(),
-                max: box.max.clone()
-            };
-        }
-    }
-
-    buildFallbackAnchors(parts, inv) {
-        const box = new THREE.Box3();
-        parts.forEach(part => box.expandByObject(part));
-        if (box.isEmpty()) return;
-        box.applyMatrix4(inv);
-        const c = box.getCenter(new THREE.Vector3());
-        const s = box.getSize(new THREE.Vector3());
-
-        const anchor = (center, size, min, max) => ({
-            center,
-            size: size.clone(),
-            min: min.clone(),
-            max: max.clone()
-        });
-
-        this.limbAnchors = {
-            head: {
-                center: new THREE.Vector3(c.x, box.max.y - s.y * 0.1, c.z),
-                size: new THREE.Vector3(s.x * 0.4, s.y * 0.18, s.z * 0.4),
-                min: new THREE.Vector3(c.x - s.x * 0.2, box.max.y - s.y * 0.18, c.z - s.z * 0.2),
-                max: new THREE.Vector3(c.x + s.x * 0.2, box.max.y, c.z + s.z * 0.2)
-            },
-            torso: anchor(new THREE.Vector3(c.x, c.y + s.y * 0.05, c.z), s, box.min, box.max),
-            larm: anchor(new THREE.Vector3(c.x - s.x * 0.4, c.y + s.y * 0.05, c.z), s, box.min, box.max),
-            rarm: anchor(new THREE.Vector3(c.x + s.x * 0.4, c.y + s.y * 0.05, c.z), s, box.min, box.max),
-            lleg: anchor(new THREE.Vector3(c.x - s.x * 0.15, box.min.y + s.y * 0.2, c.z), s, box.min, box.max),
-            rleg: anchor(new THREE.Vector3(c.x + s.x * 0.15, box.min.y + s.y * 0.2, c.z), s, box.min, box.max)
-        };
-    }
-
-    computeEndpoints() {
-        const torso = this.limbAnchors.torso;
-        if (!torso) return;
-        ['larm', 'rarm', 'lleg', 'rleg'].forEach(key => {
-            const a = this.limbAnchors[key];
-            if (!a) return;
-            const axis = a.size.x >= a.size.y && a.size.x >= a.size.z ? 'x' : (a.size.y >= a.size.z ? 'y' : 'z');
-            const loEnd = a.center.clone(); loEnd[axis] = a.min[axis];
-            const hiEnd = a.center.clone(); hiEnd[axis] = a.max[axis];
-            if (loEnd.distanceTo(torso.center) > hiEnd.distanceTo(torso.center)) {
-                a.end = loEnd; a.root = hiEnd;
-            } else {
-                a.end = hiEnd; a.root = loEnd;
+            if (seq === this.refreshSeq) {
+                this.showPreviewSpinner(false);
+                if (this.previewAbort === aborter) this.previewAbort = null;
             }
-        });
+        }
     }
 
-    attachModel(model, cat) {
+    collisionDisabled() {
+        const el = document.getElementById('crt3dNoCollide');
+        return el ? el.checked : false;
+    }
+
+    updateColliders() {
+        this.bodyBoxes = [];
+        if (!this.viewer || !this.pivot) return;
+        const group = this.viewer.avatarGroup;
+        if (!group) return;
+        group.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
+        for (const child of group.children) {
+            if (!child || child === this.pivot) continue;
+            const box = new THREE.Box3().setFromObject(child);
+            if (box.isEmpty()) continue;
+            box.applyMatrix4(inv);
+            box.expandByScalar(-0.02);
+            if (box.isEmpty()) continue;
+            this.bodyBoxes.push(box);
+        }
+    }
+
+    spawnPlacement() {
+        if (!this.viewer || !this.pivot || !this.bodyBoxes.length) return;
+        const group = this.viewer.avatarGroup;
+        if (!group) return;
+        group.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
+        const modelBox = new THREE.Box3().setFromObject(this.pivot);
+        if (modelBox.isEmpty()) return;
+        modelBox.applyMatrix4(inv);
+        const size = modelBox.getSize(new THREE.Vector3());
+        const base = modelBox.getCenter(new THREE.Vector3());
+        const t = this.getTransform();
+        if (this.cat === 'tool') {
+            let arm = null;
+            for (const bodyBox of this.bodyBoxes) {
+                if (!arm || bodyBox.min.x < arm.min.x) arm = bodyBox;
+            }
+            if (!arm) return;
+            const center = arm.getCenter(new THREE.Vector3());
+            t.position.x = center.x - (base.x - this.pivot.position.x);
+            t.position.y = center.y - (base.y - this.pivot.position.y);
+            t.position.z = arm.max.z + size.z / 2 + 0.1 - (base.z - this.pivot.position.z);
+        } else {
+            let top = null;
+            for (const bodyBox of this.bodyBoxes) {
+                if (!top || bodyBox.max.y > top.max.y) top = bodyBox;
+            }
+            if (!top) return;
+            const center = top.getCenter(new THREE.Vector3());
+            t.position.x = center.x - (base.x - this.pivot.position.x);
+            t.position.y = top.max.y + size.y / 2 + 0.15 - (base.y - this.pivot.position.y);
+            t.position.z = center.z - (base.z - this.pivot.position.z);
+        }
+    }
+
+    resolveCollision() {
+        if (this.collisionDisabled()) return;
+        if (!this.viewer || !this.pivot || !this.bodyBoxes.length) return;
+        const group = this.viewer.avatarGroup;
+        if (!group) return;
+        group.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
+        const modelBox = new THREE.Box3().setFromObject(this.pivot);
+        if (modelBox.isEmpty()) return;
+        modelBox.applyMatrix4(inv);
+        const t = this.getTransform();
+        const minPush = 1e-6;
+        for (let iter = 0; iter < 4; iter++) {
+            let moved = false;
+            for (const bodyBox of this.bodyBoxes) {
+                if (!modelBox.intersectsBox(bodyBox)) continue;
+                const bodyCenter = bodyBox.getCenter(new THREE.Vector3());
+                if (modelBox.containsPoint(bodyCenter)) continue;
+                const modelCenter = modelBox.getCenter(new THREE.Vector3());
+                const ox = Math.min(modelBox.max.x - bodyBox.min.x, bodyBox.max.x - modelBox.min.x);
+                const oy = Math.min(modelBox.max.y - bodyBox.min.y, bodyBox.max.y - modelBox.min.y);
+                const oz = Math.min(modelBox.max.z - bodyBox.min.z, bodyBox.max.z - modelBox.min.z);
+                if (ox < minPush && oy < minPush && oz < minPush) continue;
+                const push = new THREE.Vector3();
+                if (ox <= oy && ox <= oz) {
+                    push.set(modelCenter.x < bodyCenter.x ? -ox : ox, 0, 0);
+                } else if (oy <= ox && oy <= oz) {
+                    push.set(0, modelCenter.y < bodyCenter.y ? -oy : oy, 0);
+                } else {
+                    push.set(0, 0, modelCenter.z < bodyCenter.z ? -oz : oz);
+                }
+                if (push.lengthSq() < minPush * minPush) continue;
+                this.pivot.position.add(push);
+                modelBox.translate(push);
+                moved = true;
+            }
+            if (!moved) break;
+        }
+        t.position.x = this.pivot.position.x;
+        t.position.y = this.pivot.position.y;
+        t.position.z = this.pivot.position.z;
+    }
+
+    attachModel(model) {
         const textureLoader = new THREE.TextureLoader();
         let texture = null;
         if (this.textureFile) {
@@ -489,14 +461,10 @@ class ModelPreview {
             }
         });
 
-        const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
-
         const pivot = new THREE.Group();
         pivot.userData.baseScale = 1;
-        pivot.userData.lift = cat === 'face' ? 0 : (size.y / 2);
         pivot.add(model);
 
-        this.computeLimbAnchors();
         this.viewer.avatarGroup.add(pivot);
         this.pivot = pivot;
     }
@@ -520,69 +488,26 @@ class ModelPreview {
         const sy = (-center.y * 0.5 + 0.5) * rect.height;
         const px = e.clientX - rect.left;
         const py = e.clientY - rect.top;
-        return Math.hypot(px - sx, py - sy) <= HIT_RADIUS;
-    }
-
-    hitAvatarPart() {
-        const parts = Object.values(this.limbParts || {});
-        if (!parts.length) return null;
-        const hits = raycaster.intersectObjects(parts, true);
-        for (const hit of hits) {
-            let obj = hit.object;
-            while (obj && !obj.userData.limbKey) obj = obj.parent;
-            if (obj && obj.userData.limbKey) {
-                const norm = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : null;
-                return { limb: obj.userData.limbKey, point: hit.point, normal: norm, distance: hit.distance };
-            }
-        }
-        return null;
-    }
-
-    placeOnPart(hit) {
-        if (!hit) return false;
-        const group = this.viewer.avatarGroup;
-        const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
-        const local = hit.point.clone().applyMatrix4(inv);
-        const limb = this.limbAnchors[hit.limb];
-        if (!limb) return false;
-
-        let surface = 'top';
-        if (hit.normal) {
-            const n = hit.normal.clone().transformDirection(inv);
-            const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
-            if (ay >= ax && ay >= az) {
-                if (n.y < 0) {
-                    if (hit.limb === 'larm' || hit.limb === 'rarm') surface = 'hand';
-                    else if (hit.limb === 'lleg' || hit.limb === 'rleg') surface = 'foot';
-                }
-            } else if (az >= ax && n.z > 0) {
-                surface = 'front';
-            }
-        }
-
-        const snap = hit.limb + '-' + surface;
-        if (SNAPS[snap] && this.snap !== snap) {
-            this.snap = snap;
-            this.setSnapValue(snap);
-        }
-
-        const t = this.getTransform();
-        const base = this.getAttachmentPosition(this.snapValue);
-        const lift = this.snapValue === 'none' ? 0 : (this.pivot.userData.lift || 0);
-        const targetY = surface === 'top' ? limb.max.y : local.y;
-        t.position.x = local.x - base.x;
-        t.position.y = targetY - base.y - lift * t.scale.y;
-        t.position.z = local.z - base.z;
-        this.applyTransform();
-        const liftY = this.resolveCollision();
-        if (liftY > 0) t.position.y += liftY;
-        this.syncInputs();
-        return true;
+        const radius = e.pointerType === 'touch' ? HIT_RADIUS_TOUCH : HIT_RADIUS;
+        return Math.hypot(px - sx, py - sy) <= radius;
     }
 
     handlePointerDown(e) {
-        if (!this.viewer || !this.pivot || !this.hitsModel(e)) return;
+        if (!this.viewer || !this.pivot) return;
+        if (this.dragState) {
+            this.dragState = null;
+            return;
+        }
+        if (this.viewer.activePointers && this.viewer.activePointers.size >= 1) {
+            const activeCount = this.viewer.activePointers.size;
+            if (activeCount >= 1 && e.isPrimary === false) return;
+            if (activeCount >= 2) return;
+        }
+        if (!this.hitsModel(e)) return;
         e.stopImmediatePropagation();
+        if (e.cancelable && e.pointerType === 'touch') {
+            try { e.preventDefault(); } catch {}
+        }
 
         const center = this.pivot.getWorldPosition(new THREE.Vector3());
         const normal = this.viewer.camera.getWorldDirection(new THREE.Vector3());
@@ -602,46 +527,22 @@ class ModelPreview {
             pointerId: e.pointerId,
             grabOffset: localHit.sub(this.pivot.position.clone())
         };
-    }
-
-    resolveCollision() {
-        if (!this.pivot || this.snapValue === 'none') return 0;
-        const group = this.viewer.avatarGroup;
-        group.updateWorldMatrix(true, true);
-        const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
-        const box = new THREE.Box3().setFromObject(this.pivot).applyMatrix4(inv);
-        if (box.isEmpty()) return 0;
-
-        const snap = this.snapValue;
-        let liftY = 0;
-        for (const key of Object.keys(this.limbAnchors)) {
-            if (snap === key + '-hand' || snap === key + '-foot' || snap === key + '-front') continue;
-            const a = this.limbAnchors[key];
-            if (!a) continue;
-            if (box.max.x <= a.min.x || box.min.x >= a.max.x) continue;
-            if (box.max.z <= a.min.z || box.min.z >= a.max.z) continue;
-            if (box.min.y < a.max.y) {
-                liftY = Math.max(liftY, a.max.y - box.min.y);
-            }
-        }
-        if (liftY > 0) {
-            this.pivot.position.y += liftY;
-        }
-        return liftY;
+        try { this.container.setPointerCapture(e.pointerId); } catch {}
     }
 
     handlePointerMove(e) {
         const drag = this.dragState;
         if (!this.viewer || !this.pivot || !drag || drag.pointerId !== e.pointerId) return;
+        if (this.viewer.activePointers && this.viewer.activePointers.size >= 2) {
+            this.dragState = null;
+            return;
+        }
+        if (e.cancelable && e.pointerType === 'touch') {
+            try { e.preventDefault(); } catch {}
+        }
 
         const ndc = this.pointerToNDC(e);
         raycaster.setFromCamera(ndc, this.viewer.camera);
-
-        const modelHit = raycaster.intersectObject(this.pivot, true)[0];
-        const partHit = this.hitAvatarPart();
-        if (this.snapValue !== 'none' && (!modelHit || (partHit && partHit.distance < modelHit.distance))) {
-            if (this.placeOnPart(partHit)) return;
-        }
 
         const center = this.pivot.getWorldPosition(new THREE.Vector3());
         const normal = this.viewer.camera.getWorldDirection(new THREE.Vector3());
@@ -656,14 +557,11 @@ class ModelPreview {
         const localTarget = hit.clone().applyMatrix4(inv).sub(drag.grabOffset);
 
         const t = this.getTransform();
-        const base = this.getAttachmentPosition(this.snapValue);
-        const lift = this.snapValue === 'none' ? 0 : (this.pivot.userData.lift || 0);
-        t.position.x = localTarget.x - base.x;
-        t.position.y = localTarget.y - base.y - lift * t.scale.y;
-        t.position.z = localTarget.z - base.z;
+        t.position.x = localTarget.x;
+        t.position.y = localTarget.y;
+        t.position.z = localTarget.z;
         this.applyTransform();
-        const liftY = this.resolveCollision();
-        if (liftY > 0) t.position.y += liftY;
+        this.resolveCollision();
         this.syncInputs();
     }
 
@@ -672,13 +570,19 @@ class ModelPreview {
         if (drag && drag.pointerId === e.pointerId) {
             this.dragState = null;
             this.scheduleRefresh();
+        } else if (this.viewer && this.viewer.activePointers && this.viewer.activePointers.size >= 2) {
+            this.dragState = null;
         }
     }
 
     attachDragListeners() {
         this.container = this.viewEl;
-        this.container.addEventListener('pointerdown', this.onViewPointerDown, true);
-        window.addEventListener('pointermove', this.onWindowPointerMove);
+        if (this.container && this.container.style) {
+            this.container.style.touchAction = 'none';
+        }
+        this.container.addEventListener('pointerdown', this.onViewPointerDown, { capture: true, passive: false });
+        this.container.addEventListener('contextmenu', this.onViewContextMenu || (this.onViewContextMenu = e => e.preventDefault()));
+        window.addEventListener('pointermove', this.onWindowPointerMove, { passive: false });
         window.addEventListener('pointerup', this.onWindowPointerUp);
         window.addEventListener('pointercancel', this.onWindowPointerUp);
     }
@@ -686,6 +590,7 @@ class ModelPreview {
     removeDragListeners() {
         if (this.container) {
             this.container.removeEventListener('pointerdown', this.onViewPointerDown, true);
+            if (this.onViewContextMenu) this.container.removeEventListener('contextmenu', this.onViewContextMenu);
             this.container = null;
         }
         window.removeEventListener('pointermove', this.onWindowPointerMove);
@@ -696,26 +601,14 @@ class ModelPreview {
     applyFromInputs() {
         this.transform = this.readInputs();
         this.applyTransform();
-        this.scheduleRefresh();
-    }
-
-    setSnap() {
-        const sel = document.getElementById('crt3dSnap');
-        if (sel) this.snap = sel.value;
-        const t = this.getTransform();
-        t.position.x = 0;
-        t.position.y = 0;
-        t.position.z = 0;
+        this.resolveCollision();
         this.syncInputs();
-        this.applyTransform();
         this.scheduleRefresh();
     }
 
     reset() {
         this.transform = null;
-        this.snap = null;
         this.syncInputs();
-        this.setSnapValue(this.snapValue);
         this.applyTransform();
         this.scheduleRefresh();
     }
@@ -725,10 +618,27 @@ class ModelPreview {
         return {
             position: { x: t.position.x, y: t.position.y, z: t.position.z },
             rotation: { x: t.rotation.x, y: t.rotation.y, z: t.rotation.z },
-            scale: { x: t.scale.x, y: t.scale.y, z: t.scale.z },
-            weld: this.weld,
-            snap: this.snapValue
+            scale: { x: t.scale.x, y: t.scale.y, z: t.scale.z }
         };
+    }
+
+    async exportModel() {
+        if (!this.modelFile) return null;
+        const model = await loadModelFile(this.modelFile);
+        const t = this.getTransform();
+        const wrapper = new THREE.Group();
+        wrapper.add(model);
+        wrapper.position.set(t.position.x, t.position.y, t.position.z);
+        wrapper.rotation.set(
+            THREE.MathUtils.degToRad(t.rotation.x),
+            THREE.MathUtils.degToRad(t.rotation.y),
+            THREE.MathUtils.degToRad(t.rotation.z)
+        );
+        wrapper.scale.set(t.scale.x, t.scale.y, t.scale.z);
+        wrapper.updateMatrixWorld(true);
+        const file = new File([new OBJExporter().parse(wrapper)], 'model.obj', { type: 'text/plain' });
+        const textureFile = this.textureFile || (await extractModelTexture(model));
+        return { file, textureFile };
     }
 
     close() {
@@ -740,8 +650,7 @@ class ModelPreview {
             this.scheduleRefresh();
         }
         this.pivot = null;
-        this.limbAnchors = {};
-        this.limbParts = {};
+        this.bodyBoxes = [];
         const modal = this.modal;
         if (modal) modal.classList.remove('active');
     }
@@ -756,7 +665,8 @@ class ModelPreview {
         modal.classList.add('active');
         viewEl.innerHTML = '';
 
-        this.viewer = new AvatarViewer(viewEl, getCurrentUserId());
+        this.cat = currentCreateCategory(this.cat);
+        this.viewer = new AvatarViewer(viewEl, 0, { dummy: true, toolPose: this.cat === 'tool' });
         this.viewer.autoRotate = false;
         const viewer = this.viewer;
 
@@ -768,9 +678,11 @@ class ModelPreview {
             if (!model) throw new Error('Failed to load model');
             if (this.viewer !== viewer || !modal.classList.contains('active')) return;
 
-            this.attachModel(model, this.cat);
+            const fresh = !this.transform;
+            this.attachModel(model);
+            this.updateColliders();
+            if (fresh) this.spawnPlacement();
             this.syncInputs();
-            this.setSnapValue(this.snapValue);
             this.applyTransform();
             this.attachDragListeners();
         } catch (e) {
@@ -792,14 +704,40 @@ if (initialCatTab && initialCatTab.dataset.cat) preview.setCategory(initialCatTa
 window.openCreate3DPreview = function() { preview.open(); };
 window.closeCreate3DPreview = function() { preview.close(); };
 window.applyCreateTransform = function() { preview.applyFromInputs(); };
-window.setCreateSnap = function() { preview.setSnap(); };
 window.resetCreateTransform = function() { preview.reset(); };
 window.setCreateModelFile = function(file) { preview.setModel(file); };
 window.setCreateTextureFile = function(file) { preview.setTexture(file); };
 window.setCreateCategory = function(cat) { preview.setCategory(cat); };
 window.getCreateModelFile = function() { return preview.modelFile; };
-window.refreshCreatePreview = function() { preview.refreshPreview(); };
+window.getCreateTransformedModel = async function() {
+    try {
+        const exported = await preview.exportModel();
+        return exported ? exported.file : null;
+    } catch (e) {
+        return null;
+    }
+};
+window.refreshCreatePreview = function(showError) { preview.refreshPreview(showError); };
 window.getCreateModelTransformData = function() { return preview.getTransformData(); };
+
+if (window.pendingCreateModelFile && !preview.modelFile) {
+    preview.setModel(window.pendingCreateModelFile);
+    window.pendingCreateModelFile = null;
+}
+if (window.pendingCreateTextureFile && !preview.textureFile) {
+    preview.setTexture(window.pendingCreateTextureFile);
+    window.pendingCreateTextureFile = null;
+}
+if (!preview.modelFile) {
+    const modelInput = document.getElementById('crtShopModelFile');
+    const modelPicked = modelInput && modelInput.files && modelInput.files[0];
+    if (modelPicked) preview.setModel(modelPicked);
+}
+if (!preview.textureFile) {
+    const texInput = document.getElementById('crtShopFile');
+    const texPicked = texInput && texInput.files && texInput.files[0];
+    if (texPicked) preview.setTexture(texPicked);
+}
 
 document.addEventListener('htmx:beforeTransition', function() {
     preview.close();

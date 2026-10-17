@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"log"
+	"strconv"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -13,6 +14,7 @@ var errorPages = map[int]struct {
 }{
 	fiber.StatusNotFound:            {"pages/errors/404", "404 - Page Not Found - VERTEXIA"},
 	fiber.StatusForbidden:           {"pages/errors/403", "403 - Access Denied - VERTEXIA"},
+	fiber.StatusTooManyRequests:     {"pages/errors/429", "429 - Too Many Requests - VERTEXIA"},
 	fiber.StatusInternalServerError: {"pages/errors/500", "500 - Internal Server Error - VERTEXIA"},
 }
 
@@ -22,7 +24,15 @@ func serveErrorPage(c fiber.Ctx, code int) error {
 		page = errorPages[fiber.StatusInternalServerError]
 	}
 	c.Status(code)
-	if err := Render(c, page.Template, fiber.Map{"Title": page.Title}); err != nil {
+	data := fiber.Map{"Title": page.Title}
+	if code == fiber.StatusTooManyRequests {
+		retryAfter, err := strconv.Atoi(c.GetRespHeader(fiber.HeaderRetryAfter))
+		if err != nil || retryAfter < 1 {
+			retryAfter = 60
+		}
+		data["RetryAfter"] = retryAfter
+	}
+	if err := Render(c, page.Template, data); err != nil {
 		c.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
 		return c.Status(code).SendString(page.Title)
 	}

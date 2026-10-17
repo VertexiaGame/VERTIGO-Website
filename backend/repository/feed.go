@@ -84,6 +84,42 @@ func (r *FeedRepository) GetRecentFeedPostsPaginated(limit, offset, currentUserI
 	return r.queryFeedPosts(query, currentUserID, limit, offset)
 }
 
+func (r *FeedRepository) GetFeedPostByID(id, currentUserID int) (*models.FeedPost, error) {
+	if r.db == nil {
+		return nil, nil
+	}
+	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
+	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
+	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
+              FROM feed f
+              INNER JOIN users u ON f.user_id = u.id
+              WHERE f.id = ? AND f.removed = 'false'`
+	var p models.FeedPost
+	err := r.db.QueryRow(query, currentUserID, id).Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted)
+	if err != nil {
+		return nil, nil
+	}
+	return &p, nil
+}
+
+func (r *FeedRepository) GetFriendsFeedPostByID(id, currentUserID int) (*models.FeedPost, error) {
+	if r.db == nil {
+		return nil, nil
+	}
+	query := `SELECT f.id, f.userid, u.username, f.status, f.removed, f.edited, f.editdate, f.creationdate,
+	                 (SELECT COUNT(*) FROM ffreact r WHERE r.fid = f.id) AS reactions,
+	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
+              FROM ffeed f
+              INNER JOIN users u ON f.userid = u.id
+              WHERE f.id = ? AND f.removed = 'false'`
+	var p models.FeedPost
+	err := r.db.QueryRow(query, currentUserID, id).Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted)
+	if err != nil {
+		return nil, nil
+	}
+	return &p, nil
+}
+
 func (r *FeedRepository) CreatePost(userID int, content string) (int, error) {
 	if r.db == nil {
 		return 0, nil

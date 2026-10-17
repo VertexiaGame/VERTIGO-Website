@@ -1,0 +1,281 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/frn.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/create.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/admin.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Play</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search games" id="playBarSearch" value="{{.Filter.Search}}" autocomplete="off">
+            </div>
+            <div class="barbtns">
+                <a href="/create?type=game" hx-get="/create?type=game" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">Create</a>
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane">
+            <div class="shp-lay gam-lay">
+                <div class="shp-hdr-block">
+                    <h1 class="shp-heading">Games</h1>
+                    <span class="shp-subheading">find something fun to play</span>
+                </div>
+
+                <div class="gam-genres" id="gamGenreBar">
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "all"}} active{{end}}" data-genre="all" onclick="window.switchGameGenre('all', event)">
+                        <i class="fa-solid fa-shapes"></i>
+                        <span>All</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "adventure"}} active{{end}}" data-genre="adventure" onclick="window.switchGameGenre('adventure', event)">
+                        <i class="fa-solid fa-compass"></i>
+                        <span>Adventure</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "obby"}} active{{end}}" data-genre="obby" onclick="window.switchGameGenre('obby', event)">
+                        <i class="fa-solid fa-person-running"></i>
+                        <span>Obby</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "tycoon"}} active{{end}}" data-genre="tycoon" onclick="window.switchGameGenre('tycoon', event)">
+                        <i class="fa-solid fa-industry"></i>
+                        <span>Tycoon</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "roleplay"}} active{{end}}" data-genre="roleplay" onclick="window.switchGameGenre('roleplay', event)">
+                        <i class="fa-solid fa-masks-theater"></i>
+                        <span>Roleplay</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "horror"}} active{{end}}" data-genre="horror" onclick="window.switchGameGenre('horror', event)">
+                        <i class="fa-solid fa-ghost"></i>
+                        <span>Horror</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "simulator"}} active{{end}}" data-genre="simulator" onclick="window.switchGameGenre('simulator', event)">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>Simulator</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "shooter"}} active{{end}}" data-genre="shooter" onclick="window.switchGameGenre('shooter', event)">
+                        <i class="fa-solid fa-crosshairs"></i>
+                        <span>Shooter</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "racing"}} active{{end}}" data-genre="racing" onclick="window.switchGameGenre('racing', event)">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        <span>Racing</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "puzzle"}} active{{end}}" data-genre="puzzle" onclick="window.switchGameGenre('puzzle', event)">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                        <span>Puzzle</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveGenre "sandbox"}} active{{end}}" data-genre="sandbox" onclick="window.switchGameGenre('sandbox', event)">
+                        <i class="fa-solid fa-cubes"></i>
+                        <span>Sandbox</span>
+                    </button>
+                </div>
+
+                <div id="gamShelves"{{if .Browsing}} style="display: none;"{{end}}>
+                    {{if .Popular}}
+                    <div class="carsec gam-featured">
+                        <h2 class="carttl">Featured</h2>
+                        <div class="carcnt" id="heroPlayCarousel">
+                            <button class="cararr cararrl" onclick="movePlayCarousel(-1, event)">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button class="cararr cararrr" onclick="movePlayCarousel(1, event)">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                            <div class="cartrk">
+                                {{range $game := .Popular}}
+                                <a href="/play/{{$game.ID}}" hx-get="/play/{{$game.ID}}" hx-target="body" hx-push-url="true" class="carsld">
+                                    <img src="/static/uploads/games/{{$game.ID}}.png"
+                                         onerror="this.src='/static/useful/temp/pfp.png'; this.style.filter='blur(10px)';"
+                                         alt="{{$game.Name}}" class="carimg" loading="lazy">
+                                    <div class="carovl"></div>
+                                    <div class="carinf">
+                                        <h3 class="carnm">{{$game.Name}}</h3>
+                                        <p class="cardsc">{{$game.DescriptionText}}</p>
+                                    </div>
+                                </a>
+                                {{end}}
+                            </div>
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{if .Popular}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">Popular Right Now</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleGameShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row">
+                            {{range $game := .Popular}}
+                            {{template "components/games/card" $game}}
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{if .TopPlaying}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">Top Playing Now</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleGameShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row">
+                            {{range $game := .TopPlaying}}
+                            {{template "components/games/card" $game}}
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{if .Newest}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">New &amp; Noteworthy</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleGameShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row">
+                            {{range $game := .Newest}}
+                            {{template "components/games/card" $game}}
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{if .Classics}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">Classics</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleGameShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row">
+                            {{range $game := .Classics}}
+                            {{template "components/games/card" $game}}
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{range $shelf := .GenreShelves}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">Top {{$shelf.Name}}</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleGameShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row">
+                            {{range $game := $shelf.Games}}
+                            {{template "components/games/card" $game}}
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div class="carsec" id="gamSearch"{{if not .Browsing}} style="display: none;"{{end}}>
+                    <div class="gam-shelf-hdr">
+                        <div class="gam-search-ttl">
+                            <h2 class="carttl" id="gameSearchTitle">{{if and (ne .ActiveGenre "all") (eq .Filter.Search "")}}{{.ActiveGenreNm}} Games{{else}}Search Results{{end}}</h2>
+                            <span class="shp-subheading" id="gameResultCount">{{.TotalItems}} games</span>
+                        </div>
+                        <div class="glb-dropdown gam-sort" id="gameSortDropdown">
+                            <button type="button" class="glb-dropdown-trigger" id="gameSortTrigger" onclick="window.toggleGlobalDropdown('gameSortDropdown')">
+                                <span id="gameSortLabel" class="glb-dropdown-label">
+                                    {{if eq .Filter.Sort "playing"}}Top Playing
+                                    {{else if eq .Filter.Sort "newest"}}Newest
+                                    {{else if eq .Filter.Sort "oldest"}}Oldest
+                                    {{else}}Popular{{end}}
+                                </span>
+                                <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4">
+                                    <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                </svg>
+                            </button>
+                            <div class="glb-dropdown-menu" id="gameSortMenu">
+                                <div class="glb-dropdown-item{{if or (eq .Filter.Sort "popular") (eq .Filter.Sort "")}} active{{end}}" data-value="popular" onclick="window.selectGlobalDropdownOption('gameSortDropdown', 'popular', 'Popular')">Popular</div>
+                                <div class="glb-dropdown-item{{if eq .Filter.Sort "playing"}} active{{end}}" data-value="playing" onclick="window.selectGlobalDropdownOption('gameSortDropdown', 'playing', 'Top Playing')">Top Playing</div>
+                                <div class="glb-dropdown-item{{if eq .Filter.Sort "newest"}} active{{end}}" data-value="newest" onclick="window.selectGlobalDropdownOption('gameSortDropdown', 'newest', 'Newest')">Newest</div>
+                                <div class="glb-dropdown-item{{if eq .Filter.Sort "oldest"}} active{{end}}" data-value="oldest" onclick="window.selectGlobalDropdownOption('gameSortDropdown', 'oldest', 'Oldest')">Oldest</div>
+                            </div>
+                            <input type="hidden" id="gameSortSelect" value="{{if .Filter.Sort}}{{.Filter.Sort}}{{else}}popular{{end}}">
+                        </div>
+                    </div>
+
+                    {{template "components/games/grid" .}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        if (window.playCarouselInterval) {
+            clearInterval(window.playCarouselInterval);
+        }
+        let currentSlideIndex = 0;
+
+        function showSlide(index) {
+            const container = document.getElementById('heroPlayCarousel');
+            if (!container) return;
+            const track = container.querySelector('.cartrk');
+            const slides = container.querySelectorAll('.carsld');
+            if (slides.length === 0) return;
+
+            if (index >= slides.length) {
+                currentSlideIndex = 0;
+            } else if (index < 0) {
+                currentSlideIndex = slides.length - 1;
+            } else {
+                currentSlideIndex = index;
+            }
+
+            const translation = -currentSlideIndex * 100;
+            track.style.transform = "translateX(" + translation + "%)";
+        }
+
+        function startInterval() {
+            if (window.playCarouselInterval) {
+                clearInterval(window.playCarouselInterval);
+            }
+            window.playCarouselInterval = setInterval(() => {
+                showSlide(currentSlideIndex + 1);
+            }, 5000);
+        }
+
+        window.movePlayCarousel = function(direction, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            if (window.playCarouselInterval) {
+                clearInterval(window.playCarouselInterval);
+            }
+            window.playCarouselInterval = setInterval(() => {
+                showSlide(currentSlideIndex + 1);
+            }, 5000);
+            showSlide(currentSlideIndex + direction);
+        };
+
+        showSlide(0);
+        startInterval();
+
+        const carouselContainer = document.getElementById('heroPlayCarousel');
+        if (carouselContainer) {
+            carouselContainer.addEventListener('mouseenter', () => {
+                if (window.playCarouselInterval) {
+                    clearInterval(window.playCarouselInterval);
+                }
+            });
+            carouselContainer.addEventListener('mouseleave', () => {
+                startInterval();
+            });
+        }
+    })();
+</script>
+<script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/games/games.js?v={{.AssetV}}"></script>
+

@@ -18,7 +18,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-const userSelectFields = "id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, ''), music_id"
+const userSelectFields = "id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, ''), music_id, disable_autoplay, reduced_motion, COALESCE(banner_effect, 'none'), banner_text_bg, COALESCE(banner_text_bg_color, 'F0F0F0'), COALESCE(banner_text_bg_border, 'A9A9A9'), COALESCE(banner_text_bg_text, '1A202C'), COALESCE(banner_text_bg_opacity, 78)"
 
 type scannable interface {
 	Scan(dest ...any) error
@@ -32,6 +32,8 @@ func scanUser(s scannable) (*models.User, error) {
 		&u.CustomCSS, &u.Vermail, &u.Vermc, &u.Casom, &u.Bits,
 		&u.Bucks, &u.LastOnline, &u.CreationDate, &u.Views, &u.FeedCaptchas,
 		&u.EmailVerifyToken, &u.EmailVerifyExpiry, &u.Pronouns, &u.Socials, &u.MusicID,
+		&u.DisableAutoplay, &u.ReducedMotion, &u.BannerEffect, &u.BannerTextBg,
+		&u.BannerTextBgColor, &u.BannerTextBgBorder, &u.BannerTextBgText, &u.BannerTextBgOpacity,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -68,6 +70,55 @@ func (r *UserRepository) GetByUnikey(unikey string) (*models.User, error) {
 		return nil, errors.New("database connection is offline")
 	}
 	return scanUser(r.db.QueryRow("SELECT "+userSelectFields+" FROM users WHERE unikey = ?", unikey))
+}
+
+func (r *UserRepository) batchUsersByField(field string, values []string) ([]*models.User, error) {
+	if r.db == nil {
+		return nil, nil
+	}
+	seen := make(map[string]struct{}, len(values))
+	uniq := make([]any, 0, len(values))
+	for _, v := range values {
+		v = strings.TrimSpace(v)
+		if v == "" {
+			continue
+		}
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		uniq = append(uniq, v)
+		if len(uniq) >= 128 {
+			break
+		}
+	}
+	if len(uniq) == 0 {
+		return nil, nil
+	}
+	placeholders := strings.Repeat("?,", len(uniq))
+	placeholders = strings.TrimSuffix(placeholders, ",")
+	rows, err := r.db.Query("SELECT "+userSelectFields+" FROM users WHERE "+field+" IN ("+placeholders+")", uniq...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []*models.User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+func (r *UserRepository) GetByUnikeys(unikeys []string) ([]*models.User, error) {
+	return r.batchUsersByField("unikey", unikeys)
+}
+
+func (r *UserRepository) GetByUsernames(usernames []string) ([]*models.User, error) {
+	return r.batchUsersByField("username", usernames)
 }
 
 func (r *UserRepository) SearchAdminUsers(search string, powerFilter int, limit, offset int) ([]*models.User, int, error) {
@@ -377,6 +428,33 @@ func (r *UserRepository) UpdateMusicID(userID int, trackID int64) error {
 		val = trackID
 	}
 	_, err := r.db.Exec("UPDATE users SET music_id = ? WHERE id = ?", val, userID)
+	return err
+}
+
+func (r *UserRepository) UpdatePersonalization(userID int, disableAutoplay bool, reducedMotion bool, customCSS string) error {	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	var cssVal any
+	if customCSS != "" {
+		cssVal = customCSS
+	}
+	_, err := r.db.Exec("UPDATE users SET disable_autoplay = ?, reduced_motion = ?, custom_css = ? WHERE id = ?", disableAutoplay, reducedMotion, cssVal, userID)
+	return err
+}
+
+func (r *UserRepository) UpdateBannerEffect(userID int, effect string) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec("UPDATE users SET banner_effect = ? WHERE id = ?", effect, userID)
+	return err
+}
+
+func (r *UserRepository) UpdateBannerTextBg(userID int, enabled bool, color, border, text string, opacity int) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec("UPDATE users SET banner_text_bg = ?, banner_text_bg_color = ?, banner_text_bg_border = ?, banner_text_bg_text = ?, banner_text_bg_opacity = ? WHERE id = ?", enabled, color, border, text, opacity, userID)
 	return err
 }
 

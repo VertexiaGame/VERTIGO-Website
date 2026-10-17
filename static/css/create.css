@@ -65,6 +65,190 @@
     max-width: 100% !important;
 }
 
+.settabvwp.crtvwp,
+.settabvwp.crtvwp .settabcntnt.active,
+.settabvwp.crtvwp .crtform,
+.settabvwp.crtvwp .crtforml,
+.settabvwp.crtvwp .crtformel,
+.settabvwp.crtvwp .crtfld {
+    overflow: visible !important;
+}
+
+#crtGameGenreDropdown,
+#crtGameVisibilityDropdown {
+    width: 100%;
+}
+
+.crtthumbcount {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: #718096;
+    white-space: nowrap;
+}
+
+.crtthumbs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.crtthumbs:empty {
+    display: none;
+}
+
+.crtthumbs .feedemt {
+    width: 100%;
+    margin-top: 0 !important;
+    animation: shpCardIn 0.22s var(--ease-pop) backwards;
+}
+
+#crtGameThumbPreview {
+    transition: opacity 0.25s ease;
+}
+
+.crtthumbs img {
+    width: 96px;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #D4D4D4;
+    background: #D4D4D4;
+    display: block;
+}
+
+.crtthumbs-pick {
+    position: relative;
+    border-radius: 8px;
+    cursor: grab;
+    transition: opacity 0.15s ease, box-shadow 0.15s ease, transform 0.2s var(--ease-pop);
+}
+
+.crtthumbs-pick:active {
+    cursor: grabbing;
+}
+
+.crtthumbs-pick.crt-enter {
+    animation: shpCardIn 0.22s var(--ease-pop) backwards;
+}
+
+.crtthumbs-pick.crt-enter:nth-child(1) { animation-delay: 0.02s; }
+.crtthumbs-pick.crt-enter:nth-child(2) { animation-delay: 0.04s; }
+.crtthumbs-pick.crt-enter:nth-child(3) { animation-delay: 0.06s; }
+.crtthumbs-pick.crt-enter:nth-child(4) { animation-delay: 0.08s; }
+.crtthumbs-pick.crt-enter:nth-child(5) { animation-delay: 0.1s; }
+
+.crtthumbs-pick.crt-leaving {
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+.crtthumbs-pick:first-child img {
+    border-color: rgba(145, 42, 223, 0.45);
+}
+
+.crtthumbs-pick.crt-dragging {
+    opacity: 0.45;
+    transform: scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    z-index: 2;
+}
+
+.crtthumbs-pick.crt-droptarget {
+    box-shadow: 0 0 0 3px rgba(145, 42, 223, 0.35);
+}
+
+.crtthumbs-x,
+.crtthumbs-mv,
+.crtthumbs-ord {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: #F0F0F0;
+    color: #3D3D3D;
+    font-size: 11px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+.crtthumbs-x:focus-visible,
+.crtthumbs-mv:focus-visible {
+    outline: 2px solid #912ADF;
+    outline-offset: 2px;
+}
+
+.crtthumbs-x {
+    top: -6px;
+    right: -6px;
+    cursor: pointer;
+}
+
+.crtthumbs-x:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #FFFFFF;
+}
+
+.crtthumbs-mv {
+    bottom: -6px;
+    cursor: pointer;
+}
+
+.crtthumbs-mv i {
+    font-size: 9px;
+}
+
+.crtthumbs-mv:hover:enabled {
+    border-color: #912ADF;
+    color: #912ADF;
+}
+
+.crtthumbs-mv:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.crtthumbs-mvl {
+    left: -6px;
+}
+
+.crtthumbs-mvr {
+    right: -6px;
+}
+
+.crtthumbs-ord {
+    top: -6px;
+    left: -6px;
+    font-weight: 500;
+    cursor: default;
+}
+
+.crtthumbs-pick:first-child .crtthumbs-ord {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    border: none;
+    color: #FFFFFF;
+}
+
+#crtGameGenreDropdown .glb-dropdown-menu,
+#crtGameVisibilityDropdown .glb-dropdown-menu {
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+}
+
+#crtGameGenreDropdown .glb-dropdown-menu {
+    max-height: 240px !important;
+}
+
 .crtshoptabs,
 .crtassettabs {
     max-width: 100% !important;
@@ -142,8 +326,8 @@
     gap: 6px;
     width: 100%;
     min-height: 96px;
-    background: #FAFAFA;
-    border: 2px dashed #C1C1C1;
+    background: #F0F0F0;
+    border: 2px dashed #A9A9A9;
     border-radius: 8px;
     cursor: pointer;
     font-family: 'Ubuntu', sans-serif;
@@ -196,18 +380,24 @@
 
 .crt3dbody {
     padding: 16px !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
 }
 
 .crt3dview {
     position: relative;
     width: 100%;
     height: 420px;
-    background: #FAFAFA;
-    border: 2px solid #C1C1C1;
+    background: #F0F0F0;
+    border: 2px solid #A9A9A9;
     border-radius: 12px;
     overflow: hidden;
     box-sizing: border-box;
+    touch-action: none;
+    overscroll-behavior: contain;
+}
+
+.crt3dview canvas {
+    display: block;
     touch-action: none;
 }
 
@@ -231,8 +421,8 @@
     flex-direction: column;
     gap: 10px;
     margin-top: 10px;
-    background: #FAFAFA;
-    border: 2px solid #C1C1C1;
+    background: #F0F0F0;
+    border: 2px solid #A9A9A9;
     border-radius: 12px;
     padding: 12px;
     box-sizing: border-box;
@@ -330,6 +520,41 @@
 .crtassetrow strong {
     font-weight: 500;
     color: #3D3D3D;
+}
+
+.crtprog {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.crtprog[hidden] {
+    display: none;
+}
+
+.crtprogtrack {
+    width: 100%;
+    height: 8px;
+    background: #EDEDED;
+    border-radius: 8px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.crtprogbar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    border-radius: 8px;
+    transition: width 0.15s ease;
+}
+
+.crtprogtxt {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #666666;
 }
 
 @media (max-width: 996px) {

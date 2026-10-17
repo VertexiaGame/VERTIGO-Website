@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/static/css/gen.css?v={{.AssetV}}">
+    <link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+</head>
+<body>
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">VERTEXIA</span>
+        </div>
+        <div class="pane">
+            <div class="frmlay">
+                <div class="frmmain">
+                    <h2 class="frmttl">Enter Password</h2>
+                    <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 0 0 20px 0;">beta2-171026</p>
+                    <form action="/sitelock" method="POST" hx-boost="false">
+                        <div class="frmgrp">
+                            <div class="frmincnt">
+                                <input type="password" name="password" class="frmin" placeholder="Password" required autofocus>
+                                <i class="fa-solid fa-key"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="submit" class="primary" style="position: relative; left: auto; top: auto; display: inline-flex;">
+                                <span>Continue</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{if .Error}}
+<script>
+    (function() {
+        //lmao
+        var err = "{{.Error}}";
+        if (!err) return;
+        var input = document.querySelector('input[name="password"]');
+        if (!input) return;
+        input.classList.add('inerr');
+        var group = input.closest('.frmgrp') || input.parentElement;
+        var errDiv = document.createElement('span');
+        errDiv.className = 'frminerr';
+        errDiv.textContent = err;
+        group.appendChild(errDiv);
+        requestAnimationFrame(function() {
+            errDiv.classList.add('visible');
+        });
+    })();
+</script>
+{{end}}
+</body>
+</html>

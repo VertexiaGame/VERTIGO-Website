@@ -2,9 +2,84 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 )
+
+const MaxShopTransformBytes = 2048
+
+func ValidateShopTransform(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	if len(raw) > MaxShopTransformBytes {
+		return "", errors.New("transform data is too large")
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
+		return "", errors.New("invalid transform data")
+	}
+	checkVector := func(value any, positive bool) error {
+		vec, ok := value.(map[string]any)
+		if !ok {
+			return errors.New("invalid transform data")
+		}
+		for _, axis := range []string{"x", "y", "z"} {
+			num, ok := vec[axis].(float64)
+			if !ok || num < -1000 || num > 1000 {
+				return errors.New("invalid transform data")
+			}
+			if positive && (num <= 0 || num > 1000) {
+				return errors.New("invalid transform data")
+			}
+		}
+		return nil
+	}
+	for key, value := range decoded {
+		switch key {
+		case "position", "rotation":
+			if err := checkVector(value, false); err != nil {
+				return "", err
+			}
+		case "scale":
+			if err := checkVector(value, true); err != nil {
+				return "", err
+			}
+		case "placement":
+			placed, ok := value.(map[string]any)
+			if !ok {
+				return "", errors.New("invalid transform data")
+			}
+			for _, sub := range []string{"position", "rotation", "scale"} {
+				subVal, ok := placed[sub]
+				if !ok {
+					return "", errors.New("invalid transform data")
+				}
+				if err := checkVector(subVal, sub == "scale"); err != nil {
+					return "", err
+				}
+			}
+		case "weld", "snap":
+			if value == nil {
+				continue
+			}
+			str, ok := value.(string)
+			if !ok || len(str) > 64 {
+				return "", errors.New("invalid transform data")
+			}
+		default:
+			return "", errors.New("invalid transform data")
+		}
+	}
+	canonical, err := json.Marshal(decoded)
+	if err != nil {
+		return "", errors.New("invalid transform data")
+	}
+	return string(canonical), nil
+}
 
 type ShopItem struct {
 	ID                  int            `json:"id"`
@@ -30,6 +105,7 @@ type ShopItem struct {
 	OriginalStock       int            `json:"original_stock"`
 	RAP                 int            `json:"rap"`
 	OffSale             string         `json:"offsale"`
+	Transform           string         `json:"transform,omitempty"`
 }
 
 type ShopFilter struct {
@@ -42,6 +118,27 @@ type ShopFilter struct {
 	Sort     string `json:"sort"`
 	Page     int    `json:"page"`
 	Limit    int    `json:"limit"`
+}
+
+const (
+	ShopApprovalApproved = "approved"
+	ShopApprovalDeclined = "declined"
+	ShopApprovalPending  = "pending"
+)
+
+func (s *ShopItem) ApprovalLabel() string {
+	switch s.ApprovalState {
+	case ShopApprovalApproved:
+		return "Approved"
+	case ShopApprovalDeclined, "rejected":
+		return "Rejected"
+	default:
+		return "Pending"
+	}
+}
+
+func (s *ShopItem) IsPending() bool {
+	return s.ApprovalState != ShopApprovalApproved && s.ApprovalState != ShopApprovalDeclined && s.ApprovalState != "rejected"
 }
 
 func NormalizeShopCategory(cat string) (string, string) {

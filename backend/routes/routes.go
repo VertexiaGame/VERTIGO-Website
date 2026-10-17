@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"strings"
 
 	"github.com/gofiber/contrib/v3/websocket"
@@ -12,9 +13,27 @@ import (
 
 func Setup(app *fiber.App) {
 	app.Use(func(c fiber.Ctx) error {
+		if config.Global != nil && config.Global.IsSiteLockActive() && !handlers.IsSiteLockUnlocked(c) {
+			path := c.Path()
+			if path != "/sitelock" &&
+				!strings.HasPrefix(path, "/static") &&
+				!strings.HasPrefix(path, "/assets") &&
+				path != "/favicon.ico" {
+				if c.Get("HX-Request") == "true" {
+					c.Set("HX-Redirect", "/sitelock")
+					return c.SendStatus(fiber.StatusFound)
+				}
+				return c.Redirect().To("/sitelock")
+			}
+		}
+		return c.Next()
+	})
+
+	app.Use(func(c fiber.Ctx) error {
 		if config.Global != nil && config.Global.IsLiveTimerActive() {
 			path := c.Path()
 			if path != "/livetimer" &&
+				path != "/sitelock" &&
 				path != "/api/v1/livetimer" &&
 				!strings.HasPrefix(path, "/static") &&
 				!strings.HasPrefix(path, "/assets") &&
@@ -30,16 +49,20 @@ func Setup(app *fiber.App) {
 	})
 
 	app.Get("/livetimer", handlers.LiveTimerGet)
+	app.Get("/sitelock", handlers.SiteLockGet)
+	app.Post("/sitelock", handlers.SiteLockPost)
 
 	app.Use("/ws/feed", func(c fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			username := handlers.GetActiveUser(c)
 			if username == "" {
+				log.Printf("WS /ws/feed rejected: unauthorized handshake from %s", c.IP())
 				return c.SendStatus(fiber.StatusUnauthorized)
 			}
 			c.Locals("username", username)
 			return c.Next()
 		}
+		log.Printf("WS /ws/feed rejected: missing upgrade headers from %s (session_cookie=%t remember_cookie=%t)", c.IP(), c.Cookies("session_id") != "", c.Cookies("vertexia_remember") != "")
 		return fiber.ErrUpgradeRequired
 	})
 	app.Get("/ws/feed", websocket.New(handlers.FeedWS))
@@ -52,6 +75,11 @@ func Setup(app *fiber.App) {
 	app.Get("/logout", handlers.Logout)
 	app.Get("/altcha", handlers.AltchaGet)
 	app.Get("/auth/validate", handlers.ValidateUkey)
+
+	app.Get("/studio/auth", handlers.StudioAuthGet)
+	app.Post("/studio/auth/allow", handlers.StudioAuthAllow)
+	app.Post("/studio/auth/deny", handlers.StudioAuthDeny)
+	app.Get("/studio/auth/poll", handlers.StudioAuthPoll)
 
 	app.Get("/search", handlers.SearchRedirect)
 	app.Get("/api/v1/search", handlers.SearchAPI)
@@ -77,8 +105,23 @@ func Setup(app *fiber.App) {
 	app.Post("/settings/socials", handlers.SettingsSocialsPost)
 	app.Post("/settings/music", handlers.SettingsMusicPost)
 	app.Post("/settings/music/remove", handlers.SettingsMusicRemovePost)
+	app.Post("/settings/banner", handlers.SettingsBannerPost)
+	app.Post("/settings/banner/remove", handlers.SettingsBannerRemovePost)
+	app.Post("/settings/banner/effect", handlers.SettingsBannerEffectPost)
+	app.Post("/settings/banner/textbg", handlers.SettingsBannerTextBgPost)
+	app.Post("/settings/personalization", handlers.SettingsPersonalizationPost)
+
+	app.Get("/play", handlers.PlayGet)
+	app.Get("/games", handlers.PlayGet)
+	app.Get("/play/:id", handlers.GameDetailGet)
+	app.Post("/play/:id/rate", handlers.GameRatePost)
 
 	app.Get("/shop", handlers.ShopGet)
+	app.Get("/shop/item/:id", handlers.ShopItemPage)
+	app.Post("/shop/purchase/:id", handlers.ShopPurchasePost)
+	app.Post("/shop/item/:id/purchase", handlers.ShopPurchasePost)
+	app.Get("/shop/:id", handlers.ShopItemRedirect)
+	app.Get("/item/:id", handlers.ShopItemRedirect)
 
 	app.Get("/avatar", handlers.AvatarEditorPage)
 	app.Get("/avatar/:id", handlers.AvatarGet)
@@ -97,16 +140,27 @@ func Setup(app *fiber.App) {
 
 	app.Get("/create", handlers.CreateGet)
 	app.Get("/create/assets", handlers.AssetsPage)
-	app.Post("/create/assets", handlers.AssetUploadPost)
+	app.Post("/create/assets", handlers.AssetUploadLimiter(), handlers.AssetUploadPost)
+	app.Get("/create/items", handlers.ItemsPage)
+	app.Post("/create/shop", handlers.ShopCreateLimiter(), handlers.ShopItemCreatePost)
+	app.Get("/create/games", handlers.MyGamesPage)
+	app.Get("/create/games/:id/edit", handlers.GameEditPage)
+	app.Post("/create/game", handlers.GameCreateLimiter(), handlers.GameCreatePost)
+	app.Post("/create/games/:id", handlers.GameUpdateLimiter(), handlers.GameUpdatePost)
+	app.Post("/create/games/:id/thumbnails/remove", handlers.GameUpdateLimiter(), handlers.GameThumbRemovePost)
+	app.Post("/create/games/:id/thumbnails/move", handlers.GameUpdateLimiter(), handlers.GameThumbMovePost)
 	app.Get("/assets", handlers.AssetsPage)
-	app.Post("/assets", handlers.AssetUploadPost)
+	app.Post("/assets", handlers.AssetUploadLimiter(), handlers.AssetUploadPost)
 	app.Get("/assets/:id/file", handlers.AssetFileGet)
 	app.Get("/assets/:id/render", handlers.AssetRenderGet)
+	app.Get("/assets/:id/status", handlers.AssetStatusGet)
 	app.Get("/assets/:id", handlers.AssetFileGet)
 	app.Get("/asset/:id/file", handlers.AssetFileGet)
+	app.Get("/asset/:id/status", handlers.AssetStatusGet)
 	app.Get("/asset/:id", handlers.AssetFileGet)
 
 	app.Post("/feed", handlers.PostFeed)
+	app.Get("/feed/:id", handlers.FeedSinglePage)
 
 	app.Get("/admin", handlers.AdminIndex)
 	app.Get("/admin/users/:id", handlers.AdminUserViewPage)
@@ -115,16 +169,27 @@ func Setup(app *fiber.App) {
 	app.Post("/admin/users/:id/resetavatar", handlers.AdminResetAvatarPost)
 	app.Post("/admin/users/:id/outfits/:oid/delete", handlers.AdminOutfitDeletePost)
 	app.Post("/admin/assets/:id/:action", handlers.AdminAssetReviewPost)
+	app.Post("/admin/shop/:id/:action", handlers.AdminShopReviewPost)
+	app.Post("/admin/banners/:id/:action", handlers.AdminBannerReviewPost)
 
 	api := app.Group("/api/v1")
 
 	api.Get("/altcha", handlers.AltchaGet)
 	api.Get("/auth/validate", handlers.ValidateUkey)
+	api.Post("/studio/exchange", handlers.StudioAuthExchange)
+	api.Get("/studio/exchange", handlers.StudioAuthExchange)
+	api.Get("/studio/poll", handlers.StudioAuthPoll)
+	api.Post("/studio/games", handlers.GameCreateLimiter(), handlers.StudioGameCreatePost)
+	api.Get("/studio/games", handlers.StudioGamesListGet)
+	api.Post("/studio/games/:id/vrtx", handlers.GameUpdateLimiter(), handlers.StudioGameVrtxUploadPost)
+	api.Get("/studio/games/:id/vrtx", handlers.StudioGameVrtxGet)
+	api.Get("/studio/games/:id", handlers.StudioGameGet)
 	api.Get("/search", handlers.SearchAPI)
 
 	api.Get("/feed", handlers.GetFeedPaginated)
 	api.Post("/feed", handlers.PostFeed)
 	api.Get("/feed/comments", handlers.GetFeedCommentsHandler)
+	api.Get("/feed/:id", handlers.GetFeedSingle)
 
 	api.Get("/user/:id", handlers.ProfileGet)
 	api.Get("/u/:id", handlers.ProfileGet)
@@ -146,9 +211,29 @@ func Setup(app *fiber.App) {
 	api.Post("/settings/socials", handlers.SettingsSocialsPost)
 	api.Post("/settings/music", handlers.SettingsMusicPost)
 	api.Post("/settings/music/remove", handlers.SettingsMusicRemovePost)
+	api.Post("/settings/banner", handlers.SettingsBannerPost)
+	api.Post("/settings/banner/remove", handlers.SettingsBannerRemovePost)
+	api.Post("/settings/banner/effect", handlers.SettingsBannerEffectPost)
+	api.Post("/settings/banner/textbg", handlers.SettingsBannerTextBgPost)
+	api.Post("/settings/personalization", handlers.SettingsPersonalizationPost)
+
+	api.Get("/games", handlers.GamesAPI)
+	api.Post("/games", handlers.GameCreateLimiter(), handlers.GameCreatePost)
+	api.Post("/games/:id", handlers.GameUpdateLimiter(), handlers.GameUpdatePost)
+	api.Post("/games/:id/thumbnails/remove", handlers.GameUpdateLimiter(), handlers.GameThumbRemovePost)
+	api.Post("/games/:id/thumbnails/move", handlers.GameUpdateLimiter(), handlers.GameThumbMovePost)
+	api.Post("/games/:id/rate", handlers.GameRatePost)
+	api.Post("/games/:id/join", handlers.GameJoinPost)
+	api.Get("/games/:id/servers", handlers.GameServersGet)
+	api.Post("/gs/:id/leave", handlers.GameserverLeavePost)
 
 	api.Get("/shop/items", handlers.ShopItemsAPI)
 	api.Get("/shop/items/:id", handlers.ShopItemDetailAPI)
+	api.Post("/shop/items", handlers.ShopCreateLimiter(), handlers.ShopItemCreatePost)
+	api.Post("/shop/purchase/:id", handlers.ShopPurchaseAPI)
+	api.Get("/shop/owns/:id", handlers.CrateGetAPI)
+	api.Get("/crate/:id", handlers.CrateGetAPI)
+	api.Get("/crate", handlers.CrateGetAPI)
 
 	api.Get("/avatar/data/:id", handlers.AvatarDataGet)
 	api.Get("/avatar/inventory", handlers.AvatarInventoryAPI)
@@ -168,27 +253,48 @@ func Setup(app *fiber.App) {
 	api.Post("/avatar/outfit/delete", handlers.AvatarDeleteOutfitPost)
 	api.Post("/avatar/rerender", handlers.AvatarReRenderPost)
 
+	api.Get("/gameserver/avatar", handlers.GameserverAvatarBundleGet)
+	api.Get("/gameserver/avatar/:ukey", handlers.GameserverAvatarBundleGet)
+	api.Get("/gameserver/shop/texture/:type/:id", handlers.GameserverShopTextureGet)
+	api.Get("/gameserver/shop/mesh/:type/:id", handlers.GameserverShopMeshGet)
+	api.Get("/gameserver/games/:id", handlers.GameserverGameGet)
+	api.Get("/gameserver/games/:id/vrtx", handlers.GameserverGameVrtxGet)
+	api.Get("/gameserver/servers/:id", handlers.GameserverServerGet)
+	api.Post("/gameserver/servers/:id/join", handlers.GameserverServerJoinPost)
+	api.Post("/gameserver/servers/:id/leave", handlers.GameserverServerLeavePost)
+	api.Post("/gameserver/servers/:id/heartbeat", handlers.GameserverServerHeartbeatPost)
+
 	api.Get("/music/search", handlers.MusicSearchGet)
 	api.Get("/music/track/:id", handlers.MusicTrackGet)
 	api.Post("/music/update", handlers.SettingsMusicPost)
 
-	api.Post("/create/preview", handlers.CreatePreviewPost)
+	api.Post("/create/preview", handlers.CreatePreviewLimiter(), handlers.CreatePreviewPost)
 	api.Get("/assets", handlers.AssetsPage)
-	api.Post("/assets", handlers.AssetUploadPost)
+	api.Post("/assets", handlers.AssetUploadLimiter(), handlers.AssetUploadPost)
 	api.Get("/assets/:id/file", handlers.AssetFileGet)
 	api.Get("/assets/:id/render", handlers.AssetRenderGet)
+	api.Get("/assets/:id/status", handlers.AssetStatusGet)
 	api.Get("/assets/:id", handlers.AssetFileGet)
 	api.Get("/asset/:id/file", handlers.AssetFileGet)
+	api.Get("/asset/:id/status", handlers.AssetStatusGet)
 	api.Get("/asset/:id", handlers.AssetFileGet)
 
 	api.Get("/livetimer", handlers.LiveTimerAPIGet)
 
 	api.Get("/admin/status", handlers.AdminStatusAPI)
+	api.Get("/admin/gs", handlers.AdminGSServersAPI)
+	api.Get("/admin/gs/health", handlers.AdminGSHealthAPI)
+	api.Post("/admin/gs/:id/drain", handlers.AdminGSDrainPost)
+	api.Post("/admin/gs/:id/kill", handlers.AdminGSKillPost)
 	api.Get("/admin/users", handlers.AdminUsersAPI)
 	api.Get("/admin/users/:id", handlers.AdminUserDetailAPI)
 	api.Get("/admin/logs", handlers.AdminLogsAPI)
 	api.Get("/admin/assets", handlers.AdminAssetsAPI)
 	api.Post("/admin/assets/:id/:action", handlers.AdminAssetReviewPost)
+	api.Get("/admin/shop", handlers.AdminShopQueueAPI)
+	api.Post("/admin/shop/:id/:action", handlers.AdminShopReviewPost)
+	api.Get("/admin/banners", handlers.AdminBannerQueueAPI)
+	api.Post("/admin/banners/:id/:action", handlers.AdminBannerReviewPost)
 	api.Post("/admin/users/:id/scrub/:action", handlers.AdminScrubPost)
 	api.Post("/admin/users/:id/modhist/:mid/retract", handlers.AdminModhistRetractPost)
 	api.Post("/admin/users/:id/resetavatar", handlers.AdminResetAvatarPost)

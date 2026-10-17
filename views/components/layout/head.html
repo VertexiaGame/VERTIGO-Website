@@ -1,5 +1,5 @@
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>{{.Title}}</title>
 <script type="importmap">
 {
@@ -13,17 +13,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="/static/css/gen.css">
-<link rel="stylesheet" href="/static/css/nav.css">
-<link rel="stylesheet" href="/static/css/mus.css">
-<link rel="stylesheet" href="/static/css/shop.css">
-<link rel="stylesheet" href="/static/css/search.css">
+<link rel="stylesheet" href="/static/css/gen.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/nav.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/mus.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/search.css?v={{.AssetV}}">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.7/htmx.min.js" integrity="sha512-IisGoumHahmfNIhP4wUV3OhgQZaaDBuD6IG4XlyjT77IUkwreZL3T3afO4xXuDanSalZ57Un+UlAbarQjNZCTQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5.5.2/dist/iro.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/static/js/elements/colorpicker.js"></script>
-<script src="/static/js/elements/music.js"></script>
-<script src="/static/js/elements/dropdown.js"></script>
-<script src="/static/js/elements/search.js"></script>
+<script src="/static/js/elements/colorpicker.js?v={{.AssetV}}"></script>
+<script src="/static/js/elements/music.js?v={{.AssetV}}"></script>
+<script src="/static/js/elements/dropdown.js?v={{.AssetV}}"></script>
+<script src="/static/js/elements/banner.js?v={{.AssetV}}"></script>
+<script src="/static/js/elements/search.js?v={{.AssetV}}"></script>
+<script src="/static/js/elements/loader.js?v={{.AssetV}}"></script>
+<script src="/static/js/elements/ratelimit.js?v={{.AssetV}}"></script>
+<script src="/static/js/elements/bgdim.js?v={{.AssetV}}"></script>
 <script>
     if (/Android|iPhone|iPod/i.test(navigator.userAgent)) {
         document.documentElement.classList.add('mobmode');
@@ -65,3 +69,4 @@
         animation: none !important;
     }
 </style>
+{{if .ViewerCustomCSS}}<style id="userCustomCSS">{{.ViewerCustomCSS}}</style>{{end}}

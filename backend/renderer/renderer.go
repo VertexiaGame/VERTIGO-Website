@@ -1,9 +1,12 @@
 package renderer
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
+	"image"
+	"image/png"
 	"log"
 	"runtime"
 	"strings"
@@ -18,7 +21,7 @@ import (
 const (
 	Width          = 330
 	Height         = 330
-	ScaleFactor    = 8
+	ScaleFactor    = 4
 	Brightness     = 0.52
 	Roughness      = 0.6
 	CamPosX        = 2.0
@@ -30,6 +33,8 @@ const (
 	BaseFOV        = 95.0
 	DefaultZoom    = 2.2
 	AutoZoomMargin = 1.20
+	maxAutoZoomFactor = 1.6
+	maxFov            = 78.0
 	AssetPath      = "./assets/char/"
 	FacePath       = "./assets/faces/"
 	HeadFile       = "Head.obj"
@@ -44,6 +49,8 @@ const (
 const (
 	loadThreshold = 95.0
 	renderTimeout = 15 * time.Second
+	maxLoadWait   = 5 * time.Second
+	maxQueueWait  = 5 * time.Second
 )
 
 var (
@@ -56,7 +63,24 @@ var (
 			return fauxgl.NewContext(Width*ScaleFactor, Height*ScaleFactor)
 		},
 	}
+	bufPool = sync.Pool{
+		New: func() any {
+			return new(bytes.Buffer)
+		},
+	}
 )
+
+func encodePNG(img image.Image) ([]byte, error) {
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufPool.Put(buf)
+	if err := png.Encode(buf, img); err != nil {
+		return nil, err
+	}
+	out := make([]byte, buf.Len())
+	copy(out, buf.Bytes())
+	return out, nil
+}
 
 type RenderRequest struct {
 	HeadColor      string
@@ -101,6 +125,11 @@ func Init() {
 	}
 
 	initBodyParts()
+
+	if ctx := contextPool.Get(); ctx != nil {
+		contextPool.Put(ctx)
+	}
+	_, _ = loadTextureCached(FacePath + "def.png")
 
 	go checkforload()
 
@@ -153,17 +182,27 @@ func worker(id int) {
 }
 
 func submitRenderJob(req RenderRequest, timeoutMsg string) ([]byte, error) {
+	loadTimer := time.NewTimer(maxLoadWait)
+	defer loadTimer.Stop()
 	for gettheload() >= loadThreshold {
-		time.Sleep(100 * time.Millisecond)
+		select {
+		case <-loadTimer.C:
+			return nil, errors.New("server busy, try again")
+		case <-time.After(100 * time.Millisecond):
+		}
 	}
 
 	resultChan := make(chan []byte, 1)
 	errChan := make(chan error, 1)
 
-	jobq <- RenderJob{
+	select {
+	case jobq <- RenderJob{
 		Req:    req,
 		Result: resultChan,
 		Error:  errChan,
+	}:
+	case <-time.After(maxQueueWait):
+		return nil, errors.New("server busy, try again")
 	}
 
 	timer := time.NewTimer(renderTimeout)
@@ -294,10 +333,13 @@ func RenderCreatePreview(category string, filePath string, texturePath string) (
 		RightLegColor: "a4bd47",
         */
 	switch category {
-	case "hat", "face":
+	case "hat":
 		req.PreviewType = "hat"
 		req.PreviewObj = filePath
 		req.PreviewTexture = texturePath
+	case "face":
+		req.PreviewType = "faces"
+		req.PreviewTexture = filePath
 	case "tool":
 		req.PreviewType = "gear"
 		req.PreviewObj = filePath

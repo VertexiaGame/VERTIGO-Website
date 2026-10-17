@@ -160,12 +160,14 @@ func Home(c fiber.Ctx) error {
 	}
 
 	return Render(c, "pages/home", fiber.Map{
-		"Title":     "VERTEXIA",
-		"UserCount": count,
-		"Games":     games,
-		"Greeting":  greeting,
-		"Friends":   friends,
-		"Feed":      currentFeed,
+		"Title":           "VERTEXIA",
+		"UserCount":       count,
+		"Games":           games,
+		"Greeting":        greeting,
+		"Friends":         friends,
+		"Feed":            currentFeed,
+		"FocusedFeedID":   0,
+		"FocusedFeedType": "worldwide",
 	}, "layouts/main")
 }
 
@@ -204,6 +206,149 @@ func GetFeedPaginated(c fiber.Ctx) error {
 	return c.JSON(toFeedPosts(dbPosts))
 }
 
+func GetFeedSingle(c fiber.Ctx) error {
+	feedID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || feedID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid feed ID"})
+	}
+	feedType := c.Query("type", "")
+	username := GetActiveUser(c)
+	var currentUserID int
+	if username != "" && service.User != nil {
+		u, _ := service.User.GetUserByUsername(username)
+		if u != nil {
+			currentUserID = u.ID
+		}
+	}
+	if service.Feed == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+	}
+	post, resolvedType := service.Feed.GetSinglePost(feedID, currentUserID)
+	if post == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+	}
+	if feedType != "" && feedType != "worldwide" && feedType != "friends" {
+		feedType = ""
+	}
+	if feedType == "" {
+		feedType = resolvedType
+	}
+	single := toFeedPosts([]*models.FeedPost{post})
+	if len(single) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+	}
+	return c.JSON(fiber.Map{
+		"id":          single[0].ID,
+		"username":    single[0].Username,
+		"user_id":     single[0].UserID,
+		"content":     single[0].Content,
+		"time_ago":    single[0].TimeAgo,
+		"full_date":   single[0].FullDate,
+		"reactions":   single[0].Reactions,
+		"has_reacted": single[0].HasReacted,
+		"feed_type":   feedType,
+	})
+}
+
+func FeedSinglePage(c fiber.Ctx) error {
+	feedID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || feedID <= 0 {
+		return serveErrorPage(c, fiber.StatusNotFound)
+	}
+
+	var count int
+	var games []*models.Game
+	if service.User != nil {
+		count, _ = service.User.GetUserCount()
+	}
+	if service.Game != nil {
+		var gerr error
+		games, gerr = service.Game.GetPopularGames(12)
+		if gerr != nil {
+			log.Printf("VERTEXIA DB Error: Failed to fetch popular games: %v", gerr)
+		}
+	}
+
+	username := GetActiveUser(c)
+	var greeting string
+	var friends []*models.User
+
+	if username != "" {
+		greetings := []string{
+			"Hello, %s!",
+			"G'day, %s!",
+			"Welcome back, %s!",
+			"Howdy, %s!",
+			"What's cracking, %s!",
+			"Salutations, %s!",
+			"Yo, %s!",
+			"Greetings, %s!",
+			"Hey there, %s!",
+			"Good to see you, %s!",
+			"Hi, %s!",
+			"Sup, %s!",
+			"Ahoy, %s!",
+			"What's up, %s!",
+			"Aloha, %s!",
+			"Nice to see you, %s!",
+			"What's new, %s!",
+			"Long time no see, %s!",
+			"Look who it is, %s!",
+			"Welcome, %s!",
+		}
+		idx := time.Now().UnixNano() % int64(len(greetings))
+		greeting = fmt.Sprintf(greetings[idx], username)
+
+		if service.User != nil {
+			friends, _ = service.User.GetRecentUsers(username, 10)
+		}
+	}
+
+	var currentUserID int
+	if username != "" && service.User != nil {
+		u, _ := service.User.GetUserByUsername(username)
+		if u != nil {
+			currentUserID = u.ID
+		}
+	}
+
+	if service.Feed == nil {
+		return serveErrorPage(c, fiber.StatusNotFound)
+	}
+
+	post, resolvedType := service.Feed.GetSinglePost(feedID, currentUserID)
+	if post == nil {
+		return serveErrorPage(c, fiber.StatusNotFound)
+	}
+
+	var currentFeed []FeedPost
+	if dbPosts, err := service.Feed.GetRecentFeed(10, currentUserID, "worldwide"); err == nil {
+		currentFeed = toFeedPosts(dbPosts)
+	}
+	focused := toFeedPosts([]*models.FeedPost{post})
+	found := false
+	for _, p := range currentFeed {
+		if p.ID == feedID {
+			found = true
+			break
+		}
+	}
+	if !found && len(focused) > 0 {
+		currentFeed = append(focused, currentFeed...)
+	}
+
+	return Render(c, "pages/home", fiber.Map{
+		"Title":           fmt.Sprintf("@%s - VERTEXIA", post.Username),
+		"UserCount":       count,
+		"Games":           games,
+		"Greeting":        greeting,
+		"Friends":         friends,
+		"Feed":            currentFeed,
+		"FocusedFeedID":   feedID,
+		"FocusedFeedType": resolvedType,
+	}, "layouts/main")
+}
+
 func GetFeedCommentsHandler(c fiber.Ctx) error {
 	feedID, err := strconv.Atoi(c.Query("feed_id"))
 	if err != nil || feedID <= 0 {
@@ -236,13 +381,13 @@ func PostFeed(c fiber.Ctx) error {
 		return c.Redirect().To("/")
 	}
 
-	postID, userID, err := service.Feed.PostToFeed(username, content, feedType)
+	postID, userID, storedContent, err := service.Feed.PostToFeed(username, content, feedType)
 	if err != nil {
 		return c.Redirect().To("/")
 	}
 
 	if postID > 0 {
-		BroadcastFeedPost(postID, username, userID, content, feedType)
+		BroadcastFeedPost(postID, username, userID, storedContent, feedType)
 	}
 
 	return c.Redirect().To("/")
@@ -261,6 +406,23 @@ func FeedWS(c *websocket.Conn) {
 	feedHubMu.Lock()
 	feedClients[client] = username
 	feedHubMu.Unlock()
+
+	stopPing := make(chan struct{})
+	defer close(stopPing)
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				client.mu.Lock()
+				_ = client.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second))
+				client.mu.Unlock()
+			case <-stopPing:
+				return
+			}
+		}
+	}()
 
 	defer func() {
 		feedHubMu.Lock()
@@ -325,7 +487,7 @@ func FeedWS(c *websocket.Conn) {
 
 				default:
 					if service.Feed != nil {
-						postID, _, err := service.Feed.PostToFeed(username, clientMsg.Content, feedType)
+						postID, _, storedContent, err := service.Feed.PostToFeed(username, clientMsg.Content, feedType)
 						if err != nil {
 							sendFeedError(client, err)
 							continue
@@ -337,7 +499,7 @@ func FeedWS(c *websocket.Conn) {
 							if u != nil {
 								uID = u.ID
 							}
-							BroadcastFeedPost(postID, username, uID, clientMsg.Content, feedType)
+							BroadcastFeedPost(postID, username, uID, storedContent, feedType)
 						}
 					}
 				}

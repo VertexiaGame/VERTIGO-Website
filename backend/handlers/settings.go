@@ -72,6 +72,17 @@ func SettingsGet(c fiber.Ctx) error {
 		userMusicID = user.MusicID.Int64
 	}
 
+	var liveBanner, pendingBanner *models.Banner
+	if service.Banner != nil {
+		liveBanner, _ = service.Banner.GetApprovedBanner(user.ID)
+		pendingBanner, _ = service.Banner.GetPendingBanner(user.ID)
+	}
+	bannerEdit := pendingBanner
+	if bannerEdit == nil {
+		bannerEdit = liveBanner
+	}
+	bannerEffect := models.NormalizeBannerEffect(user.BannerEffect)
+
 	return Render(c, "pages/settings", fiber.Map{
 		"Title":               "Settings - VERTEXIA",
 		"Error":               c.Query("error"),
@@ -84,6 +95,19 @@ func SettingsGet(c fiber.Ctx) error {
 		"CurUsername":         user.Username,
 		"CurDisplayName":      user.DisplayName,
 		"UsernameChangesLeft": changesLeft,
+		"DisableAutoplay":     user.DisableAutoplay,
+		"ReducedMotion":       user.ReducedMotion,
+		"CustomCSS":           user.CustomCSS.String,
+		"BannerLive":          liveBanner,
+		"BannerPending":       pendingBanner,
+		"BannerEdit":          bannerEdit,
+		"BannerEffect":        bannerEffect,
+		"BannerEffectName":    models.BannerEffectName(bannerEffect),
+		"BannerTextBg":        user.BannerTextBg,
+		"BannerTextBgColor":   user.BannerTextBgColor,
+		"BannerTextBgBorder":  user.BannerTextBgBorder,
+		"BannerTextBgText":    user.BannerTextBgText,
+		"BannerTextBgOpacity": user.BannerTextBgOpacity,
 	}, "layouts/main")
 }
 
@@ -229,4 +253,22 @@ func SettingsMusicRemovePost(c fiber.Ctx) error {
 
 	err = service.User.UpdateMusicID(user.ID, 0)
 	return handleSettingsResponse(c, err, "Profile music removed successfully", fiber.Map{"music_id": 0})
+}
+
+func SettingsPersonalizationPost(c fiber.Ctx) error {
+	user, err := getSettingsUser(c)
+	if err != nil {
+		return handleSettingsResponse(c, err, "", nil)
+	}
+
+	disableAutoplay := c.FormValue("disable_autoplay") != ""
+	reducedMotion := c.FormValue("reduced_motion") != ""
+	customCSS := c.FormValue("custom_css")
+
+	err = service.User.UpdatePersonalization(user.ID, disableAutoplay, reducedMotion, customCSS)
+	return handleSettingsResponse(c, err, "Personalization saved successfully", fiber.Map{
+		"disable_autoplay": disableAutoplay,
+		"reduced_motion":   reducedMotion,
+		"custom_css":       service.SanitizeCustomCSS(customCSS),
+	})
 }

@@ -1,4 +1,4 @@
-<div class="tabcnt" data-active-user="{{.Username}}">
+<div class="tabcnt" data-active-user="{{.Username}}" data-focused-id="{{.FocusedFeedID}}" data-focused-type="{{.FocusedFeedType}}">
     <div class="tablst">
         <div class="tabind"></div>
         <button class="tabbtn active" data-tab="worldwide">Worldwide Feed</button>
@@ -13,7 +13,7 @@
     </form>
     <div class="pstlst">
         {{range $post := .Feed}}
-        <div class="pstitm" data-id="{{$post.ID}}" data-username="{{$post.Username}}" data-feed-type="worldwide">
+        <div class="pstitm" data-id="{{$post.ID}}" data-username="{{$post.Username}}" data-feed-type="{{if eq $post.ID $.FocusedFeedID}}{{$.FocusedFeedType}}{{else}}worldwide{{end}}">
             <div class="pstcrd">
                 <div class="pstavt">
                     <img src="/api/v1/avatar/headshot/{{$post.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{$post.Username}}">
@@ -50,4 +50,4 @@
     </div>
 </div>
 
-<script type="module" src="/static/js/feed/feed.js"></script>
+<script type="module" src="/static/js/feed/feed.js?v={{.AssetV}}"></script>

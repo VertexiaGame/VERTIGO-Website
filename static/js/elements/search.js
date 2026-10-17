@@ -145,8 +145,10 @@ const navigateToSearchResult = itemEl => {
     const dropdown = itemEl.closest('.srch-dropdown');
     if (dropdown) dropdown.classList.remove('active');
 
-    if (window.htmx) {
-        window.htmx.ajax('GET', targetUrl, { target: 'body', pushUrl: true });
+    if (window.navigateWithHistory) {
+        window.navigateWithHistory(targetUrl);
+    } else if (window.htmx) {
+        window.htmx.ajax('GET', targetUrl, { target: 'body' });
     } else {
         window.location.href = targetUrl;
     }
@@ -180,8 +182,10 @@ const handleSearchKeyDown = (e, input) => {
             if (q) {
                 dropdown.classList.remove('active');
                 const targetUrl = isUserContextPage() ? `/users?q=${encodeURIComponent(q)}` : `/shop?q=${encodeURIComponent(q)}`;
-                if (window.htmx) {
-                    window.htmx.ajax('GET', targetUrl, { target: 'body', pushUrl: true });
+                if (window.navigateWithHistory) {
+                    window.navigateWithHistory(targetUrl);
+                } else if (window.htmx) {
+                    window.htmx.ajax('GET', targetUrl, { target: 'body' });
                 } else {
                     window.location.href = targetUrl;
                 }

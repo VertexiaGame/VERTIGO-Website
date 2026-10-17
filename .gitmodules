@@ -1,0 +1,3 @@
+[submodule "fauxgl"]
+	path = fauxgl
+	url = https://github.com/whatthexampp/texiagl.git

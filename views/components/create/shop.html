@@ -16,7 +16,7 @@
             <div class="setcrd">
                 <h3 class="setttl" id="crtShopTitle">Create {{.ActiveCatName}}</h3>
                 <span class="setinf">Publish a new <strong id="crtShopCatName">{{.ActiveCatName}}</strong> to the VERTEXIA shop</span>
-                <form class="crtformel" onsubmit="return window.submitShopItem(event)">
+                <form class="crtformel" hx-boost="false" action="javascript:void(0);" onsubmit="return window.submitShopItem(event)">
                     <input type="hidden" id="crtShopCatInput" name="category" value="{{.ActiveCat}}">
                     <input type="hidden" id="crtShopModelTransform" name="transform" value="">
                     <div class="crtfld">
@@ -46,15 +46,29 @@
                         </div>
                     </div>
                     <div class="crtfld">
-                        <label class="crtlbl" for="crtShopPrice">Price</label>
+                        <label class="crtlbl" for="crtShopPrice">Price in Vertices</label>
                         <div class="instk">
                             <div class="instkrw">
                                 <div class="ttpcnt">
                                     <div class="setinbox">
-                                        <input type="number" id="crtShopPrice" name="price" class="setin crtprice" placeholder="0" min="0" max="1000000" required>
+                                        <input type="number" id="crtShopPrice" name="bucks" class="setin crtprice" placeholder="0" min="0" max="1000000">
                                         <img src="/static/useful/icons/verticec.png" class="crtpriceico" alt="Vertices">
                                     </div>
-                                    <span class="ttptxt">Set your price in Vertices</span>
+                                    <span class="ttptxt">Set your price in Vertices, 0 for free</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtShopTicketsPrice">Price in Tickets</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setinbox">
+                                        <input type="number" id="crtShopTicketsPrice" name="bits" class="setin crtprice" placeholder="0" min="0" max="1000000">
+                                        <img src="/static/useful/icons/ticketc.png" class="crtpriceico" alt="Tickets">
+                                    </div>
+                                    <span class="ttptxt">Set your price in Tickets, 0 for free</span>
                                 </div>
                             </div>
                         </div>
@@ -70,25 +84,38 @@
                             </label>
                             <span class="ttptxt">PNG or JPEG</span>
                         </div>
+                        <div class="crtprog" id="crtShopFileProg" hidden>
+                            <div class="crtprogtrack"><div class="crtprogbar" id="crtShopFileProgBar"></div></div>
+                            <span class="crtprogtxt" id="crtShopFileProgTxt">Uploading… 0%</span>
+                        </div>
                     </div>
-                    <div class="crtfld crt3dfld{{if or (eq .ActiveCat "hat") (eq .ActiveCat "face") (eq .ActiveCat "tool")}} visible{{end}}" id="crtShopModelFld">
+                    <div class="crtfld crt3dfld{{if or (eq .ActiveCat "hat") (eq .ActiveCat "tool")}} visible{{end}}" id="crtShopModelFld">
                         <label class="crtlbl" for="crtShopModelFile">3D Model</label>
                         <div class="ttpcnt">
                             <label class="crtupload" for="crtShopModelFile">
-                                <input type="file" id="crtShopModelFile" name="model" accept=".glb,.obj" onchange="window.handleShopModelFile(event)" hidden>
+                                <input type="file" id="crtShopModelFile" name="model" accept=".obj" onchange="window.handleShopModelFile(event)" hidden>
                                 <i class="fa-solid fa-cube"></i>
-                                <span class="crtupmsg" id="crtShopModelMsg">Choose a GLB or OBJ</span>
+                                <span class="crtupmsg" id="crtShopModelMsg">Choose an OBJ</span>
                                 <span class="crtupname" id="crtShopModelName"></span>
                             </label>
-                            <span class="ttptxt">GLB or OBJ</span>
+                            <span class="ttptxt">OBJ with a PNG or JPEG texture</span>
                         </div>
-                        <button type="button" class="primary hpyprim hpyinl hpysm crt3dbtn" id="crtShopModelViewBtn" onclick="window.openCreate3DPreview()" disabled>
-                            <span>Preview in 3D</span>
+                            <button type="button" class="primary hpyprim hpyinl hpysm crt3dbtn" id="crtShopModelViewBtn" onclick="if(window.openCreate3DPreview)window.openCreate3DPreview()" disabled>
+                                <span>Preview in 3D</span>
+                            </button>
+                            <div class="crtprog" id="crtShopModelProg" hidden>
+                                <div class="crtprogtrack"><div class="crtprogbar" id="crtShopModelProgBar"></div></div>
+                                <span class="crtprogtxt" id="crtShopModelProgTxt">Uploading… 0%</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                        <button type="submit" class="primary hpyprim hpyinl hpysm" id="crtShopSubmitBtn">
+                            <span>Create Item</span>
                         </button>
+                        <a href="/create/items" hx-get="/create/items" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                            <span>My Items</span>
+                        </a>
                     </div>
-                    <button type="submit" class="primary hpyprim hpyinl hpysm">
-                        <span>Create Item</span>
-                    </button>
                 </form>
             </div>
         </div>

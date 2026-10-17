@@ -1,5 +1,13 @@
 <div id="tab-profile" class="settabcntnt{{if eq .ActiveTab "profile"}} active{{end}}">
     <div class="setcrd">
+        <div class="prftabcnt">
+            <div class="prftablst">
+                <div class="prftabind" id="bannerTabInd"></div>
+                <button type="button" class="prftabbtn active" onclick="window.switchBannerTab('profile', event)">General</button>
+                <button type="button" class="prftabbtn" onclick="window.switchBannerTab('banner', event)">Header</button>
+            </div>
+        </div>
+        <div id="bannerPaneProfile" style="margin-top: 16px;">
         <h3 class="setttl">Change Bio</h3>
         <form action="/settings/bio" method="POST" hx-boost="false" style="display: flex; flex-direction: column; gap: 12px;">
             <div class="instk">
@@ -17,7 +25,7 @@
             </button>
         </form>
 
-        <div style="height: 1px; background: #e0e0e0; margin: 24px 0;"></div>
+        <div style="height: 1px; background: #d4d4d4; margin: 24px 0;"></div>
 
         <h3 class="setttl">Change Pronouns</h3>
         <form action="/settings/pronouns" method="POST" hx-boost="false" style="display: flex; flex-direction: column; gap: 12px;">
@@ -36,7 +44,7 @@
             </button>
         </form>
 
-        <div style="height: 1px; background: #e0e0e0; margin: 24px 0;"></div>
+        <div style="height: 1px; background: #d4d4d4; margin: 24px 0;"></div>
 
         <h3 class="setttl">Social Links</h3>
         <span class="setinf" style="margin-bottom: 0 !important;">Click on any icon to add a social link !!</span>
@@ -68,7 +76,7 @@
             </button>
         </form>
 
-        <div style="height: 1px; background: #e0e0e0; margin: 24px 0;"></div>
+        <div style="height: 1px; background: #d4d4d4; margin: 24px 0;"></div>
 
         <h3 class="setttl">Profile Music</h3>
         <span class="setinf">Play tracks on your profile via Deezer!</span>
@@ -105,5 +113,197 @@
             <img src="/static/useful/icons/music.png" class="hpyico" alt="">
             <span>Search Songs</span>
         </button>
+        </div>
+        <div id="bannerPaneBanner" style="margin-top: 16px; display: none;">
+            <h3 class="setttl">Profile Banner</h3>
+            <div class="bnrprevwrap">
+                <div id="settingsBannerPreview" class="bnrprev" role="img" aria-label="Banner preview">
+                    <div id="settingsBannerFx" class="bnrprevfx" style="{{if .BannerPending}}{{.BannerPending.Style}}{{else if .BannerLive}}{{.BannerLive.Style}}{{end}}"></div>
+                </div>
+                <div class="bnreffbar" role="group" aria-label="Banner effect">
+                    <button type="button" class="bnreffbtn{{if or (eq .BannerEffect "none") (eq .BannerEffect "")}} active{{end}}" data-bnreff="none" title="None" aria-label="No effect" onclick="window.selectBannerEffect('none')"><i class="fa-solid fa-ban"></i></button>
+                    <button type="button" class="bnreffbtn{{if eq .BannerEffect "blur"}} active{{end}}" data-bnreff="blur" title="Blur" aria-label="Blur effect" onclick="window.selectBannerEffect('blur')"><i class="fa-solid fa-droplet"></i></button>
+                    <button type="button" class="bnreffbtn{{if eq .BannerEffect "darken"}} active{{end}}" data-bnreff="darken" title="Darken" aria-label="Darken effect" onclick="window.selectBannerEffect('darken')"><i class="fa-solid fa-moon"></i></button>
+                    <button type="button" class="bnreffbtn{{if eq .BannerEffect "zoom"}} active{{end}}" data-bnreff="zoom" title="Zoom" aria-label="Zoom effect" onclick="window.selectBannerEffect('zoom')"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button type="button" class="bnreffbtn{{if eq .BannerEffect "drift"}} active{{end}}" data-bnreff="drift" title="Drift" aria-label="Drift effect" onclick="window.selectBannerEffect('drift')"><i class="fa-solid fa-wind"></i></button>
+                </div>
+            </div>
+            <input type="hidden" id="bannerEffectInput" name="effect" value="{{if .BannerEffect}}{{.BannerEffect}}{{else}}none{{end}}">
+
+            {{if .BannerPending}}
+            <div class="feedemt" id="bannerPendingNote"><i class="fa-solid fa-hourglass-half"></i> Awaiting admin approval.</div>
+            {{end}}
+
+            <div style="height: 1px; background: #d4d4d4; margin: 24px 0;"></div>
+
+            <form action="/settings/banner" method="POST" enctype="multipart/form-data" hx-boost="false" id="bannerForm" class="crtformel">
+                <div class="bnrsec">
+                    <div class="crtfld">
+                        <label class="crtlbl">Type</label>
+                        <div class="crttype bnrtype" role="group" aria-label="Banner type">
+                            <button type="button" class="crttypebtn{{if or (not .BannerEdit) (eq .BannerEdit.Type "color")}} active{{end}}" data-bnrtype="color" onclick="window.selectBannerType('color')"><i class="fa-solid fa-fill-drip"></i> Color</button>
+                            <button type="button" class="crttypebtn{{if and .BannerEdit (eq .BannerEdit.Type "gradient")}} active{{end}}" data-bnrtype="gradient" onclick="window.selectBannerType('gradient')"><i class="fa-solid fa-palette"></i> Gradient</button>
+                            <button type="button" class="crttypebtn{{if and .BannerEdit (eq .BannerEdit.Type "image")}} active{{end}}" data-bnrtype="image" onclick="window.selectBannerType('image')"><i class="fa-solid fa-image"></i> Image</button>
+                        </div>
+                        <input type="hidden" id="bannerTypeInput" name="type" value="{{if .BannerEdit}}{{.BannerEdit.Type}}{{else}}color{{end}}">
+                    </div>
+                    <div class="crtfld" id="bannerColorARow"{{if and .BannerEdit (eq .BannerEdit.Type "image")}} style="display: none;"{{end}}>
+                        <label class="crtlbl" for="bannerColorA" id="bannerColorALabel">{{if and .BannerEdit (eq .BannerEdit.Type "gradient")}}Gradient{{else}}Color{{end}}</label>
+                        <input type="hidden" id="bannerColorA" name="color_a" value="#{{if .BannerEdit}}{{.BannerEdit.ColorA}}{{else}}7423CB{{end}}">
+                        <div class="bnrbarwrap">
+                            <div class="bnrbar" id="bannerGradientBar" style="{{if .BannerEdit}}{{if eq .BannerEdit.Type "gradient"}}background:linear-gradient(90deg,#{{.BannerEdit.ColorA}},#{{.BannerEdit.ColorB}});{{else if eq .BannerEdit.Type "color"}}background:#{{.BannerEdit.ColorA}};{{end}}{{end}}"></div>
+                            <div class="bnrstops">
+                                <button type="button" class="bnrstop" id="bannerStopA" aria-label="Start color" title="Start color" onclick="window.toggleBannerPicker('A')">
+                                    <span class="bnrstem"></span>
+                                    <span class="bnrswatch" id="bannerSwatchA" style="{{if .BannerEdit}}background:#{{.BannerEdit.ColorA}};{{end}}"></span>
+                                </button>
+                                <button type="button" class="bnrstop" id="bannerStopB" aria-label="End color" title="End color" onclick="window.toggleBannerPicker('B')"{{if not (and .BannerEdit (eq .BannerEdit.Type "gradient"))}} style="display: none;"{{end}}>
+                                    <span class="bnrstem"></span>
+                                    <span class="bnrswatch" id="bannerSwatchB" style="{{if .BannerEdit}}background:#{{.BannerEdit.ColorB}};{{end}}"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bnrpop" id="bannerPickerPopA">
+                            <div class="bnrpophdr">
+                                <span class="bnrpoptitle">Start color</span>
+                                <button type="button" class="bnrpopclose" onclick="window.closeBannerPickers()" aria-label="Close color picker"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="bnrclrpick" id="bannerColorAPicker"></div>
+                        </div>
+                        <div class="bnrpop" id="bannerPickerPopB">
+                            <div class="bnrpophdr">
+                                <span class="bnrpoptitle">End color</span>
+                                <button type="button" class="bnrpopclose" onclick="window.closeBannerPickers()" aria-label="Close color picker"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="bnrclrpick" id="bannerColorBPicker"></div>
+                        </div>
+                    </div>
+                    <div class="crtfld" id="bannerColorBRow"{{if not (and .BannerEdit (eq .BannerEdit.Type "gradient"))}} style="display: none;"{{end}}>
+                        <input type="hidden" id="bannerColorB" name="color_b" value="#{{if .BannerEdit}}{{.BannerEdit.ColorB}}{{else}}912ADF{{end}}">
+                    </div>
+                    <div class="crtfld" id="bannerAngleRow"{{if not (and .BannerEdit (eq .BannerEdit.Type "gradient"))}} style="display: none;"{{end}}>
+                        <label class="crtlbl" for="bannerAngle">Angle</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setinbox">
+                                        <input type="number" id="bannerAngle" name="angle" class="setin" placeholder="135" min="0" max="360" step="1" value="{{if .BannerEdit}}{{.BannerEdit.Angle}}{{else}}135{{end}}" autocomplete="off">
+                                    </div>
+                                    <span class="ttptxt">0 to 360 degrees</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bnrpresetrow" role="group" aria-label="Common angles">
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrangle="0" onclick="window.setBannerAngle(0)">0°</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrangle="45" onclick="window.setBannerAngle(45)">45°</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrangle="90" onclick="window.setBannerAngle(90)">90°</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrangle="135" onclick="window.setBannerAngle(135)">135°</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrangle="180" onclick="window.setBannerAngle(180)">180°</button>
+                        </div>
+                    </div>
+                    <div class="crtfld" id="bannerImageRow"{{if not (and .BannerEdit (eq .BannerEdit.Type "image"))}} style="display: none;"{{end}}>
+                        <label class="crtlbl" for="bannerImageFile">Image</label>
+                        <div class="ttpcnt">
+                            <label class="crtupload" for="bannerImageFile">
+                                <input type="file" id="bannerImageFile" name="image" accept="image/png,image/jpeg" hidden>
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span class="crtupmsg" id="bannerImageMsg">Choose a PNG or JPEG</span>
+                                <span class="crtupname" id="bannerImageName"></span>
+                            </label>
+                            <span class="ttptxt">PNG or JPEG up to 8 MB</span>
+                        </div>
+                    </div>
+                    {{if or .BannerLive .BannerPending}}
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;" id="bannerActions">
+                        <button type="button" class="primary hpydng hpyinl hpysm" id="bannerRemoveBtn" onclick="window.removeProfileBanner()">
+                            <span>Remove Banner</span>
+                        </button>
+                    </div>
+                    {{end}}
+                </div>
+            </form>
+
+            <div style="height: 1px; background: #d4d4d4; margin: 24px 0;"></div>
+
+            <div class="bnrsec">
+                <div class="bnrtight">
+                    <div class="persrow">
+                        <h3 class="setttl bnrsmttl">Enable background behind text</h3>
+                        <label class="tgl">
+                            <input type="checkbox" id="bannerTextBg" aria-label="Enable background behind text"{{if .BannerTextBg}} checked{{end}}>
+                            <span class="tgltrack"><span class="tglknob"></span></span>
+                        </label>
+                    </div>
+                    <span class="setinf perssub bnrsmsub">This renders the information on the header with a background</span>
+                </div>
+                <div id="bannerTextBgOpts"{{if not .BannerTextBg}} style="display: none;"{{end}}>
+                    <div class="crtfld">
+                        <label class="crtlbl">Background, border & text color</label>
+                        <div class="bnrbarwrap">
+                            <div class="bnrtxtprev" id="bannerTextBgPreview"><span>Aa</span></div>
+                            <div class="bnrstops">
+                                <button type="button" class="bnrstop" id="bannerTextBgStopBg" aria-label="Choose background color" title="Background color" onclick="window.toggleBannerTextBgPicker('bg')">
+                                    <span class="bnrstem"></span>
+                                    <span class="bnrswatch" id="bannerTextBgSwatch"{{if .BannerTextBgColor}} style="background:#{{.BannerTextBgColor}};"{{end}}></span>
+                                </button>
+                                <button type="button" class="bnrstop" id="bannerTextBgStopText" aria-label="Choose text color" title="Text color" onclick="window.toggleBannerTextBgPicker('text')">
+                                    <span class="bnrstem"></span>
+                                    <span class="bnrswatch" id="bannerTextBgTextSwatch"{{if .BannerTextBgText}} style="background:#{{.BannerTextBgText}};"{{end}}></span>
+                                </button>
+                                <button type="button" class="bnrstop" id="bannerTextBgStopBorder" aria-label="Choose border color" title="Border color" onclick="window.toggleBannerTextBgPicker('border')">
+                                    <span class="bnrstem"></span>
+                                    <span class="bnrswatch" id="bannerTextBgBorderSwatch"{{if .BannerTextBgBorder}} style="background:#{{.BannerTextBgBorder}};"{{end}}></span>
+                                </button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="bannerTextBgColor" value="#{{if .BannerTextBgColor}}{{.BannerTextBgColor}}{{else}}F0F0F0{{end}}">
+                        <input type="hidden" id="bannerTextBgBorder" value="#{{if .BannerTextBgBorder}}{{.BannerTextBgBorder}}{{else}}A9A9A9{{end}}">
+                        <input type="hidden" id="bannerTextBgText" value="#{{if .BannerTextBgText}}{{.BannerTextBgText}}{{else}}1A202C{{end}}">
+                        <div class="bnrpop" id="bannerTextBgPickerPop">
+                            <div class="bnrpophdr">
+                                <span class="bnrpoptitle">Background color</span>
+                                <button type="button" class="bnrpopclose" onclick="window.closeBannerPickers()" aria-label="Close color picker"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="bnrclrpick" id="bannerTextBgPicker"></div>
+                        </div>
+                        <div class="bnrpop" id="bannerTextBgBorderPickerPop">
+                            <div class="bnrpophdr">
+                                <span class="bnrpoptitle">Border color</span>
+                                <button type="button" class="bnrpopclose" onclick="window.closeBannerPickers()" aria-label="Close color picker"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="bnrclrpick" id="bannerTextBgBorderPicker"></div>
+                        </div>
+                        <div class="bnrpop" id="bannerTextBgTextPickerPop">
+                            <div class="bnrpophdr">
+                                <span class="bnrpoptitle">Text color</span>
+                                <button type="button" class="bnrpopclose" onclick="window.closeBannerPickers()" aria-label="Close color picker"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="bnrclrpick" id="bannerTextBgTextPicker"></div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="bannerTextBgOpacity">Opacity</label>
+                        <div class="bnropacityrow">
+                            <input type="range" id="bannerTextBgOpacity" class="bnrrange" min="0" max="100" step="1" value="{{.BannerTextBgOpacity}}" aria-label="Background opacity percent">
+                            <span class="bnropval" id="bannerTextBgOpacityVal">{{.BannerTextBgOpacity}}%</span>
+                        </div>
+                        <div class="bnrpresetrow" role="group" aria-label="Common opacities">
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrop="0" onclick="window.setBannerTextBgOpacity(0)">0%</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrop="25" onclick="window.setBannerTextBgOpacity(25)">25%</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrop="50" onclick="window.setBannerTextBgOpacity(50)">50%</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrop="75" onclick="window.setBannerTextBgOpacity(75)">75%</button>
+                            <button type="button" class="crttypebtn bnrpreset" data-bnrop="100" onclick="window.setBannerTextBgOpacity(100)">100%</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 1px; background: #d4d4d4; margin: 24px 0;"></div>
+
+            <button type="button" class="primary hpyprim hpyinl hpysm" id="bannerUpdateHeaderBtn" onclick="window.updateHeader(event)" style="align-self: flex-start;">
+                <span>Update Header</span>
+            </button>
+            <span class="frminsuc" id="bannerFormMsg"></span>
+        </div>
     </div>
 </div>

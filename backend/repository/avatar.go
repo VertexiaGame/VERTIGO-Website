@@ -209,13 +209,20 @@ func (r *AvatarRepository) lookupShopItems(ids []int) map[int]*models.InventoryI
 		args = append(args, id)
 	}
 
-	query := `SELECT s.id, s.name, s.type, COALESCE(s.description, ''), COALESCE(u.username, 'Polyoria')
-              FROM shop s
-              LEFT JOIN users u ON s.creator_id = u.id
+	query := `SELECT s.id, s.name, s.type, COALESCE(s.description, ''), COALESCE(u.username, 'VERTEXIA')
+              FROM shopitem s
+              LEFT JOIN users u ON s.cid = u.id AND s.creator_type = 'user'
               WHERE s.id IN (` + strings.Join(placeholders, ",") + `)`
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return found
+		legacyQuery := `SELECT s.id, s.name, s.type, COALESCE(s.description, ''), COALESCE(u.username, 'VERTEXIA')
+              FROM shop s
+              LEFT JOIN users u ON s.creator_id = u.id
+              WHERE s.id IN (` + strings.Join(placeholders, ",") + `)`
+		rows, err = r.db.Query(legacyQuery, args...)
+		if err != nil {
+			return found
+		}
 	}
 	defer rows.Close()
 
@@ -250,18 +257,51 @@ func (r *AvatarRepository) GetInventory(userID int, category, search string) ([]
 	var items []*models.InventoryItem
 
 	if r.db != nil {
-		query := `SELECT s.id, s.name, s.type, COALESCE(s.description, ''), COALESCE(u.username, 'Polyoria')
+		query := `SELECT s.id, s.name, s.type, COALESCE(s.description, ''), COALESCE(u.username, 'VERTEXIA')
+	              FROM crate c
+	              JOIN shopitem s ON c.iid = s.id
+	              LEFT JOIN users u ON s.cid = u.id AND s.creator_type = 'user'
+	              WHERE c.uid = ?`
+		rows, err := r.db.Query(query, userID)
+		if err != nil {
+			fallback := `SELECT s.id, s.name, s.type, COALESCE(s.description, ''), COALESCE(u.username, 'VERTEXIA')
+	              FROM crate c
+	              JOIN shopitem s ON c.iid = s.id
+	              LEFT JOIN users u ON s.cid = u.id
+	              WHERE c.uid = ?`
+			rows, err = r.db.Query(fallback, userID)
+		}
+		if err == nil {
+			defer rows.Close()
+			seen := make(map[int]bool)
+			for rows.Next() {
+				var item models.InventoryItem
+				if err := rows.Scan(&item.ID, &item.Name, &item.Type, &item.Description, &item.CreatorName); err == nil {
+					if seen[item.ID] {
+						continue
+					}
+					seen[item.ID] = true
+					items = append(items, &item)
+				}
+			}
+		} else {
+			legacyQuery := `SELECT s.id, s.name, s.type, COALESCE(s.description, ''), COALESCE(u.username, 'VERTEXIA')
 	              FROM inventory i
 	              JOIN shop s ON i.item_id = s.id
 	              LEFT JOIN users u ON s.creator_id = u.id
 	              WHERE i.user_id = ?`
-		rows, err := r.db.Query(query, userID)
-		if err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var item models.InventoryItem
-				if err := rows.Scan(&item.ID, &item.Name, &item.Type, &item.Description, &item.CreatorName); err == nil {
-					items = append(items, &item)
+			if rows2, err2 := r.db.Query(legacyQuery, userID); err2 == nil {
+				defer rows2.Close()
+				seen2 := make(map[int]bool)
+				for rows2.Next() {
+					var item models.InventoryItem
+					if err := rows2.Scan(&item.ID, &item.Name, &item.Type, &item.Description, &item.CreatorName); err == nil {
+						if seen2[item.ID] {
+							continue
+						}
+						seen2[item.ID] = true
+						items = append(items, &item)
+					}
 				}
 			}
 		}

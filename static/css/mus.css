@@ -12,7 +12,7 @@
     width: 100% !important;
     height: 52px !important;
     flex-shrink: 0 !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 12px !important;
     transition: border-color 0.2s ease !important;
@@ -95,7 +95,7 @@
     gap: 12px !important;
     padding: 10px 12px !important;
     background: #ECECEC !important;
-    border: 2px solid #C1C1C1 !important;
+    border: 2px solid #A9A9A9 !important;
     border-radius: 12px !important;
     transition: background 0.15s ease, border-color 0.15s ease !important;
 }
@@ -116,7 +116,7 @@
     border-radius: 8px !important;
     object-fit: cover !important;
     flex-shrink: 0 !important;
-    background: #C1C1C1 !important;
+    background: #A9A9A9 !important;
 }
 
 .musinf {
@@ -159,7 +159,7 @@
     align-items: center !important;
     justify-content: center !important;
     padding-top: 10px !important;
-    border-top: 1px solid #C1C1C1 !important;
+    border-top: 1px solid #A9A9A9 !important;
     flex-shrink: 0 !important;
 }
 
@@ -186,7 +186,7 @@
 
 .musplayer {
     background: #ECECEC !important;
-    border: 2px solid #C1C1C1 !important;
+    border: 2px solid #A9A9A9 !important;
     border-radius: 10px !important;
     padding: 6px 10px !important;
     display: flex !important;
@@ -203,7 +203,7 @@
     border-radius: 4px !important;
     object-fit: cover !important;
     flex-shrink: 0 !important;
-    background: #C1C1C1 !important;
+    background: #A9A9A9 !important;
 }
 
 .musplayer-meta {
@@ -371,4 +371,64 @@
     opacity: 1 !important;
     color: #912ADF !important;
     transform: scale(1.15) !important;
+}
+
+#profileMusicWidget .musplayer {
+    flex-wrap: wrap !important;
+    gap: 0 8px !important;
+    transition: padding 0.25s var(--ease-smooth), gap 0.25s var(--ease-smooth) !important;
+}
+
+#profileMusicWidget .musplayer:hover {
+    padding: 12px 14px !important;
+    gap: 10px 8px !important;
+}
+
+#profileMusicWidget .musplayer-cvr {
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    transition: width 0.25s var(--ease-smooth), border-radius 0.25s var(--ease-smooth), box-shadow 0.25s var(--ease-smooth) !important;
+}
+
+#profileMusicWidget .musplayer:hover .musplayer-cvr {
+    width: 100% !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+#profileMusicWidget .musplayer-meta {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+}
+
+#profileMusicWidget .musplayer-seek {
+    flex: 1 1 100% !important;
+    max-height: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    transition: max-height 0.25s var(--ease-smooth), opacity 0.2s ease, visibility 0.25s !important;
+}
+
+#profileMusicWidget .musplayer:hover .musplayer-seek {
+    max-height: 32px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+#profileMusicWidget .musplayer-barcnt {
+    transition: height 0.25s var(--ease-smooth), background-color 0.25s var(--ease-smooth) !important;
+}
+
+#profileMusicWidget .musplayer:hover .musplayer-barcnt {
+    height: 10px !important;
+    border-radius: 6px !important;
+    background: rgba(61, 61, 61, 0.28) !important;
+}
+
+#profileMusicWidget .musplayer:hover .musplayer-barfill {
+    border-radius: 5px !important;
 }

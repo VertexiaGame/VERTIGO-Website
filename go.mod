@@ -3,12 +3,14 @@ module vertexia-frontend
 go 1.25.0
 
 require (
+	github.com/fasthttp/websocket v1.5.12
 	github.com/fogleman/fauxgl v0.0.0-20250110135958-abf826acbbbd
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gofiber/contrib/v3/websocket v1.2.1
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/template/html/v3 v3.0.6
 	github.com/joho/godotenv v1.5.1
+	github.com/redis/go-redis/v9 v9.22.0
 	github.com/shirou/gopsutil/v3 v3.24.5
 	golang.org/x/crypto v0.54.0
 )
@@ -16,7 +18,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
-	github.com/fasthttp/websocket v1.5.12 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fogleman/simplify v0.0.0-20170216171241-d32f302d5046 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gofiber/schema v1.8.2 // indirect
@@ -37,6 +39,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.72.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect

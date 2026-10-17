@@ -25,3 +25,28 @@
         </div>
     {{end}}
 </nav>
+<div class="mobbot">
+    <a href="/" hx-get="/" hx-target="body" hx-push-url="true" class="mobitm">
+        <img src="/static/useful/icons/m/home.png" alt="Home">
+    </a>
+    <div class="mobdiv"></div>
+    <a href="/play" hx-get="/play" hx-target="body" hx-push-url="true" class="mobitm">
+        <img src="/static/useful/icons/m/games.png" alt="Games">
+    </a>
+    <div class="mobdiv"></div>
+    <a href="/profile" hx-get="/profile" hx-target="body" hx-push-url="true" class="mobitm mobcenter">
+        {{if .IsLoggedIn}}
+        <img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.Username}}" class="mobhead">
+        {{else}}
+        <img src="/static/useful/temp/pfp.png" alt="Guest" class="mobhead">
+        {{end}}
+    </a>
+    <div class="mobdiv"></div>
+    <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="mobitm">
+        <img src="/static/useful/icons/m/forum.png" alt="Forum">
+    </a>
+    <div class="mobdiv"></div>
+    <a href="/more" class="mobitm">
+        <img src="/static/useful/icons/m/more.png" alt="More">
+    </a>
+</div>

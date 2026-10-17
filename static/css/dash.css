@@ -37,10 +37,10 @@
     width: 100% !important;
     max-width: 346px !important;
     height: 330px !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
     border: none !important;
     border-radius: 0px 12px 12px 0px !important;
-    box-shadow: 4px 0 0 0 #C1C1C1, 0 4px 0 0 #C1C1C1, 0 -4px 0 0 #C1C1C1 !important;
+    box-shadow: 4px 0 1px 0 #A9A9A9, 0 4px 1px 0 #A9A9A9, 0 -4px 1px 0 #A9A9A9 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -176,7 +176,7 @@
     height: 52px !important;
     left: 0 !important;
     top: 34px !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 12px !important;
     transition: border-color 0.2s ease !important;
@@ -494,8 +494,8 @@
     position: relative !important;
     width: 100% !important;
     min-height: 85px !important;
-    background: #E0E0E0 !important;
-    border: 2px solid #C1C1C1 !important;
+    background: #D4D4D4 !important;
+    border: 2px solid #A9A9A9 !important;
     border-radius: 12px !important;
     transition: min-height 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease !important;
 }
@@ -506,19 +506,20 @@
     left: -2px !important;
     top: -2px !important;
     border-radius: 10px 0px 0px 10px !important;
-    border-right: 2px solid #C1C1C1 !important;
+    border-right: 2px solid #A9A9A9 !important;
     border-bottom: none !important;
     overflow: hidden !important;
     transition: border-bottom 0.2s ease, border-radius 0.2s ease !important;
 }
 .pstavt img {
     width: 85px !important;
+    padding: 2px !important;
     height: 85px !important;
     object-fit: cover !important;
 }
 .pstcrd.expanded .pstavt,
 .pstitm.expanded .pstavt {
-    border-bottom: 2px solid #C1C1C1 !important;
+    border-bottom: 2px solid #A9A9A9 !important;
     border-bottom-left-radius: 10px !important;
 }
 .psthdr {
@@ -655,6 +656,24 @@
     max-height: 1000px !important;
     overflow: visible !important;
 }
+.pbmore {
+    position: relative !important;
+    margin-left: 99px !important;
+    margin-right: 16px !important;
+    margin-top: -4px !important;
+    margin-bottom: 8px !important;
+    font-family: 'Ubuntu' !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 18px !important;
+    color: #7423CB !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    display: inline-block;
+}
+.pbmore:hover {
+    text-decoration: underline !important;
+}
 .pstico {
     width: 20px !important;
     height: 20px !important;
@@ -731,7 +750,7 @@
     margin-top: 8px !important;
     margin-left: 23px !important;
     padding-left: 25px !important;
-    border-left: 2px solid #C1C1C1 !important;
+    border-left: 2px solid #A9A9A9 !important;
     box-sizing: border-box !important;
     width: calc(100% - 23px) !important;
 }
@@ -776,8 +795,8 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 14px !important;
     color: #718096 !important;
-    background: #FAFAFA !important;
-    border: 2px dashed #C1C1C1 !important;
+    background: #F0F0F0 !important;
+    border: 2px dashed #A9A9A9 !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
 }
@@ -793,8 +812,8 @@
     position: relative !important;
     box-sizing: border-box !important;
     width: 100% !important;
-    background: #E0E0E0 !important;
-    border: 2px solid #C1C1C1 !important;
+    background: #D4D4D4 !important;
+    border: 2px solid #A9A9A9 !important;
     border-radius: 12px !important;
     padding: 8px 65px 8px 56px !important;
     min-height: 48px !important;
@@ -809,7 +828,7 @@
     width: 48px !important;
     height: 48px !important;
     border-radius: 10px 0 0 10px !important;
-    border-right: 2px solid #C1C1C1 !important;
+    border-right: 2px solid #A9A9A9 !important;
     overflow: hidden !important;
 }
 
@@ -900,7 +919,7 @@
     position: relative !important;
     width: 100% !important;
     height: 38px !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
     border: 1px solid rgba(61, 61, 61, 0.3) !important;
     border-radius: 8px !important;
     box-sizing: border-box !important;

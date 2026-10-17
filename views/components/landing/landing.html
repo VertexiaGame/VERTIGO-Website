@@ -14,8 +14,8 @@
         </div>
     </div>
     <div class="hroimgcnt">
-        <div class="ttpcnt">
-            <img src="/static/useful/pages/land/g21art.png" alt="Vertexia Art" class="hroimg">
+        <div class="ttpcnt g21wrap" id="g21wrap">
+            <img src="/static/useful/pages/land/g21art.png" alt="Vertexia Art" class="hroimg" id="g21art">
             <span class="ttptxt">Made by G21!</span>
         </div>
     </div>
@@ -27,7 +27,7 @@
     <div class="crlwrp">
         <div class="crlcnt" id="gamesCarousel">
             {{range .Games}}
-            <a href="/games/{{.ID}}" class="gmcrd">
+            <a href="/play/{{.ID}}" class="gmcrd">
                 <div class="gmthmwrp">
                     <img src="/static/uploads/games/{{.ID}}.png"
                          onerror="this.src='/static/useful/temp/pfp.png'; this.style.filter='blur(10px)';"
@@ -46,3 +46,88 @@
     </div>
 </div>
 {{end}}
+
+<div class="storyartcnt" id="storyartcnt">
+    <div class="ttpcnt storyttp">
+        <img src="/static/useful/pages/land/storyart.png" alt="Story Art" class="storyart" loading="lazy" decoding="async" width="2732" height="1853" fetchpriority="low">
+        <span class="ttptxt">Made by Story!</span>
+        <div class="storytxt" id="storytxt">
+            <span class="storytxt-line storytxt-create">CREATE ANYTHING</span>
+            <span class="storytxt-line storytxt-studio">WITH OUR STUDIO</span>
+        </div>
+    </div>
+</div>
+
+<div class="vrvsec">
+    <img src="/static/useful/pages/land/vrv.png" alt="VRV" class="vrvimg" loading="lazy" decoding="async" width="909" height="312">
+    <div class="vrvrow">
+        <div class="vrvtext">
+            <h2 class="vrvttl">OPEN SOURCE ENGINE</h2>
+            <p class="vrvprg">Access our source-code under MIT and vGPL 3.0 respectively!</p>
+        </div>
+        <a href="https://github.com/VertexiaGame" target="_blank" rel="noopener noreferrer" class="vrvbtn primary"><span><i class="fa-brands fa-github" style="margin-right:8px;"></i>GitHub</span></a>
+    </div>
+</div>
+<script>
+(function(){
+  const cnt=document.getElementById('storyartcnt');
+  const txt=document.getElementById('storytxt');
+  if(!cnt||!txt) return;
+  let morphed=false;
+  let morphTimer=null;
+  function doMorph(){
+    if(morphed) return;
+    morphed=true;
+    txt.classList.add('scrolled');
+  }
+  function scheduleMorph(delay){
+    if(morphed) return;
+    clearTimeout(morphTimer);
+    morphTimer=setTimeout(doMorph, delay);
+  }
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        cnt.classList.add('inview');
+        scheduleMorph(1600);
+      }
+    });
+  },{threshold:0.55, rootMargin:'0px 0px -20% 0px'});
+  io.observe(cnt);
+  let ticking=false;
+  let hasScrolled=false;
+  window.addEventListener('scroll',()=>{
+    if(!hasScrolled && window.scrollY>40) hasScrolled=true;
+    if(ticking) return;
+    ticking=true;
+    requestAnimationFrame(()=>{
+      if(!morphed && hasScrolled){
+        const r=cnt.getBoundingClientRect();
+        const vh=window.innerHeight;
+        const inCenter = r.top < vh*0.62 && r.bottom > vh*0.25;
+        if(inCenter) doMorph();
+      }
+      ticking=false;
+    });
+  },{passive:true});
+})();
+</script>
+<script>
+(function(){
+  const wrap=document.getElementById('g21wrap');
+  if(!wrap) return;
+  wrap.addEventListener('click',()=>{
+    const el=document.createElement('span');
+    el.className='squish';
+    el.textContent='*squish*';
+    const x=18 + Math.random()*64;
+    const y=18 + Math.random()*64;
+    const r=(Math.random()*28 - 14).toFixed(1);
+    el.style.left=x+'%';
+    el.style.top=y+'%';
+    el.style.setProperty('--r', r+'deg');
+    wrap.appendChild(el);
+    setTimeout(()=>{ el.remove(); }, 1000);
+  });
+})();
+</script>

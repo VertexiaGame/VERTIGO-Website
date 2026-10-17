@@ -114,6 +114,51 @@ window.selectSocialPlatform = function(iconEl) {
     }
 };
 
+window.applyReducedMotion = function(on) {
+    document.documentElement.classList.toggle('reduced-motion', !!on);
+};
+
+window.applyCustomCSS = function(cssText) {
+    const css = (cssText || '').trim();
+    let styleEl = document.getElementById('userCustomCSS');
+    if (css === '') {
+        if (styleEl) styleEl.remove();
+        return;
+    }
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'userCustomCSS';
+        document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
+};
+
+function showPersonalizationMessage(ok, message) {
+    const msg = document.getElementById('personalizationMsg');
+    if (!msg) return;
+    msg.classList.remove('visible', 'frminsuc', 'frminerr');
+    msg.classList.add(ok ? 'frminsuc' : 'frminerr');
+    msg.textContent = message;
+    requestAnimationFrame(() => msg.classList.add('visible'));
+    if (ok) autoDismissSettingsMessage();
+}
+
+function initPersonalization() {
+    const motionBox = document.querySelector('#personalizationForm input[name="reduced_motion"]');
+    if (motionBox) {
+        motionBox.onchange = () => window.applyReducedMotion(motionBox.checked);
+    }
+
+    const cssBox = document.getElementById('personalizationCSS');
+    if (cssBox && window.CodeMirror && !cssBox.dataset.cmInit) {
+        cssBox.dataset.cmInit = '1';
+        window.persCSSeditor = window.CodeMirror.fromTextArea(cssBox, {
+            mode: 'css',
+            lineNumbers: true
+        });
+    }
+}
+
 window.updateViewportHeight = function() {
     const activeContent = document.querySelector('.settabcntnt.active');
     const viewport = document.querySelector('.settabvwp');
@@ -142,6 +187,12 @@ window.switchSettingsTab = function(tabName, event) {
     const currentContent = document.querySelector('.settabcntnt.active');
     const targetContent = document.getElementById('tab-' + tabName);
     if (!targetContent) return;
+
+    dismissSettingsMessages();
+    if (window.setMsgTimer) {
+        clearTimeout(window.setMsgTimer);
+        window.setMsgTimer = null;
+    }
 
     tabs.forEach(tab => tab.classList.remove('active'));
     clickedTab.classList.add('active');
@@ -177,6 +228,21 @@ window.switchSettingsTab = function(tabName, event) {
         window.history.replaceState({}, document.title, url.pathname);
     } catch (e) {}
 };
+
+function dismissSettingsMessages() {
+    document.querySelectorAll('.settabcnt .frminsuc.visible, .settabcnt .frminerr.visible').forEach(el => el.classList.remove('visible'));
+}
+
+function autoDismissSettingsMessage() {
+    if (window.setMsgTimer) {
+        clearTimeout(window.setMsgTimer);
+        window.setMsgTimer = null;
+    }
+    window.setMsgTimer = setTimeout(() => {
+        dismissSettingsMessages();
+        window.setMsgTimer = null;
+    }, 2000);
+}
 
 function clearFormMessages(form) {
     if (!form) return;
@@ -238,8 +304,10 @@ function showFormSuccess(form, message) {
         }
         succDiv.textContent = message;
         requestAnimationFrame(() => succDiv.classList.add('visible'));
+        autoDismissSettingsMessage();
     }
 }
+
 
 const setupSettingsFormListeners = () => {
     document.addEventListener('submit', function(e) {
@@ -253,6 +321,46 @@ const setupSettingsFormListeners = () => {
             if (!newUsername) return;
 
             window.openUsernameModal(newUsername);
+            return;
+        }
+
+        if (form.action.includes('/settings/personalization')) {
+            e.preventDefault();
+
+            if (window.persCSSeditor) {
+                window.persCSSeditor.save();
+            }
+            const formData = new FormData(form);
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (submitBtn) submitBtn.disabled = false;
+
+                if (data.error) {
+                    showPersonalizationMessage(false, data.error);
+                } else {
+                    const motionBox = form.querySelector('input[name="reduced_motion"]');
+                    window.applyReducedMotion(motionBox ? motionBox.checked : false);
+                    if (data.custom_css !== undefined) {
+                        window.applyCustomCSS(data.custom_css);
+                    }
+                    showPersonalizationMessage(true, data.success || 'Preferences saved successfully');
+                }
+            })
+            .catch(() => {
+                if (submitBtn) submitBtn.disabled = false;
+                showPersonalizationMessage(false, 'An unexpected error occurred. Please try again.');
+            });
             return;
         }
 
@@ -359,6 +467,11 @@ const initSettings = () => {
         window.selectSocialPlatform(activeSclIco);
     }
 
+    initPersonalization();
+
+    if (typeof window.initProfileBanner === 'function') {
+        window.initProfileBanner();
+    }
     if (initialErr || initialSuccess) {
         try {
             const url = new URL(window.location.href);

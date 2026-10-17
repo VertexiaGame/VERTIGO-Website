@@ -1,0 +1,45 @@
+<div id="tab-personalization" class="settabcntnt{{if eq .ActiveTab "personalization"}} active{{end}}">
+    <div class="setcrd">
+        <form action="/settings/personalization" method="POST" hx-boost="false" id="personalizationForm" style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="persrow">
+                <h3 class="setttl">Disable Autoplay for Profile Music</h3>
+                <label class="tgl">
+                    <input type="checkbox" name="disable_autoplay" value="1" aria-label="Disable Autoplay for Profile Music"{{if .DisableAutoplay}} checked{{end}}>
+                    <span class="tgltrack"><span class="tglknob"></span></span>
+                </label>
+            </div>
+            <span class="setinf perssub">No longer automatically plays profile music.</span>
+
+            <div style="height: 1px; background: #d4d4d4; margin: 8px 0;"></div>
+
+            <div class="persrow">
+                <h3 class="setttl">Prefer reduced motion</h3>
+                <label class="tgl">
+                    <input type="checkbox" name="reduced_motion" value="1" aria-label="Prefer reduced motion"{{if .ReducedMotion}} checked{{end}}>
+                    <span class="tgltrack"><span class="tglknob"></span></span>
+                </label>
+            </div>
+            <span class="setinf perssub">Reduces and speeds up some of the animations in the website.</span>
+
+            <div style="height: 1px; background: #d4d4d4; margin: 8px 0;"></div>
+
+            <div>
+                <h3 class="setttl">Website CSS</h3>
+                <span class="setinf">Custom CSS applied across the whole website for you.</span>
+                <div class="instk">
+                    <div class="instkrw">
+                        <div class="setareabox cm-css-box">
+                            <textarea name="custom_css" id="personalizationCSS" class="setarea" placeholder="e.g. .bar { background: #000000; }" maxlength="10000" spellcheck="false">{{.CustomCSS}}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="primary hpyprim hpyinl hpysm" style="align-self: flex-start;">
+                <span>Save Preferences</span>
+            </button>
+
+            <span class="frminsuc" id="personalizationMsg"></span>
+        </form>
+    </div>
+</div>

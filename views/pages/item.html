@@ -1,0 +1,254 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/admin.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/prof.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<script>
+window.updateItemTabIndicator = function() {
+    const indicator = document.querySelector('.shpitm-tabind');
+    const activeTab = document.querySelector('.shpitm-tabbtn.active');
+    if (indicator && activeTab) {
+        indicator.style.left = activeTab.offsetLeft + 'px';
+        indicator.style.width = activeTab.offsetWidth + 'px';
+        indicator.style.height = activeTab.offsetHeight + 'px';
+        indicator.style.top = activeTab.offsetTop + 'px';
+    }
+};
+window.switchItemTab = function(tabName, event) {
+    if (event) event.preventDefault();
+    const tabs = Array.from(document.querySelectorAll('.shpitm-tabbtn'));
+    const clickedTab = event ? event.currentTarget : null;
+    if (!clickedTab) return;
+    if (clickedTab.classList.contains('active')) return;
+    tabs.forEach(tab => tab.classList.remove('active'));
+    clickedTab.classList.add('active');
+    window.updateItemTabIndicator();
+    const commentsPane = document.getElementById('shpitmPaneComments');
+    const relatedPane = document.getElementById('shpitmPaneRelated');
+    if (commentsPane && relatedPane) {
+        if (tabName === 'comments') {
+            commentsPane.style.display = '';
+            relatedPane.style.display = 'none';
+        } else {
+            commentsPane.style.display = 'none';
+            relatedPane.style.display = '';
+        }
+    }
+};
+</script>
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Shop</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search" id="shpitmBarSearch" autocomplete="off" onkeydown="if(event.key==='Enter'){window.location.href='/shop?q='+encodeURIComponent(this.value)}">
+            </div>
+            <div class="barbtns">
+                <a href="/shop" hx-get="/shop" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration:none;">Back to Shop</a>
+            </div>
+        </div>
+        <div class="pane">
+            <div class="shp-lay shpitm-lay">
+                <div class="shpitm-hero">
+                    <div class="shpitm-rendercol">
+                        <div class="adm-rendcrd shpitm-rendcrd">
+                            {{if not .CanViewFull}}
+                            <img src="/static/useful/icons/missing.png" alt="[Content Pending]" class="adm-rendimg avtldimg" onload="this.classList.add('ld');">
+                            {{else}}
+                            <img src="/api/v1/avatar/shop/{{.Item.Type}}/{{.Item.ID}}" alt="{{.Item.Name}}" class="adm-rendimg avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
+                            {{end}}
+                            {{if or (eq .Item.OnSale "false") (eq .Item.OffSale "true")}}
+                            <div class="shp-ribbon shp-ribbon-off">
+                                <img src="/static/useful/icons/off.png" class="shp-ribicon" alt="Offsale">
+                                <span class="shp-ribtext">OFFSALE</span>
+                            </div>
+                            {{else if eq .Item.Special "true"}}
+                            <div class="shp-ribbon shp-ribbon-special">
+                                <img src="/static/useful/icons/special.png" class="shp-ribicon" alt="Special">
+                                <span class="shp-ribtext">SPECIAL</span>
+                            </div>
+                            {{end}}
+                            {{if and .CanViewFull (or (eq .Item.Type "hat") (eq .Item.Type "gear"))}}
+                            <button type="button" class="adm-3d-toggle-btn" data-item-id="{{.Item.ID}}" data-item-type="{{.Item.Type}}" onclick="window.toggleShopItem3D(this)" title="3D Preview">
+                                <i class="fa-solid fa-cube"></i><span>3D View</span>
+                            </button>
+                            {{end}}
+                        </div>
+                    </div>
+                    <div class="shpitm-infocol">
+                        <div class="adm-card shpitm-titlecard">
+                            <div class="shpitm-titlehdr">
+                                <h1 class="shpitm-title">{{if not .CanViewFull}}[Content Pending]{{else}}{{.Item.Name}}{{end}}</h1>
+                                <span class="shpitm-creator">By <a href="/user/{{.Item.CID}}" hx-get="/user/{{.Item.CID}}" hx-target="body" hx-push-url="true" class="adm-owner-link"><img src="/api/v1/avatar/headshot/{{.Item.CID}}.png" alt="" class="shpitm-creator-pfp" onerror="this.src='/static/useful/temp/pfp.png';">{{.Item.CreatorName}}</a></span>
+                            </div>
+                            <div class="shpitm-priceblock">
+                                {{if or (eq .Item.OnSale "false") (eq .Item.OffSale "true")}}
+                                    <span class="shp-price-off">Offsale</span>
+                                    <span class="shpitm-price-note">This item is not for sale.</span>
+                                {{else if and (eq .Item.Bucks 0) (eq .Item.Bits 0)}}
+                                    <span class="shp-price-free" style="font-size:18px;">Free</span>
+                                {{else}}
+                                    <div class="shpitm-pricevals">
+                                        {{if gt .Item.Bucks 0}}
+                                        <span class="shp-price-val" style="font-size:18px;">
+                                            <img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices">
+                                            <span>{{.Item.Bucks}}</span>
+                                        </span>
+                                        {{end}}
+                                        {{if gt .Item.Bits 0}}
+                                        <span class="shp-price-val" style="font-size:18px;">
+                                            <img src="/static/useful/icons/ticketc.png" class="shp-price-ico" alt="Tickets">
+                                            <span>{{.Item.Bits}}</span>
+                                        </span>
+                                        {{end}}
+                                    </div>
+                                {{end}}
+                                <div class="shpitm-actions" id="shpitmActions"
+                                    data-item-id="{{.Item.ID}}"
+                                    data-item-type="{{.Item.Type}}"
+                                    data-is-owned="{{.IsOwned}}"
+                                    data-is-equipped="{{.IsEquipped}}"
+                                    data-is-logged="{{.IsLoggedIn}}">
+                                    {{if .IsLoggedIn}}
+                                        {{if .IsOwned}}
+                                            {{if .IsEquipped}}
+                                            <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.toggleItemWear(false)"><span>Take Off</span></button>
+                                            {{else}}
+                                            <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.toggleItemWear(true)"><span>Wear</span></button>
+                                            {{end}}
+                                        {{else}}
+                                            {{if or (eq .Item.OnSale "false") (eq .Item.OffSale "true")}}
+                                                <button type="button" class="primary hpyinl hpysm" disabled style="opacity:0.6;cursor:not-allowed;"><span>Offsale</span></button>
+                                            {{else if and (eq .Item.Bucks 0) (eq .Item.Bits 0)}}
+                                                <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.purchaseItem('free')"><span>Get</span></button>
+                                            {{else if and (gt .Item.Bucks 0) (gt .Item.Bits 0)}}
+                                                <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.purchaseItem('vertices')"><span style="display:inline-flex;align-items:center;gap:6px;"><img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices" style="width:14px;height:14px;"> Buy for {{.Item.Bucks}}</span></button>
+                                                <button type="button" class="primary hpyinl hpysm" style="background: linear-gradient(0deg, rgba(255,255,255,0) 2.18%, rgba(255,255,255,0.39) 91.46%), #E67E22; color:#fff; border-color: rgba(255,255,255,0.3);" onclick="window.purchaseItem('tickets')"><span style="display:inline-flex;align-items:center;gap:6px;"><img src="/static/useful/icons/ticketc.png" class="shp-price-ico" alt="Tickets" style="width:14px;height:14px;"> Buy for {{.Item.Bits}}</span></button>
+                                            {{else if gt .Item.Bucks 0}}
+                                                <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.purchaseItem('vertices')"><span style="display:inline-flex;align-items:center;gap:6px;"><img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices" style="width:14px;height:14px;"> Buy for {{.Item.Bucks}}</span></button>
+                                            {{else}}
+                                                <button type="button" class="primary hpyinl hpysm" style="background: linear-gradient(0deg, rgba(255,255,255,0) 2.18%, rgba(255,255,255,0.39) 91.46%), #E67E22; color:#fff; border-color: rgba(255,255,255,0.3);" onclick="window.purchaseItem('tickets')"><span style="display:inline-flex;align-items:center;gap:6px;"><img src="/static/useful/icons/ticketc.png" class="shp-price-ico" alt="Tickets" style="width:14px;height:14px;"> Buy for {{.Item.Bits}}</span></button>
+                                            {{end}}
+                                        {{end}}
+                                    {{else}}
+                                        <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration:none;"><span>Login to Buy</span></a>
+                                    {{end}}
+                                </div>
+                                <div id="shpitmWearMsg" class="shpitm-wearmsg"></div>
+                            </div>
+                            <div class="shpitm-metastrip">
+                                <div class="shpitm-metaitem">
+                                    <span class="shpitm-metalbl">Type</span>
+                                    <span class="shpitm-metaval">{{.Item.TypeName}}</span>
+                                </div>
+                                <div class="shpitm-metaitem">
+                                    <span class="shpitm-metalbl">Created</span>
+                                    <span class="shpitm-metaval">{{.Item.CreatedAt.Format "02/01/2006"}}</span>
+                                </div>
+                                <div class="shpitm-metaitem">
+                                    <span class="shpitm-metalbl">Updated</span>
+                                    <span class="shpitm-metaval">{{.Item.UpdatedAt.Format "02/01/2006"}}</span>
+                                </div>
+                                <div class="shpitm-metaitem">
+                                    <span class="shpitm-metalbl">Sales</span>
+                                    <span class="shpitm-metaval">{{.Sales}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="shpitm-descsec">
+                    <h2 class="prfboxttl">Description</h2>
+                    <div class="prfbox-card shpitm-descbox">
+                        <p class="prfboxtxt shpitm-desctxt">{{if not .CanViewFull}}[Content Pending]{{else}}{{if .Item.Description}}{{.Item.Description}}{{else}}No description provided.{{end}}{{end}}</p>
+                    </div>
+                </div>
+                <div class="prftabcnt shpitm-tabw">
+                    <div class="prftablst">
+                        <div class="prftabind shpitm-tabind"></div>
+                        <button type="button" class="prftabbtn shpitm-tabbtn active" onclick="window.switchItemTab('comments', event)">Comments</button>
+                        <button type="button" class="prftabbtn shpitm-tabbtn" onclick="window.switchItemTab('related', event)">Related Items</button>
+                    </div>
+                </div>
+                <div id="shpitmPaneComments" class="shpitm-pane">
+                    <div class="shpitm-commentwrap">
+                        <div class="feedinbox shpitm-feedinbox" id="shpitmFeedBox">
+                            <input type="text" class="feedin" placeholder="say something cool..." id="shpitmCommentInput" autocomplete="off">
+                            <button type="button" class="feedsnd" onclick="window.postFakeComment()" title="Post">
+                                <i class="fa-solid fa-paper-plane" style="font-size: 20px !important;"></i>
+                            </button>
+                        </div>
+                        <div class="pstlst shpitm-pstlst" id="shpitmCommentsList">
+                            <div class="feedemt">nobody has commented yet... be the first!</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="shpitmPaneRelated" class="shpitm-pane" style="display:none;">
+                    <div class="shpitm-relatedhdr">
+                        <h3 class="shpitm-relatedttl">Related Items</h3>
+                        <a href="/shop?cat={{.Item.Type}}" hx-get="/shop?cat={{.Item.Type}}" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration:none;"><span>More Items</span></a>
+                    </div>
+                    {{if .Related}}
+                    <div class="shp-grid" style="margin-top:12px;">
+                        {{range .Related}}
+                        <a href="/shop/item/{{.ID}}" hx-get="/shop/item/{{.ID}}" hx-target="body" hx-push-url="true" class="shp-card" style="text-decoration:none;" data-id="{{.ID}}">
+                            <div class="avtitmimg{{if or (eq .OnSale "false") (eq .OffSale "true")}} shp-offimg{{end}}">
+                                <img src="/api/v1/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
+                                {{if and (ne .OnSale "false") (ne .OffSale "true") (ne .Special "true") (eq .Bucks 0) (eq .Bits 0)}}
+                                    <span class="avtitmbdg" style="background: rgba(40, 167, 69, 0.85);">Free</span>
+                                {{end}}
+                            </div>
+                            {{if or (eq .OnSale "false") (eq .OffSale "true")}}
+                            <div class="shp-ribbon shp-ribbon-off">
+                                <img src="/static/useful/icons/off.png" class="shp-ribicon" alt="Offsale">
+                                <span class="shp-ribtext">OFFSALE</span>
+                            </div>
+                            {{else if eq .Special "true"}}
+                            <div class="shp-ribbon shp-ribbon-special">
+                                <img src="/static/useful/icons/special.png" class="shp-ribicon" alt="Special">
+                                <span class="shp-ribtext">SPECIAL</span>
+                            </div>
+                            {{end}}
+                            <div class="avtitmmeta">
+                                <span class="avtitmnm">{{.Name}}</span>
+                                <span class="avtitmcr">by {{.CreatorName}}</span>
+                            </div>
+                            <div class="shp-price-row">
+                                {{if or (eq .OnSale "false") (eq .OffSale "true")}}
+                                    <span class="shp-price-off">Offsale</span>
+                                {{else if and (eq .Bucks 0) (eq .Bits 0)}}
+                                    <span class="shp-price-free">Free</span>
+                                {{else}}
+                                    {{if gt .Bucks 0}}
+                                    <span class="shp-price-val">
+                                        <img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices">
+                                        <span>{{.Bucks}}</span>
+                                    </span>
+                                    {{end}}
+                                    {{if gt .Bits 0}}
+                                    <span class="shp-price-val">
+                                        <img src="/static/useful/icons/ticketc.png" class="shp-price-ico" alt="Tickets">
+                                        <span>{{.Bits}}</span>
+                                    </span>
+                                    {{end}}
+                                {{end}}
+                            </div>
+                        </a>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div class="feedemt" style="margin-top:12px;">No related items found.</div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/item/item.js?v={{.AssetV}}"></script>
+

@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"html"
 	"strings"
 	"time"
 
@@ -71,23 +70,39 @@ func (s *FeedService) GetRecentFeedPaginated(limit, offset, currentUserID int, f
 	return s.feedRepo.GetRecentFeedPostsPaginated(limit, offset, currentUserID)
 }
 
-func (s *FeedService) PostToFeed(username, content, feedType string) (int, int, error) {
+func (s *FeedService) GetSinglePost(id, currentUserID int) (*models.FeedPost, string) {
+	if id <= 0 {
+		return nil, ""
+	}
+	if s.feedRepo == nil {
+		return nil, ""
+	}
+	if post, _ := s.feedRepo.GetFeedPostByID(id, currentUserID); post != nil {
+		return post, "worldwide"
+	}
+	if post, _ := s.feedRepo.GetFriendsFeedPostByID(id, currentUserID); post != nil {
+		return post, "friends"
+	}
+	return nil, ""
+}
+
+func (s *FeedService) PostToFeed(username, content, feedType string) (int, int, string, error) {
 	if username == "" {
-		return 0, 0, errors.New("Unauthorized")
+		return 0, 0, "", errors.New("Unauthorized")
 	}
 
-	content = html.EscapeString(strings.TrimSpace(content))
+	content = strings.TrimSpace(content)
 	if content == "" {
-		return 0, 0, errors.New("Content cannot be empty")
+		return 0, 0, "", errors.New("Content cannot be empty")
 	}
 
-	if len(content) > 150 {
-		content = content[:150]
+	if r := []rune(content); len(r) > 150 {
+		content = string(r[:150])
 	}
 
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil || user == nil {
-		return 0, 0, errors.New("User not found")
+		return 0, 0, "", errors.New("User not found")
 	}
 
 	if s.cooldown != nil {
@@ -96,7 +111,7 @@ func (s *FeedService) PostToFeed(username, content, feedType string) (int, int, 
 			key = fmt.Sprintf("friends_feed_post:%d", user.ID)
 		}
 		if allowed, remaining := s.cooldown.Allow(key, 15*time.Second); !allowed {
-			return 0, user.ID, fmt.Errorf("The feed has a %s cooldown per message.", s.cooldown.FormatRemaining(remaining))
+			return 0, user.ID, "", fmt.Errorf("The feed has a %s cooldown per message.", s.cooldown.FormatRemaining(remaining))
 		}
 	}
 
@@ -108,10 +123,10 @@ func (s *FeedService) PostToFeed(username, content, feedType string) (int, int, 
 	}
 
 	if err != nil {
-		return 0, user.ID, err
+		return 0, user.ID, "", err
 	}
 
-	return postID, user.ID, nil
+	return postID, user.ID, content, nil
 }
 
 func (s *FeedService) ToggleReaction(username string, feedID int, feedType string) (int, error) {
@@ -189,13 +204,13 @@ func (s *FeedService) PostComment(username string, feedID int, parentID *int, fe
 		return nil, errors.New("Unauthorized")
 	}
 
-	comment = html.EscapeString(strings.TrimSpace(comment))
+	comment = strings.TrimSpace(comment)
 	if comment == "" {
 		return nil, errors.New("Comment cannot be empty")
 	}
 
-	if len(comment) > 5000 {
-		comment = comment[:5000]
+	if r := []rune(comment); len(r) > 5000 {
+		comment = string(r[:5000])
 	}
 
 	user, err := s.userRepo.GetByUsername(username)

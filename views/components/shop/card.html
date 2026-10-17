@@ -1,0 +1,44 @@
+<div class="shp-card" data-id="{{.ID}}">
+    <div class="avtitmimg{{if or (eq .OnSale "false") (eq .OffSale "true")}} shp-offimg{{end}}">
+        {{if ne .ApprovalState "approved"}}
+        <img src="/static/useful/icons/missing.png" alt="[Content Pending]" loading="lazy" class="avtldimg" onload="this.classList.add('ld');">
+        {{else}}
+        <img src="/api/v1/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
+        {{end}}
+    </div>
+    {{if or (eq .OnSale "false") (eq .OffSale "true")}}
+    <div class="shp-ribbon shp-ribbon-off">
+        <img src="/static/useful/icons/off.png" class="shp-ribicon" alt="Offsale">
+        <span class="shp-ribtext">OFFSALE</span>
+    </div>
+    {{else if eq .Special "true"}}
+    <div class="shp-ribbon shp-ribbon-special">
+        <img src="/static/useful/icons/special.png" class="shp-ribicon" alt="Special">
+        <span class="shp-ribtext">SPECIAL</span>
+    </div>
+    {{end}}
+    <div class="avtitmmeta">
+        <span class="avtitmnm">{{if ne .ApprovalState "approved"}}[Content Pending]{{else}}{{.Name}}{{end}}</span>
+        <span class="avtitmcr">by {{.CreatorName}}</span>
+    </div>
+    <div class="shp-price-row">
+        {{if or (eq .OnSale "false") (eq .OffSale "true")}}
+            <span class="shp-price-off">Offsale</span>
+        {{else if and (eq .Bucks 0) (eq .Bits 0)}}
+            <span class="shp-price-free">Free</span>
+        {{else}}
+            {{if gt .Bucks 0}}
+            <span class="shp-price-val">
+                <img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices">
+                <span>{{.Bucks}}</span>
+            </span>
+            {{end}}
+            {{if gt .Bits 0}}
+            <span class="shp-price-val">
+                <img src="/static/useful/icons/ticketc.png" class="shp-price-ico" alt="Tickets">
+                <span>{{.Bits}}</span>
+            </span>
+            {{end}}
+        {{end}}
+    </div>
+</div>

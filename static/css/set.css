@@ -29,8 +29,8 @@
 }
 
 .setcrd {
-    background: #fafafa !important;
-    border: 1px solid #e0e0e0 !important;
+    background: #f0f0f0 !important;
+    border: 1px solid #d4d4d4 !important;
     border-radius: 0 12px 12px 12px !important;
     padding: 28px !important;
     margin-bottom: 24px !important;
@@ -86,4 +86,413 @@
 
 .sclico.active {
     opacity: 1.0 !important;
+}
+
+.tgl {
+    position: relative !important;
+    display: inline-block !important;
+    align-self: flex-start !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 24px !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+.tgl input {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+}
+
+.tgltrack {
+    position: absolute !important;
+    inset: 0 !important;
+    background: #A9A9A9 !important;
+    border-radius: 999px !important;
+    transition: background 0.15s ease !important;
+    pointer-events: none !important;
+}
+
+.tglknob {
+    position: absolute !important;
+    top: 3px !important;
+    left: 3px !important;
+    width: 18px !important;
+    height: 18px !important;
+    background: #FFFFFF !important;
+    border-radius: 999px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    transition: transform 0.2s var(--ease-pop) !important;
+}
+
+.tgl input:checked + .tgltrack {
+    background: var(--accent, #912ADF) !important;
+}
+
+.tgl input:checked + .tgltrack .tglknob {
+    transform: translateX(20px) !important;
+}
+
+.tgl input:focus-visible + .tgltrack {
+    outline: 2px solid var(--accent, #912ADF) !important;
+    outline-offset: 2px !important;
+}
+
+.persrow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+}
+
+.persrow .setttl {
+    margin-bottom: 0 !important;
+}
+
+.perssub {
+    margin-bottom: 0 !important;
+}
+
+.cm-css-box {
+    height: 172px !important;
+}
+
+.cm-css-box .CodeMirror {
+    height: 100% !important;
+    background: transparent !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+}
+
+.cm-css-box .CodeMirror-gutters {
+    background: transparent !important;
+    border-right: 1px solid rgba(61, 61, 61, 0.15) !important;
+}
+
+.bnrprev {
+    width: 100% !important;
+    aspect-ratio: 16 / 5 !important;
+    border-radius: 12px !important;
+    border: 2px solid #A9A9A9 !important;
+    display: block !important;
+    position: relative !important;
+    background-color: #D4D4D4;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+.bnrprevfx {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    display: block !important;
+}
+
+.setttl.bnrsmttl {
+    font-size: 17px !important;
+}
+
+.setinf.bnrsmsub {
+    font-size: 12px !important;
+}
+
+.bnropacityrow {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+.bnrtight {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+}
+
+.bnrrange {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    direction: ltr !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    height: 6px !important;
+    border-radius: 3px !important;
+    background: #D4D4D4;
+    border: 1px solid rgba(61, 61, 61, 0.25) !important;
+    outline: none !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+}
+
+.bnrrange::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    background: #FFFFFF !important;
+    border: 2px solid #912ADF !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    cursor: pointer !important;
+}
+
+.bnrrange::-moz-range-thumb {
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 50% !important;
+    background: #FFFFFF !important;
+    border: 2px solid #912ADF !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    cursor: pointer !important;
+}
+
+.bnrrange::-moz-range-track {
+    height: 6px !important;
+    border-radius: 3px !important;
+    background: #D4D4D4 !important;
+}
+
+.bnrrange::-moz-range-progress {
+    height: 6px !important;
+    border-radius: 3px !important;
+    background: #7423CB !important;
+}
+
+.bnropval {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #3D3D3D !important;
+    min-width: 40px !important;
+    text-align: right !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+.bnrclrpick {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.bnrsec {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+}
+
+.bnrprevwrap {
+    position: relative !important;
+    margin-top: 12px !important;
+}
+
+.bnreffbar {
+    position: absolute !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    display: flex !important;
+    gap: 6px !important;
+}
+
+.bnreffbtn {
+    width: 28px !important;
+    height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(61, 61, 61, 0.55) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 6px !important;
+    color: #FFFFFF !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    transform: scale(1) !important;
+    transition: transform 0.2s var(--ease-pop), background 0.15s ease !important;
+}
+
+.bnreffbtn:hover {
+    transform: scale(1.1) !important;
+}
+
+.bnreffbtn.active {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.bnrbarwrap {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.bnrbar {
+    height: 28px !important;
+    border-radius: 6px !important;
+    border: 2px solid #A9A9A9 !important;
+    background: #D4D4D4;
+    box-sizing: border-box !important;
+}
+
+.bnrstops {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+}
+
+.bnrstop {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 44px !important;
+}
+
+.bnrstem {
+    width: 2px !important;
+    height: 10px !important;
+    background: #A9A9A9 !important;
+    display: block !important;
+}
+
+.bnrswatch {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 6px !important;
+    border: 2px solid #A9A9A9 !important;
+    background: #D4D4D4;
+    box-sizing: border-box !important;
+    display: block !important;
+    transition: border-color 0.15s ease, transform 0.15s ease !important;
+}
+
+.bnrstop:hover .bnrswatch {
+    transform: scale(1.08) !important;
+}
+
+.bnrstop.active .bnrswatch {
+    border-color: #912ADF !important;
+}
+
+.bnrpop {
+    display: none !important;
+    background: #F0F0F0 !important;
+    border: 2px solid #A9A9A9 !important;
+    border-radius: 12px !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+}
+
+.bnrpop.open {
+    display: block !important;
+    animation: bnrPopIn 0.25s var(--ease-pop) !important;
+}
+
+@keyframes bnrPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.bnrpophdr {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 12px !important;
+    margin-bottom: 10px !important;
+}
+
+.bnrpoptitle {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #3D3D3D !important;
+}
+
+.bnrpopclose {
+    background: transparent !important;
+    border: none !important;
+    font-size: 14px !important;
+    color: #3D3D3D !important;
+    opacity: 0.5 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2px !important;
+    transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
+.bnrpopclose:hover {
+    opacity: 1 !important;
+    transform: scale(1.1) !important;
+}
+
+.bnrtxtprev {
+    min-height: 44px !important;
+    border-radius: 6px !important;
+    border-width: 2px !important;
+    border-style: solid !important;
+    border-color: #A9A9A9;
+    background: #D4D4D4;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.bnrtxtprev span {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #3D3D3D;
+    line-height: 1 !important;
+}
+
+#bannerTextBgOpts {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.crttype.bnrtype {
+    margin-left: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.bnrpresetrow {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    margin-top: 8px !important;
+}
+
+.crttypebtn.bnrpreset {
+    height: 30px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+}
+
+#bannerPendingNote i {
+    margin-right: 6px !important;
+}
+
+.settabvwp:has(.glb-dropdown.open),
+.settabvwp:has(.glb-dropdown.active) {
+    overflow: visible !important;
 }

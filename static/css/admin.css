@@ -8,8 +8,8 @@
 }
 
 .adm-card {
-    background: #FAFAFA !important;
-    border: 1px solid #E0E0E0 !important;
+    background: #F0F0F0 !important;
+    border: 1px solid #D4D4D4 !important;
     border-radius: 12px !important;
     padding: 16px !important;
     display: flex !important;
@@ -23,7 +23,7 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
-    border-bottom: 1px solid #E0E0E0 !important;
+    border-bottom: 1px solid #D4D4D4 !important;
     padding-bottom: 10px !important;
 }
 
@@ -81,8 +81,8 @@
     width: 56px !important;
     height: 56px !important;
     object-fit: contain !important;
-    background: #E0E0E0 !important;
-    border: 2px solid #C1C1C1 !important;
+    background: #D4D4D4 !important;
+    border: 2px solid #A9A9A9 !important;
     border-radius: 8px !important;
     flex-shrink: 0 !important;
 }
@@ -195,6 +195,34 @@
     background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #DC3545 !important;
 }
 
+.adm-badge-declined {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #DC3545 !important;
+}
+
+.adm-badge-hat {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8 !important;
+}
+
+.adm-badge-gear {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8 !important;
+}
+
+.adm-badge-faces {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745 !important;
+}
+
+.adm-badge-shirts {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+}
+
+.adm-badge-tshirts {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+}
+
+.adm-badge-pants {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+}
+
 .adm-crdmeta {
     display: flex !important;
     align-items: center !important;
@@ -223,6 +251,14 @@
 }
 
 .adm-cat-tabs .tablst {
+    position: static !important;
+}
+
+.adm-shopcat-tabs {
+    flex: 0 1 auto !important;
+}
+
+.adm-shopcat-tabs .tablst {
     position: static !important;
 }
 
@@ -256,7 +292,7 @@
     height: 36px !important;
     min-width: 160px !important;
     flex: 0 1 auto !important;
-    background-color: #E0E0E0 !important;
+    background-color: #D4D4D4 !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 6px !important;
     padding: 0 28px 0 10px !important;
@@ -282,13 +318,13 @@
 }
 
 .adm-select option {
-    background-color: #FAFAFA !important;
+    background-color: #F0F0F0 !important;
     color: #3D3D3D !important;
 }
 
 .adm-panel {
-    background: #FAFAFA !important;
-    border: 1px solid #E0E0E0 !important;
+    background: #F0F0F0 !important;
+    border: 1px solid #D4D4D4 !important;
     border-radius: 12px !important;
     padding: 16px !important;
     box-sizing: border-box !important;
@@ -303,8 +339,8 @@
     position: relative !important;
     width: 100% !important;
     height: 330px !important;
-    background: #E0E0E0 !important;
-    border: 2px solid #C1C1C1 !important;
+    background: #D4D4D4 !important;
+    border: 2px solid #A9A9A9 !important;
     border-radius: 12px !important;
     display: flex !important;
     align-items: center !important;
@@ -326,6 +362,12 @@
     position: absolute !important;
     inset: 0 !important;
     cursor: grab !important;
+    touch-action: none !important;
+    overscroll-behavior: contain !important;
+}
+
+.adm-3d-canvas-wrap canvas {
+    display: block !important;
     touch-action: none !important;
 }
 
@@ -388,7 +430,7 @@
 
 .adm-audio-ico {
     font-size: 48px !important;
-    color: #C1C1C1 !important;
+    color: #A9A9A9 !important;
 }
 
 .adm-audio-player {
@@ -399,8 +441,8 @@
 .adm-tblcnt {
     width: 100% !important;
     overflow-x: auto !important;
-    background: #FAFAFA !important;
-    border: 1px solid #E0E0E0 !important;
+    background: #F0F0F0 !important;
+    border: 1px solid #D4D4D4 !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
 }
@@ -415,16 +457,16 @@
 .adm-usrtbl th {
     text-align: left !important;
     padding: 10px 14px !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
     color: #718096 !important;
     font-weight: 500 !important;
-    border-bottom: 2px solid #C1C1C1 !important;
+    border-bottom: 2px solid #A9A9A9 !important;
     white-space: nowrap !important;
 }
 
 .adm-usrtbl td {
     padding: 10px 14px !important;
-    border-bottom: 1px solid #E0E0E0 !important;
+    border-bottom: 1px solid #D4D4D4 !important;
     color: #3D3D3D !important;
     vertical-align: middle !important;
 }
@@ -455,7 +497,7 @@
     flex-wrap: wrap !important;
     margin-top: 16px !important;
     padding-top: 12px !important;
-    border-top: 1px solid #E0E0E0 !important;
+    border-top: 1px solid #D4D4D4 !important;
 }
 
 .adm-pgntxt {

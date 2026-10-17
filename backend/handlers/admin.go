@@ -367,9 +367,35 @@ func AdminIndex(c fiber.Ctx) error {
 		initialAssets = []*models.Asset{}
 	}
 
+	var initialShopItems []*models.ShopItem
+	totalShopItems := 0
+	totalShopItemPages := 1
+	if service.Shop != nil {
+		initialShopItems, totalShopItems, _ = service.Shop.GetApprovalQueue("", 1, 12)
+		if totalShopItems > 0 {
+			totalShopItemPages = (totalShopItems + 12 - 1) / 12
+		}
+	}
+	if initialShopItems == nil {
+		initialShopItems = []*models.ShopItem{}
+	}
+
+	var initialBanners []*models.Banner
+	totalBanners := 0
+	totalBannerPages := 1
+	if service.Banner != nil {
+		initialBanners, totalBanners, _ = service.Banner.GetQueue(1, 12)
+		if totalBanners > 0 {
+			totalBannerPages = (totalBanners + 12 - 1) / 12
+		}
+	}
+	if initialBanners == nil {
+		initialBanners = []*models.Banner{}
+	}
+
 	activeTab := c.Query("tab", "status")
 	switch activeTab {
-	case "status", "users", "reports", "assets", "logs":
+	case "status", "servers", "users", "reports", "assets", "shop", "banners", "logs":
 	default:
 		activeTab = "status"
 	}
@@ -412,6 +438,12 @@ func AdminIndex(c fiber.Ctx) error {
 		"Assets":          initialAssets,
 		"TotalAssets":     totalAssets,
 		"TotalAssetPages": totalAssetPages,
+		"ShopItems":       initialShopItems,
+		"TotalShopItems":  totalShopItems,
+		"TotalShopItemPages": totalShopItemPages,
+		"Banners":         initialBanners,
+		"TotalBanners":    totalBanners,
+		"TotalBannerPages": totalBannerPages,
 		"CSRF":            getCSRFToken(c),
 	}, "layouts/main")
 }
@@ -720,6 +752,7 @@ func AdminResetAvatarPost(c fiber.Ctx) error {
 	if err := service.Avatar.ResetAvatar(targetUser.ID); err != nil {
 		return adminModerationError(c, err.Error())
 	}
+	refreshAvatarRendersAsync(targetUser.ID)
 
 	if service.ModHistory != nil {
 		if err := service.ModHistory.Record(adminUser, targetUser.ID, models.ActionResetAvatar, "Avatar reset", ""); err != nil {

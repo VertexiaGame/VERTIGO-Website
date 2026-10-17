@@ -44,6 +44,14 @@ type User struct {
 	Pronouns          string
 	Socials           string
 	MusicID           sql.NullInt64
+	DisableAutoplay   bool
+	ReducedMotion     bool
+	BannerEffect      string
+	BannerTextBg        bool
+	BannerTextBgColor   string
+	BannerTextBgBorder  string
+	BannerTextBgText    string
+	BannerTextBgOpacity int
 }
 
 func (u *User) RoleName() string {

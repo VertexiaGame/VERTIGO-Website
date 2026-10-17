@@ -3,8 +3,10 @@ package handlers
 import (
 	"html"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
 )
 
@@ -53,6 +55,35 @@ func ProfileGet(c fiber.Ctx) error {
 		profileMusicID = targetUser.MusicID.Int64
 	}
 
+	var profileBanner *models.Banner
+	if service.Banner != nil {
+		profileBanner, _ = service.Banner.GetApprovedBanner(targetUser.ID)
+	}
+
+	var wearing []*models.ShopItem
+	avatarBody := models.DefaultAvatar(targetUser.ID)
+	if service.Avatar != nil {
+		if equipped, _ := service.Avatar.GetEquippedItems(targetUser.ID); len(equipped) > 0 && service.Shop != nil {
+			for _, e := range equipped {
+				if item, err := service.Shop.GetShopItemByID(e.ID); err == nil && item != nil {
+					wearing = append(wearing, item)
+				}
+			}
+		}
+		if body, err := service.Avatar.GetAvatar(targetUser.ID); err == nil && body != nil {
+			avatarBody = body
+		}
+	}
+	if wearing == nil {
+		wearing = []*models.ShopItem{}
+	}
+	cssHex := func(hex string) string {
+		if !strings.HasPrefix(hex, "#") {
+			return "#" + hex
+		}
+		return hex
+	}
+
 	return Render(c, "pages/profile", fiber.Map{
 		"Title":          html.EscapeString(targetUser.DisplayName) + " (@" + html.EscapeString(targetUser.Username) + ") - VERTEXIA",
 		"ProfileUser":    targetUser,
@@ -62,5 +93,15 @@ func ProfileGet(c fiber.Ctx) error {
 		"FollowingCount": following,
 		"FriendStatus":   friendStatus,
 		"ProfileMusicID": profileMusicID,
+		"Banner":         profileBanner,
+		"BannerFilter":   models.BannerEffectFilter(targetUser.BannerEffect),
+		"BannerTextBg":   targetUser.BannerTextBg,
+		"Wearing":        wearing,
+		"BodyHead":       cssHex(avatarBody.HeadColor),
+		"BodyTorso":      cssHex(avatarBody.TorsoColor),
+		"BodyLArm":       cssHex(avatarBody.LArmColor),
+		"BodyRArm":       cssHex(avatarBody.RArmColor),
+		"BodyLLeg":       cssHex(avatarBody.LLegColor),
+		"BodyRLeg":       cssHex(avatarBody.RLegColor),
 	}, "layouts/main")
 }

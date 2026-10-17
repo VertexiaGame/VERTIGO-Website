@@ -3,7 +3,7 @@
     position: relative !important;
     width: 100% !important;
     height: 44px !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 8px !important;
     transition: border-color 0.2s ease !important;
@@ -49,7 +49,7 @@
     position: relative !important;
     width: 100% !important;
     height: 120px !important;
-    background: #E0E0E0 !important;
+    background: #D4D4D4 !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 8px !important;
     transition: border-color 0.2s ease !important;

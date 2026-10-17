@@ -130,7 +130,6 @@ window.shopItemCardHTML = function(item) {
     const isSpecial = item.special === 'true';
     const isTimer = item.timer === 'true' || item.limited_time === 'true' || Boolean(item.time_left || item.days_left);
 
-    let badgeHtml = '';
     let ribbonHtml = '';
     if (isOffsale) {
         ribbonHtml = shopOffRibbonHTML;
@@ -142,10 +141,6 @@ window.shopItemCardHTML = function(item) {
             <img src="/static/useful/icons/limt.png" class="shp-ribicon" alt="Timed">
             <span class="shp-ribtext">${timerText}</span>
         </div>`;
-    } else {
-        if (item.bucks === 0 && item.bits === 0) {
-            badgeHtml = '<span class="avtitmbdg" style="background: rgba(40, 167, 69, 0.85);">Free</span>';
-        }
     }
 
     let priceHtml = '';
@@ -172,7 +167,6 @@ window.shopItemCardHTML = function(item) {
         <div class="shp-card" data-id="${item.id}">
             <div class="avtitmimg${isOffsale ? ' shp-offimg' : ''}">
                 <img src="/api/v1/avatar/shop/${encodeURIComponent(safeType)}/${item.id}" alt="${safeName}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
-                ${badgeHtml}
             </div>
             ${ribbonHtml}
             <div class="avtitmmeta">
@@ -452,11 +446,21 @@ const initShopPage = () => {
     window.addEventListener('resize', window.checkViewportFill);
 };
 
-document.addEventListener('click', function(event) {
-    if (!event.target.closest('.shp-dropdown')) {
-        document.querySelectorAll('.shp-dropdown.open').forEach(d => d.classList.remove('open'));
-    }
-});
+if (!window.__shopCardNavBound) {
+    window.__shopCardNavBound = true;
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.shp-dropdown')) {
+            document.querySelectorAll('.shp-dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+        var card = event.target.closest('#shopGrid .shp-card[data-id]');
+        if (card && !event.target.closest('button') && !event.target.closest('a')) {
+            var id = card.getAttribute('data-id');
+            if (id) {
+                window.navigateWithHistory('/shop/item/' + encodeURIComponent(id));
+            }
+        }
+    });
+}
 
 initShopPage();
 

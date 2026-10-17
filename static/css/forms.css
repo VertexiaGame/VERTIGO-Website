@@ -19,7 +19,7 @@
 .frmsbar {
     width: 320px;
     padding: 40px;
-    border-left: 1px solid #e0e0e0;
+    border-left: 1px solid #d4d4d4;
     box-sizing: border-box;
     background: rgba(250, 250, 250, 0.6);
     border-radius: 0 0 6px 0;
@@ -384,7 +384,7 @@ input[type="checkbox"]:checked::after,
     .frmsbar {
         width: 100%;
         border-left: none;
-        border-top: 1px solid #e0e0e0;
+        border-top: 1px solid #d4d4d4;
         border-radius: 0 0 6px 6px;
     }
     .frmmain, .frmsbar {

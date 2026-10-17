@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">429</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search">
+            </div>
+            <div class="barbtns">
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back home</button>
+            </div>
+        </div>
+        <div class="pane">
+            <div class="frmlay">
+                <div class="frmmain">
+                    <span style="font-family: 'Ubuntu', sans-serif; font-size: 64px; font-weight: 700; line-height: 1; color: var(--accent, #912ADF); display: block; margin-bottom: 8px;">429</span>
+                    <h2 class="frmttl">Slow down</h2>
+                    <p style="font-family: 'Ubuntu', sans-serif; font-size: 15px; color: #444444; line-height: 1.5; margin: 0 0 24px; max-width: 380px;">
+                        You are being rate limited. Please try again in <span id="retryAfterCount" data-retry-after="{{.RetryAfter}}">{{.RetryAfter}}</span> seconds.
+                    </p>
+                    <button id="retryAfterBtn" class="primary" style="position: relative; left: auto; top: auto; display: inline-flex;" disabled>
+                        <span id="retryAfterBtnLabel">Try again</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    var countEl = document.getElementById('retryAfterCount');
+    var btn = document.getElementById('retryAfterBtn');
+    var label = document.getElementById('retryAfterBtnLabel');
+    if (!countEl || !btn) return;
+    var remaining = parseInt(countEl.getAttribute('data-retry-after'), 10);
+    if (isNaN(remaining) || remaining < 1) remaining = 60;
+    function tick() {
+        if (remaining <= 0) {
+            countEl.textContent = '0';
+            btn.removeAttribute('disabled');
+            if (label) label.textContent = 'Try again now';
+            return;
+        }
+        countEl.textContent = String(remaining);
+        if (label) label.textContent = 'Try again in ' + remaining + 's';
+        remaining--;
+        setTimeout(tick, 1000);
+    }
+    btn.addEventListener('click', function() {
+        window.location.reload();
+    });
+    tick();
+})();
+</script>

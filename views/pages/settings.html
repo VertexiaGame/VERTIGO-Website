@@ -1,8 +1,13 @@
-<link rel="stylesheet" href="/static/css/forms.css">
-<link rel="stylesheet" href="/static/css/inputs.css">
-<link rel="stylesheet" href="/static/css/set.css">
-<link rel="stylesheet" href="/static/css/dash.css">
-<link rel="stylesheet" href="/static/css/mus.css">
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/mus.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/prof.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/create.css?v={{.AssetV}}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -24,11 +29,13 @@
                             <div class="tabind"></div>
                             <button class="tabbtn{{if eq .ActiveTab "account"}} active{{end}}" onclick="switchSettingsTab('account', event)">Account</button>
                             <button class="tabbtn{{if eq .ActiveTab "profile"}} active{{end}}" onclick="switchSettingsTab('profile', event)">Profile</button>
+                            <button class="tabbtn{{if eq .ActiveTab "personalization"}} active{{end}}" onclick="switchSettingsTab('personalization', event)">Personalization</button>
                         </div>
 
                         <div class="settabvwp">
                             {{template "components/settings/account" .}}
                             {{template "components/settings/profile" .}}
+                            {{template "components/settings/personalization" .}}
                         </div>
                     </div>
                 </div>
@@ -40,6 +47,5 @@
 {{template "elements/modal"}}
 {{template "elements/musicmodal" .}}
 
-<script src="/static/js/elements/modal.js"></script>
-<script src="/static/js/elements/music.js"></script>
-<script src="/static/js/settings/settings.js"></script>
+<script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/settings/settings.js?v={{.AssetV}}"></script>

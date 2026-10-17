@@ -1,0 +1,107 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_SHA: ${{ github.sha }}
+
+jobs:
+  build:
+    name: Build website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build release binary
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o vertexia-frontend .
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Package release
+        run: tar -czf release.tar.gz vertexia-frontend views static assets
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Deploy website
+    needs: build
+    if: vars.AUTO_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST || 'beta1.vertexia.xyz' }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PATH: /www/wwwroot/beta1.vertexia.xyz/
+      SERVICE_NAME: ${{ vars.SERVICE_NAME || 'vertexiafrontend' }}
+      HEALTH_URL: ${{ vars.HEALTH_URL || 'http://127.0.0.1:3000/' }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+    steps:
+      - name: Check out workflow files
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: dist
+
+      - name: Verify deploy configuration
+        run: |
+          missing=""
+          if [ -z "$DEPLOY_USER" ]; then missing="$missing vars.DEPLOY_USER"; fi
+          if [ -z "$DEPLOY_SSH_KEY" ]; then missing="$missing secrets.DEPLOY_SSH_KEY"; fi
+          if [ -n "$missing" ]; then
+            echo "::error::Deploy is enabled (AUTO_DEPLOY) but configuration is missing:$missing — set these under Settings > Variables and Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+
+      - name: Set up SSH access
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Upload release archive
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
+          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "cat > '$DEPLOY_PATH/release-new.tar.gz'" < dist/release.tar.gz
+
+      - name: Activate release and verify health
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' SERVICE_NAME='$SERVICE_NAME' HEALTH_URL='$HEALTH_URL' RELEASE_SHA='$RELEASE_SHA' bash -s" < .github/scripts/deploy_activate.sh

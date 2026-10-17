@@ -78,11 +78,31 @@ func AltchaGet(c fiber.Ctx) error {
 
 func LoginGet(c fiber.Ctx) error {
 	if username := GetActiveUser(c); username != "" {
+		if next := c.Query("next"); next != "" && isSafeNext(next) {
+			return c.Redirect().To(next)
+		}
 		return c.Redirect().To("/")
 	}
 	return Render(c, "pages/login", fiber.Map{
 		"Title": "Log In - VERTEXIA",
+		"Next":  c.Query("next"),
 	}, "layouts/main")
+}
+
+func isSafeNext(next string) bool {
+	if next == "" {
+		return false
+	}
+	if next[0] != '/' {
+		return false
+	}
+	if len(next) >= 2 && next[1] == '/' {
+		return false
+	}
+	if next == "/login" || next == "/register" || next == "/logout" {
+		return false
+	}
+	return true
 }
 
 func LoginPost(c fiber.Ctx) error {
@@ -101,12 +121,17 @@ func LoginPost(c fiber.Ctx) error {
 
 	identifier := c.FormValue("identifier")
 	password := c.FormValue("password")
+	next := c.FormValue("next")
+	if next == "" {
+		next = c.Query("next")
+	}
 
 	if identifier == "" || password == "" {
 		return Render(c, "pages/login", fiber.Map{
 			"Title":      "Log In - VERTEXIA",
 			"Error":      "Username/Email and Password are required",
 			"ErrorField": "credentials",
+			"Next":       next,
 		}, "layouts/main")
 	}
 
@@ -116,6 +141,7 @@ func LoginPost(c fiber.Ctx) error {
 			"Title":      "Log In - VERTEXIA",
 			"Error":      err.Error(),
 			"ErrorField": loginErrorField(err.Error()),
+			"Next":       next,
 		}, "layouts/main")
 	}
 
@@ -126,11 +152,17 @@ func LoginPost(c fiber.Ctx) error {
 
 	SetHashedCookie(c, user.ID)
 
+	if next != "" && isSafeNext(next) {
+		return c.Redirect().To(next)
+	}
 	return c.Redirect().To("/")
 }
 
 func RegisterGet(c fiber.Ctx) error {
 	if username := GetActiveUser(c); username != "" {
+		if next := c.Query("next"); next != "" && isSafeNext(next) {
+			return c.Redirect().To(next)
+		}
 		return c.Redirect().To("/")
 	}
 	userCount := 0
@@ -140,17 +172,28 @@ func RegisterGet(c fiber.Ctx) error {
 	return Render(c, "pages/register", fiber.Map{
 		"Title":     "Register - VERTEXIA",
 		"UserCount": userCount,
+		"Next":      c.Query("next"),
 	}, "layouts/main")
 }
 
 func RegisterPost(c fiber.Ctx) error {
 	if username := GetActiveUser(c); username != "" {
+		if next := c.FormValue("next"); next != "" && isSafeNext(next) {
+			return c.Redirect().To(next)
+		}
+		if next := c.Query("next"); next != "" && isSafeNext(next) {
+			return c.Redirect().To(next)
+		}
 		return c.Redirect().To("/")
 	}
 
 	userCount := 0
 	if service.User != nil {
 		userCount, _ = service.User.GetUserCount()
+	}
+	next := c.FormValue("next")
+	if next == "" {
+		next = c.Query("next")
 	}
 
 	altchaPayload := c.FormValue("altcha")
@@ -160,6 +203,7 @@ func RegisterPost(c fiber.Ctx) error {
 			"Error":      err.Error(),
 			"ErrorField": "captcha",
 			"UserCount":  userCount,
+			"Next":       next,
 		}, "layouts/main")
 	}
 
@@ -176,6 +220,7 @@ func RegisterPost(c fiber.Ctx) error {
 			"Error":      err.Error(),
 			"ErrorField": registerErrorField(err.Error()),
 			"UserCount":  userCount,
+			"Next":       next,
 		}, "layouts/main")
 	}
 
@@ -186,6 +231,9 @@ func RegisterPost(c fiber.Ctx) error {
 
 	SetHashedCookie(c, user.ID)
 
+	if next != "" && isSafeNext(next) {
+		return c.Redirect().To(next)
+	}
 	return c.Redirect().To("/")
 }
 

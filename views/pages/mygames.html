@@ -1,0 +1,69 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">My Games</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search" id="myGamesSearch" autocomplete="off">
+            </div>
+            <div class="barbtns">
+                <a href="/create?type=game" hx-get="/create?type=game" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">Create</a>
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane">
+            <div class="shp-lay">
+                <div class="shp-hdr-block">
+                    <h1 class="shp-heading">My Games</h1>
+                    <span class="shp-subheading">Update your games, icons and thumbnails</span>
+                </div>
+                <div class="shp-grid" id="myGamesGrid">
+                    {{range .Games}}
+                    <div class="shp-card" data-id="{{.ID}}" data-goto="game" tabindex="0" role="link" title="View game">
+                        <div class="avtitmimg">
+                            <img src="/static/uploads/games/{{.ID}}.png" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
+                            {{if .Private}}<span class="avtitmbdg">Private</span>{{end}}
+                        </div>
+                        <div class="avtitmmeta">
+                            <span class="avtitmnm">{{.Name}}</span>
+                            <span class="avtitmcr">{{.Visits}} visits · {{.CreatedAt.Format "Jan 02, 2006"}}</span>
+                        </div>
+                        <div class="shp-price-row gam-stats">
+                            {{if .HasRating}}
+                            <span class="shp-price-val" title="{{.Likes}} likes, {{.Dislikes}} dislikes">
+                                <i class="fa-solid fa-thumbs-up gam-stat-ico" style="color: {{.LikeColor}};"></i>
+                                <span style="color: {{.LikeColor}};">{{.LikePct}}%</span>
+                            </span>
+                            {{else}}
+                            <span class="shp-price-val gam-norating" title="No ratings yet">
+                                <i class="fa-solid fa-thumbs-up gam-stat-ico"></i>
+                                <span>&mdash;</span>
+                            </span>
+                            {{end}}
+                            <span class="shp-price-val" title="{{.Playing}} playing">
+                                <i class="fa-solid fa-user gam-stat-ico"></i>
+                                <span>{{.Playing}}</span>
+                            </span>
+                        </div>
+                        <button type="button" class="primary hpyprim hpyinl hpysm" data-edit-game="{{.ID}}" style="width: 100%; margin-top: 4px;"><span>Edit</span></button>
+                        <button type="button" class="primary hpyprim hpyinl hpysm" data-edit-studio="{{.ID}}" style="width: 100%; margin-top: 4px;"><span>Edit in Studio</span></button>
+                    </div>
+                    {{else}}
+                    <div class="feedemt" style="grid-column: 1 / -1;">You haven't created any games yet.</div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/games/mygames.js?v={{.AssetV}}"></script>

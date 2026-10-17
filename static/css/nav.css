@@ -21,12 +21,11 @@
 .navcnt::before {
     content: "";
     position: absolute;
-    top: -20px;
-    left: -20px;
-    right: -20px;
-    bottom: 0;
-    background: linear-gradient(180deg, rgba(61, 61, 61, 0.42) 0%, rgba(61, 61, 61, 0) 100%);
-    filter: blur(11.65px);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: -24px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 100%);
     z-index: -1;
     pointer-events: none;
 }
@@ -43,6 +42,7 @@
     margin: auto 0;
     background: url('/static/branding/VERTEXIA.avif') no-repeat center;
     background-size: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
 
 .navlnk,
@@ -51,7 +51,7 @@
     font-size: 20px;
     line-height: 23px;
     color: #FFFFFF;
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
     text-decoration: none;
     display: flex;
     align-items: center;
@@ -169,6 +169,7 @@
     flex: none;
     flex-grow: 0;
     object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
 
 .pfpimg {
@@ -179,6 +180,7 @@
     flex: none;
     flex-grow: 0;
     object-fit: cover;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
 }
 
 .sbtnvrt { animation-delay: 0.7s; }
@@ -250,11 +252,11 @@
     transform-origin: top right;
     transform: translateY(-8px) scale(0.95);
     pointer-events: none;
-    transition: opacity 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s;
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s;
 }
 
 .udrop.active {
-    opacity: 0.75;
+    opacity: 1;
     visibility: visible;
     transform: translateY(0) scale(1);
     pointer-events: auto;
@@ -333,11 +335,72 @@
     color: #FA0000;
 }
 
+.mobbot {
+    display: none;
+    position: fixed;
+    width: 100%;
+    height: 66px;
+    left: 0;
+    bottom: 0;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 10px;
+    box-sizing: border-box;
+    background: transparent;
+    z-index: 1000;
+}
+
+.mobitm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.mobitm img {
+    width: 46px;
+    height: 46px;
+    object-fit: contain;
+    display: block;
+    flex: none;
+}
+
+.mobcenter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.mobhead {
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 999px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.2);
+    flex: none;
+}
+
+.mobdiv {
+    width: 1px;
+    height: 23px;
+    background: rgba(255, 255, 255, 0.2);
+    flex: none;
+    border-radius: 999px;
+}
+
+/* Mobile - hide desktop nav links, keep sbar centered */
 @media (max-width: 768px), .mobmode {
     .navbrd,
     .navcnt > .navdiv,
-    .navlnk {
+    .navhome, .navplay, .navshop, .navusers, .navclans, .navforum, .navupg {
         display: none !important;
+    }
+
+    .mobbot {
+        display: flex !important;
     }
 
     .sbar {
@@ -369,4 +432,269 @@
         gap: 4px;
         height: 28px;
     }
+}
+
+/* === Figma-accurate mobile (iPhone 17) - 402x874 === */
+@media (max-width: 768px) {
+    .navcnt {
+        height: calc(66px + env(safe-area-inset-top, 0px)) !important;
+        padding: calc(10px + env(safe-area-inset-top, 0px)) 10px 10px 10px !important;
+        gap: 10px !important;
+        justify-content: center !important;
+        align-items: center !important;
+        background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%) !important;
+        /* keep absolute as original - not fixed to avoid top shift */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .navcnt::before {
+        background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%) !important;
+        filter: none !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: -24px !important;
+    }
+    .sbar {
+        position: absolute !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 66px !important;
+        padding: 10px !important;
+        gap: 10px !important;
+        justify-content: center !important;
+        align-items: center !important;
+        top: env(safe-area-inset-top, 0px) !important;
+        box-sizing: border-box !important;
+    }
+    .sbar .navlnk {
+        display: flex !important;
+        font-size: 20px !important;
+        line-height: 23px !important;
+        height: 23px !important;
+        width: auto !important;
+        color: #FFFFFF !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
+    }
+    .sbar .navdiv {
+        display: block !important;
+        width: 1px !important;
+        height: 23px !important;
+        background: rgba(255,255,255,0.2) !important;
+    }
+    .sico {
+        width: 30px !important;
+        height: 30px !important;
+        filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.25)) !important;
+    }
+    .pfpimg {
+        width: 46px !important;
+        height: 46px !important;
+    }
+    .navtxt {
+        font-family: 'Ubuntu', sans-serif !important;
+        font-weight: 400 !important;
+        font-size: 20px !important;
+        line-height: 23px !important;
+        height: 23px !important;
+        color: #FFFFFF !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    .sbtn {
+        gap: 6px !important;
+        height: 30px !important;
+        flex-shrink: 0 !important;
+    }
+    .navdiv, .sbardiv, .mobdiv {
+        width: 1px !important;
+        height: 23px !important;
+        background: rgba(255,255,255,0.2) !important;
+        border-radius: 999px !important;
+        flex-shrink: 0 !important;
+        border: none !important;
+        transform: none !important;
+    }
+    .mobbot {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+        min-height: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+        max-height: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px !important;
+        gap: 16px !important;
+        justify-content: center !important;
+        align-items: center !important;
+        background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%) !important;
+        box-sizing: border-box !important;
+        z-index: 1000 !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        will-change: auto !important;
+        backface-visibility: visible !important;
+        -webkit-backface-visibility: visible !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        pointer-events: auto !important;
+        contain: none !important;
+    }
+    .mobitm img {
+        width: 46px !important;
+        height: 46px !important;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)) !important;
+    }
+    .mobhead {
+        width: 46px !important;
+        height: 46px !important;
+        border-radius: 999px !important;
+        background: rgba(0,0,0,0.2) !important;
+        filter: none !important;
+    }
+}
+
+html.mobmode .navbrd,
+html.mobmode .navcnt > .navdiv,
+html.mobmode .navhome, html.mobmode .navplay, html.mobmode .navshop, html.mobmode .navusers, html.mobmode .navclans, html.mobmode .navforum, html.mobmode .navupg {
+    display: none !important;
+}
+html.mobmode .mobbot {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px !important;
+    gap: 16px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: linear-gradient(180deg, rgba(61,61,61,0) 0%, rgba(61,61,61,0.42) 100%) !important;
+    box-sizing: border-box !important;
+    z-index: 1000 !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    will-change: auto !important;
+    backface-visibility: visible !important;
+    -webkit-backface-visibility: visible !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: auto !important;
+    contain: none !important;
+}
+html.mobmode .navcnt {
+    height: calc(66px + env(safe-area-inset-top, 0px)) !important;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 10px 10px 10px !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: linear-gradient(180deg, rgba(61,61,61,0.42) 0%, rgba(61,61,61,0) 100%) !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+}
+html.mobmode .navcnt::before {
+    background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%) !important;
+    filter: none !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: -24px !important;
+}
+html.mobmode .sbar {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 66px !important;
+    padding: 10px !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    top: env(safe-area-inset-top, 0px) !important;
+}
+html.mobmode .sbar .navlnk {
+    display: flex !important;
+    font-size: 20px !important;
+    line-height: 23px !important;
+    color: #FFFFFF !important;
+}
+html.mobmode .sico {
+    width: 30px !important;
+    height: 30px !important;
+    filter: brightness(0) invert(1) drop-shadow(0 0 2px rgba(0,0,0,0.18)) !important;
+}
+html.mobmode .pfpimg { width: 46px !important; height: 46px !important; }
+html.mobmode .navtxt {
+    font-size: 20px !important;
+    line-height: 23px !important;
+    height: 23px !important;
+    color: #FFFFFF !important;
+}
+html.mobmode .sbtn { gap: 6px !important; height: 30px !important; }
+html.mobmode .navdiv, html.mobmode .sbardiv, html.mobmode .mobdiv {
+    width: 1px !important;
+    height: 23px !important;
+    background: rgba(255,255,255,0.2) !important;
+}
+html.mobmode .mobitm img { width: 46px !important; height: 46px !important; }
+html.mobmode .mobhead { width: 46px !important; height: 46px !important; }
+
+/* Hide avatar headshot from top bar (sbar/currency top) on mobile - keep bottom mobhead */
+@media (max-width: 768px) {
+    .sbar .pfpbtn,
+    .sbar .pfpimg,
+    .sbar .sbtnpfp,
+    .sbar .udrop { display: none !important; }
+}
+html.mobmode .sbar .pfpbtn,
+html.mobmode .sbar .pfpimg,
+html.mobmode .sbar .sbtnpfp,
+html.mobmode .sbar .udrop { display: none !important; }
+
+/* True fixed bottom bar - prevent shift/jitter when scrolling / address bar shows */
+@media (max-width: 768px), html.mobmode {
+    .mobbot {
+        position: fixed !important;
+        bottom: 0 !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        will-change: auto !important;
+        backface-visibility: visible !important;
+        -webkit-backface-visibility: visible !important;
+        contain: none !important;
+        /* ensure viewport anchoring, not ancestor */
+    }
+    html, body {
+        /* ensure no ancestor creates containing block for fixed */
+        transform: none !important;
+        filter: none !important;
+        perspective: none !important;
+        contain: none !important;
+    }
+}
+html.mobmode, html.mobmode body {
+    transform: none !important;
+    filter: none !important;
+    perspective: none !important;
+    contain: none !important;
 }

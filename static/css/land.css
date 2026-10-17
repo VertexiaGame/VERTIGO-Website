@@ -1,19 +1,27 @@
 @keyframes landentrysubtlebounce {
     0% {
         opacity: 0;
-        transform: scale(0.88) translateY(8px);
+        transform: translateY(16px) scale(0.97);
+        filter: blur(6px);
     }
-    60% {
-        opacity: 0.95;
-        transform: scale(1.03) translateY(-1px);
-    }
-    85% {
-        transform: scale(0.99) translateY(0);
+    55% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1.01);
+        filter: blur(0);
     }
     100% {
         opacity: 1;
-        transform: scale(1) translateY(0);
+        transform: translateY(0) scale(1);
+        filter: blur(0);
     }
+}
+@keyframes cardPop {
+    0% { opacity: 0; transform: translateY(14px) scale(0.94); filter: blur(4px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes storyFadeIn {
+    0% { opacity: 0; transform: scale(1.015); filter: blur(10px) brightness(1.05); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0) brightness(1); }
 }
 
 .hrocnt {
@@ -41,8 +49,8 @@
     margin-bottom: 20px;
     line-height: 1.2;
     color: #333333;
-    animation: landentrysubtlebounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) backwards;
-    animation-delay: 0.1s;
+    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: 0.08s;
 }
 .hroprg {
     font-size: 1.4rem;
@@ -50,8 +58,8 @@
     margin-bottom: 30px;
     line-height: 1.5;
     color: #555555;
-    animation: landentrysubtlebounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) backwards;
-    animation-delay: 0.2s;
+    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: 0.18s;
 }
 .hroprg strong {
     color: var(--accent, #912ADF);
@@ -59,10 +67,10 @@
 }
 .hrobtns {
     display: flex;
-    gap: 15px;
+    gap: 14px;
     flex-wrap: wrap;
-    animation: landentrysubtlebounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) backwards;
-    animation-delay: 0.3s;
+    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: 0.30s;
 }
 .hrobtns .primary {
     position: relative !important;
@@ -75,8 +83,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    animation: landentrysubtlebounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) backwards;
-    animation-delay: 0.15s;
+    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: 0.20s;
 }
 .hroimg {
     width: 100%;
@@ -94,14 +102,190 @@
     transform: scale(0.98) rotateX(-15deg);
     transition: transform 0.08s ease;
 }
+.g21wrap {
+    cursor: pointer;
+    position: relative;
+}
+.squish {
+    position: absolute;
+    transform: translate(-50%, -50%) scale(0.4) rotate(var(--r, -8deg));
+    background: none;
+    color: #fff;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+    white-space: nowrap;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.32);
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+    animation: squishPop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes squishPop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(var(--r, -10deg)); }
+    18% { opacity: 1; transform: translate(-50%, -50%) scale(1.22) rotate(calc(var(--r, 4deg) + 2deg)); }
+    34% { transform: translate(-50%, -50%) scale(0.92) rotate(calc(var(--r, -3deg) - 1deg)); }
+    52% { transform: translate(-50%, -50%) scale(1.06) rotate(var(--r, 2deg)); }
+    70% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(var(--r, 0deg)); }
+    100% { opacity: 0; transform: translate(-50%, -46%) scale(0.95) rotate(var(--r, 0deg)); }
+}
+.storyartcnt {
+    width: 100%;
+    display: block;
+    box-sizing: border-box;
+    animation: storyFadeIn 0.85s cubic-bezier(0.22,1,0.36,1) forwards;
+    overflow: visible;
+}
+.storyart {
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    display: block;
+    object-fit: cover;
+    aspect-ratio: 2732 / 1853;
+}
+.storyttp {
+    width: 100%;
+    display: block;
+    position: relative;
+    overflow: visible;
+}
+.storytxt {
+    position: absolute;
+    left: 12px;
+    bottom: 14px;
+    color: #FFFFFF;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 2.35rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-shadow: none;
+    z-index: 2;
+    pointer-events: auto;
+    cursor: pointer;
+    line-height: 1;
+    display: grid;
+    overflow: hidden;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+.storytxt-line {
+    grid-area: 1 / 1;
+    display: block;
+    will-change: transform, opacity;
+    transition: transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.45s ease;
+}
+.storytxt-create {
+    transform: translateY(0);
+    opacity: 1;
+}
+.storytxt-studio {
+    transform: translateY(110%);
+    opacity: 0;
+}
+.storytxt.scrolled .storytxt-create {
+    transform: translateY(-110%);
+    opacity: 0;
+}
+.storytxt.scrolled .storytxt-studio {
+    transform: translateY(0);
+    opacity: 1;
+}
+/* after first scroll, hovering replays the morph smoothly */
+.storytxt.scrolled:hover .storytxt-create {
+    transform: translateY(0);
+    opacity: 1;
+}
+.storytxt.scrolled:hover .storytxt-studio {
+    transform: translateY(110%);
+    opacity: 0;
+}
+.vrvsec {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 4px;
+    padding: 0 0 36px 0;
+    box-sizing: border-box;
+    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: 0.48s;
+    overflow: visible;
+}
+.vrvimg {
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    display: block;
+    object-fit: cover;
+    aspect-ratio: 909 / 312;
+}
+.vrvttl {
+    margin: 0;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: #1A202C;
+    text-transform: uppercase;
+    width: 100%;
+    text-align: left;
+    padding: 0 0 0 12px;
+    box-sizing: border-box;
+}
+.vrvprg {
+    margin: 0;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #4A5568;
+    width: 100%;
+    text-align: left;
+    padding: 0 0 0 12px;
+    box-sizing: border-box;
+}
+.vrvrow {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 12px 0 12px;
+    box-sizing: border-box;
+}
+.vrvtext {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+}
+.vrvbtn {
+    flex-shrink: 0;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    display: inline-flex !important;
+    text-decoration: none !important;
+    align-items: center;
+    justify-content: center;
+}
 .crlsec {
     padding: 20px 40px 40px 40px;
     background: transparent;
     border-radius: 0 0 6px 6px;
     width: 100%;
     box-sizing: border-box;
-    animation: landentrysubtlebounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) backwards;
-    animation-delay: 0.35s;
+    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: 0.42s;
 }
 .crlttl {
     font-size: 1.8rem;
@@ -126,13 +310,8 @@
     padding: 4px;
     box-sizing: border-box;
 }
-.crlcnt::-webkit-scrollbar {
-    display: none;
-}
-.crlcnt {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
+.crlcnt::-webkit-scrollbar { display: none; }
+.crlcnt { -ms-overflow-style: none; scrollbar-width: none; }
 .gmcrd {
     width: 180px;
     min-width: 180px;
@@ -149,7 +328,15 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
+    animation: cardPop 0.55s cubic-bezier(0.22,1,0.36,1) backwards;
 }
+.gmcrd:nth-child(1) { animation-delay: 0.50s; }
+.gmcrd:nth-child(2) { animation-delay: 0.56s; }
+.gmcrd:nth-child(3) { animation-delay: 0.62s; }
+.gmcrd:nth-child(4) { animation-delay: 0.68s; }
+.gmcrd:nth-child(5) { animation-delay: 0.74s; }
+.gmcrd:nth-child(6) { animation-delay: 0.80s; }
+.gmcrd:nth-child(n+7) { animation-delay: 0.86s; }
 .gmcrd:hover {
     transform: scale(1.04);
     box-shadow: 0 6px 16px rgba(145, 42, 223, 0.12);
@@ -205,7 +392,8 @@ html.notreq .hrohdg,
 html.notreq .hroprg,
 html.notreq .hrobtns,
 html.notreq .hroimgcnt,
-html.notreq .crlsec {
+html.notreq .crlsec,
+html.notreq .vrvsec {
     animation: none !important;
 }
 
@@ -221,5 +409,24 @@ html.notreq .crlsec {
     }
     .crlsec {
         padding: 20px 24px 40px 24px;
+    }
+    .storytxt {
+        font-size: 1.55rem;
+        left: 10px;
+        bottom: 10px;
+    }
+    .vrvsec {
+        padding: 0 0 32px 0;
+    }
+    .vrvrow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .vrvttl {
+        font-size: 1.45rem;
+    }
+    .vrvprg {
+        font-size: 0.95rem;
     }
 }

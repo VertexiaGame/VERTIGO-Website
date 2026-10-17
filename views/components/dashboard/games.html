@@ -9,7 +9,7 @@
         </button>
         <div class="cartrk">
             {{range $game := .Games}}
-            <a href="/games/{{$game.ID}}" class="carsld">
+            <a href="/play/{{$game.ID}}" class="carsld">
                 <img src="/static/uploads/games/{{$game.ID}}.png"
                      onerror="this.src='/static/useful/temp/pfp.png'; this.style.filter='blur(10px)';"
                      alt="{{$game.Name}}" class="carimg">

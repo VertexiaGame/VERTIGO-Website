@@ -1,4 +1,6 @@
-<link rel="stylesheet" href="/static/css/prof.css">
+<link rel="stylesheet" href="/static/css/prof.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
 <script>
 window.updateProfileTabIndicator = function() {
     const indicator = document.querySelector('.prftabind');
@@ -42,7 +44,8 @@ window.switchProfileTab = function(tabName, event) {
         </div>
         <div class="pane">
             <div class="prfhdr">
-                <div class="prfinf">
+                {{if .Banner}}<div class="prfbnr" style="{{.Banner.Style}}{{if .BannerFilter}}{{.BannerFilter}}{{end}}"></div>{{end}}
+                <div class="prfinf{{if .BannerTextBg}} prftxtbg{{end}}"{{if .BannerTextBg}} style="{{.ProfileUser.TextBgStyle}}"{{end}}>
                     <div class="prfavt">
                         <img src="/api/v1/avatar/headshot/{{.ProfileUser.ID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.ProfileUser.Username}}">
                     </div>
@@ -79,7 +82,46 @@ window.switchProfileTab = function(tabName, event) {
                     <div class="prfboxes-row">
                         <div class="prfsec">
                             <h2 class="prfboxttl">Currently Wearing</h2>
-                            <div class="prfbox-card prfwrngbox"></div>
+                            <div class="prfbox-card prfwrngbox">
+                                {{if .Wearing}}
+                                <div class="prfwrngcar">
+                                    <button type="button" class="prfwrngarr" id="prfWearingLeft" onclick="if(window.scrollWearing)window.scrollWearing(-1)" aria-label="Scroll left">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+                                    <div class="prfwrngrow" id="prfWearingRow">
+                                        {{range .Wearing}}
+                                        {{template "components/shop/card" .}}
+                                        {{end}}
+                                    </div>
+                                    <button type="button" class="prfwrngarr" id="prfWearingRight" onclick="if(window.scrollWearing)window.scrollWearing(1)" aria-label="Scroll right">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                {{else}}
+                                <p class="prfboxtxt">Nothing equipped.</p>
+                                {{end}}
+                                <div class="prfbodycolors">
+                                        <span class="prfbodycolorslbl">Body colors</span>
+                                        <div class="avtbody prfbodyfig">
+                                            <svg class="avtfig" width="180" height="238" viewBox="0 0 574 759" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <g clip-path="url(#prfbodyclip)">
+                                                <rect class="avtpart" y="183" width="133" height="281" rx="14" fill="{{.BodyLArm}}" data-tip="Left Arm {{.BodyLArm}}"></rect>
+                                                <rect class="avtpart" x="441" y="183" width="133" height="281" rx="14" fill="{{.BodyRArm}}" data-tip="Right Arm {{.BodyRArm}}"></rect>
+                                                <rect class="avtpart" x="294" y="478" width="133" height="281" rx="14" fill="{{.BodyRLeg}}" data-tip="Right Leg {{.BodyRLeg}}"></rect>
+                                                <rect class="avtpart" x="147" y="478" width="133" height="281" rx="14" fill="{{.BodyLLeg}}" data-tip="Left Leg {{.BodyLLeg}}"></rect>
+                                                <path class="avtpart" d="M377 88.5C377 167 367 177 288 177C209 177 199 167 199 88.5C199 10 209 0 288 0C367 0 377 10 377 88.5Z" fill="{{.BodyHead}}" data-tip="Head {{.BodyHead}}"></path>
+                                                <path class="avtpart" d="M399 183C412.199 183 418.799 183 422.899 187.101C427 191.201 427 197.801 427 211V436C427 449.199 427 455.799 422.899 459.899C418.799 464 412.199 464 399 464H175C161.801 464 155.201 464 151.101 459.899C147 455.799 147 449.199 147 436V211C147 197.801 147 191.201 151.101 187.101C155.201 183 161.801 183 175 183H202.232C205.126 183 206.573 183 207.979 183.066C211.715 183.242 209.283 183.025 212.991 183.513C214.387 183.696 222.355 185.128 238.29 187.99C251.666 190.393 268.19 191 288 191C307.81 191 324.334 190.393 337.71 187.99C353.645 185.128 361.613 183.696 363.009 183.513C366.717 183.025 364.285 183.242 368.021 183.066C369.427 183 370.874 183 373.768 183H399Z" fill="{{.BodyTorso}}" data-tip="Torso {{.BodyTorso}}"></path>
+                                            </g>
+                                            <defs>
+                                                <clipPath id="prfbodyclip">
+                                                    <rect width="574" height="759" fill="white"/>
+                                                </clipPath>
+                                            </defs>
+                                        </svg>
+                                            <span class="ttptxt prfbodytip" id="prfBodyTip"></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="prfsec">
                             <h2 class="prfboxttl">About</h2>
@@ -107,7 +149,7 @@ window.switchProfileTab = function(tabName, event) {
 </div>
 
 {{if .ProfileMusicID}}
-<div id="profileMusicWidget" class="prf-music-widget" data-music-id="{{.ProfileMusicID}}">
+<div id="profileMusicWidget" class="prf-music-widget" data-music-id="{{.ProfileMusicID}}" data-no-autoplay="{{.ViewerDisableAutoplay}}">
     <div class="musplayer">
         <img id="prfMusCover" src="" alt="" class="musplayer-cvr">
         <div class="musplayer-meta">
@@ -117,6 +159,9 @@ window.switchProfileTab = function(tabName, event) {
         <button type="button" id="prfMusPlayBtn" class="musplayer-plybtn" onclick="window.toggleProfileTrack()" title="Play/Pause">
             <i id="prfMusPlayIcon" class="fa-solid fa-play"></i>
         </button>
+        <button type="button" id="prfMusVolBtn" class="musplayer-volbtn" onclick="window.toggleMuteProfileTrack()" title="Mute/Unmute">
+            <i id="prfMusVolIcon" class="fa-solid fa-volume-high"></i>
+        </button>
         <div class="musplayer-seek">
             <span id="prfMusCurTime" class="musplayer-time">0:00</span>
             <div class="musplayer-barcnt" onclick="window.seekProfileTrack(event)">
@@ -124,12 +169,8 @@ window.switchProfileTab = function(tabName, event) {
             </div>
             <span id="prfMusDurTime" class="musplayer-time">0:30</span>
         </div>
-        <button type="button" id="prfMusVolBtn" class="musplayer-volbtn" onclick="window.toggleMuteProfileTrack()" title="Mute/Unmute">
-            <i id="prfMusVolIcon" class="fa-solid fa-volume-high"></i>
-        </button>
     </div>
 </div>
 {{end}}
 
-<script src="/static/js/elements/music.js"></script>
-<script type="module" src="/static/js/profile/profile.js"></script>
+<script type="module" src="/static/js/profile/profile.js?v={{.AssetV}}"></script>

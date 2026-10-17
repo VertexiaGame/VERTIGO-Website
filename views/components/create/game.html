@@ -1,49 +1,149 @@
 <div id="crt-game" class="settabcntnt{{if eq .ActiveType "game"}} active{{end}}">
-    <div class="setcrd">
-        <h3 class="setttl">Create Game</h3>
-        <span class="setinf">Set up a new game for players to discover and play</span>
-        <form class="crtformel" onsubmit="return window.submitGame(event)">
-            <div class="crtfld">
-                <label class="crtlbl" for="crtGameName">Name</label>
-                <div class="instk">
-                    <div class="instkrw">
-                        <div class="ttpcnt">
-                            <div class="setinbox">
-                                <input type="text" id="crtGameName" name="name" class="setin" placeholder="Name your game" required maxlength="60" autocomplete="off">
+    <div class="crtform">
+        <div class="crtforml">
+            <div class="setcrd">
+                <h3 class="setttl">Create Game</h3>
+                <span class="setinf">Set up a new game for players to discover and play</span>
+                <form class="crtformel" hx-boost="false" action="javascript:void(0);" onsubmit="return window.submitGame(event)">
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtGameName">Name</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setinbox">
+                                        <input type="text" id="crtGameName" name="name" class="setin" placeholder="Name your game" required maxlength="60" autocomplete="off" oninput="window.updateGamePreviewName()">
+                                    </div>
+                                    <span class="ttptxt">Maximum of 60 characters</span>
+                                </div>
                             </div>
-                            <span class="ttptxt">Maximum of 60 characters</span>
                         </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtGameDesc">Description</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setareabox">
+                                        <textarea id="crtGameDesc" name="description" class="setarea" placeholder="Tell us about your game" maxlength="1000"></textarea>
+                                    </div>
+                                    <span class="ttptxt">Maximum of 1000 characters</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtGameGenreInput">Genre</label>
+                        <div class="glb-dropdown" id="crtGameGenreDropdown">
+                            <button type="button" class="glb-dropdown-trigger" onclick="window.toggleGlobalDropdown('crtGameGenreDropdown')">
+                                <span class="glb-dropdown-label" id="crtGameGenreLabel">Choose a genre</span>
+                                <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4">
+                                    <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                </svg>
+                            </button>
+                            <div class="glb-dropdown-menu">
+                                <div class="glb-dropdown-item" data-value="any" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'any', 'Any')"><i class="fa-solid fa-shapes"></i> Any</div>
+                                <div class="glb-dropdown-item" data-value="adventure" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'adventure', 'Adventure')"><i class="fa-solid fa-compass"></i> Adventure</div>
+                                <div class="glb-dropdown-item" data-value="obby" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'obby', 'Obby')"><i class="fa-solid fa-person-running"></i> Obby</div>
+                                <div class="glb-dropdown-item" data-value="tycoon" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'tycoon', 'Tycoon')"><i class="fa-solid fa-industry"></i> Tycoon</div>
+                                <div class="glb-dropdown-item" data-value="roleplay" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'roleplay', 'Roleplay')"><i class="fa-solid fa-masks-theater"></i> Roleplay</div>
+                                <div class="glb-dropdown-item" data-value="horror" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'horror', 'Horror')"><i class="fa-solid fa-ghost"></i> Horror</div>
+                                <div class="glb-dropdown-item" data-value="simulator" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'simulator', 'Simulator')"><i class="fa-solid fa-gauge-high"></i> Simulator</div>
+                                <div class="glb-dropdown-item" data-value="shooter" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'shooter', 'Shooter')"><i class="fa-solid fa-crosshairs"></i> Shooter</div>
+                                <div class="glb-dropdown-item" data-value="racing" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'racing', 'Racing')"><i class="fa-solid fa-flag-checkered"></i> Racing</div>
+                                <div class="glb-dropdown-item" data-value="puzzle" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'puzzle', 'Puzzle')"><i class="fa-solid fa-puzzle-piece"></i> Puzzle</div>
+                                <div class="glb-dropdown-item" data-value="sandbox" onclick="window.selectGlobalDropdownOption('crtGameGenreDropdown', 'sandbox', 'Sandbox')"><i class="fa-solid fa-cubes"></i> Sandbox</div>
+                            </div>
+                            <input type="hidden" id="crtGameGenreInput" name="genre" value="">
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtGameTags">Tags</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setinbox">
+                                        <input type="text" id="crtGameTags" name="tags" class="setin" placeholder="tycoon, building, fun" maxlength="255" autocomplete="off">
+                                    </div>
+                                    <span class="ttptxt">Comma-separated, shown on your game page</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtGameVisibilityInput">Visibility</label>
+                        <div class="glb-dropdown" id="crtGameVisibilityDropdown">
+                            <button type="button" class="glb-dropdown-trigger" onclick="window.toggleGlobalDropdown('crtGameVisibilityDropdown')">
+                                <span class="glb-dropdown-label" id="crtGameVisibilityLabel">Public</span>
+                                <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4">
+                                    <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                </svg>
+                            </button>
+                            <div class="glb-dropdown-menu">
+                                <div class="glb-dropdown-item active" data-value="public" onclick="window.selectGlobalDropdownOption('crtGameVisibilityDropdown', 'public', 'Public')">Public</div>
+                                <div class="glb-dropdown-item" data-value="private" onclick="window.selectGlobalDropdownOption('crtGameVisibilityDropdown', 'private', 'Private')">Private</div>
+                            </div>
+                            <input type="hidden" id="crtGameVisibilityInput" name="visibility" value="public">
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtGameFile">Icon</label>
+                        <div class="ttpcnt">
+                            <label class="crtupload" for="crtGameFile">
+                                <input type="file" id="crtGameFile" name="icon" accept="image/png,image/jpeg" onchange="window.handleGameFile(event)" hidden>
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span class="crtupmsg" id="crtGameFileMsg">Choose a PNG or JPEG</span>
+                                <span class="crtupname" id="crtGameFileName"></span>
+                            </label>
+                            <span class="ttptxt">Square icon shown in game listings (optional)</span>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtGameThumbFile">Thumbnails <span class="crtthumbcount" id="crtGameThumbCount">0/5</span></label>
+                        <div class="ttpcnt">
+                            <label class="crtupload" for="crtGameThumbFile">
+                                <input type="file" id="crtGameThumbFile" name="thumbnail" accept="image/png,image/jpeg" multiple onchange="window.handleGameThumbFile(event)" hidden>
+                                <i class="fa-solid fa-panorama"></i>
+                                <span class="crtupmsg" id="crtGameThumbMsg">Choose PNG or JPEG images</span>
+                                <span class="crtupname" id="crtGameThumbName"></span>
+                            </label>
+                            <span class="ttptxt">Up to 5 wide banners, drag to reorder, first is the main one (optional)</span>
+                        </div>
+                        <div class="crtthumbs" id="crtGameThumbPicked"></div>
+                        <div class="crtprog" id="crtGameFileProg" hidden>
+                            <div class="crtprogtrack"><div class="crtprogbar" id="crtGameFileProgBar"></div></div>
+                            <span class="crtprogtxt" id="crtGameFileProgTxt">Uploading… 0%</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                        <button type="submit" class="primary hpyprim hpyinl hpysm" id="crtGameSubmitBtn">
+                            <span>Create Game</span>
+                        </button>
+                        <a href="/create/games" hx-get="/create/games" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                            <span>My Games</span>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="crtformr">
+            <div class="setcrd crtprevcrd">
+                <h3 class="setttl">Preview</h3>
+                <span class="setinf">How your game will appear in listings</span>
+                <div class="avtitm" id="crtGamePreview">
+                    <div class="avtitmimg">
+                        <img src="/static/useful/temp/pfp.png" alt="" class="avtldimg" id="crtGamePreviewImg" onerror="this.src='/static/useful/temp/pfp.png';">
+                    </div>
+                    <div class="avtitmmeta">
+                        <span class="avtitmnm" id="crtGamePreviewName">Untitled Game</span>
+                        <span class="avtitmcr">by {{.Username}}</span>
                     </div>
                 </div>
             </div>
-            <div class="crtfld">
-                <label class="crtlbl" for="crtGameDesc">Description</label>
-                <div class="instk">
-                    <div class="instkrw">
-                        <div class="ttpcnt">
-                            <div class="setareabox">
-                                <textarea id="crtGameDesc" name="description" class="setarea" placeholder="Tell us about your game" maxlength="1000"></textarea>
-                            </div>
-                            <span class="ttptxt">Maximum of 1000 characters</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="setcrd crtprevcrd">
+                <h3 class="setttl">Thumbnail</h3>
+                <span class="setinf">Banner on your game page</span>
+                <img id="crtGameThumbPreview" src="/static/useful/temp/pfp.png" alt="Thumbnail preview" style="width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:8px;border:1px solid #D4D4D4;display:block;background:#D4D4D4;" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
             </div>
-            <div class="crtfld">
-                <label class="crtlbl" for="crtGameFile">Thumbnail</label>
-                <div class="ttpcnt">
-                    <label class="crtupload" for="crtGameFile">
-                        <input type="file" id="crtGameFile" name="file" accept="image/png,image/jpeg" onchange="window.handleGameFile(event)" hidden>
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <span class="crtupmsg" id="crtGameFileMsg">Choose a thumbnail image</span>
-                        <span class="crtupname" id="crtGameFileName"></span>
-                    </label>
-                    <span class="ttptxt">PNG or JPEG</span>
-                </div>
-            </div>
-            <button type="submit" class="primary hpyprim hpyinl hpysm">
-                <span>Create Game</span>
-            </button>
-        </form>
+        </div>
     </div>
 </div>

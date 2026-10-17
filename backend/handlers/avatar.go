@@ -14,6 +14,30 @@ import (
 	"vertexia-frontend/backend/service"
 )
 
+func setAvatarNoCache(c fiber.Ctx) {
+	c.Set("Content-Type", "image/png")
+	c.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Set("Pragma", "no-cache")
+	c.Set("Expires", "0")
+}
+
+func refreshAvatarRendersAsync(userID int) {
+	if service.Avatar != nil {
+		service.Avatar.InvalidateRenderCache(userID)
+	}
+	go func() {
+		fullPath := service.AvatarFullPath(userID)
+		headPath := service.AvatarHeadPath(userID)
+		_ = os.MkdirAll(filepath.Dir(fullPath), 0755)
+		if imgBytes, err := renderer.RenderUser(database.DB, userID); err == nil && len(imgBytes) > 0 {
+			_ = os.WriteFile(fullPath, imgBytes, 0644)
+		}
+		if imgBytes, err := renderer.RenderUserHeadshot(database.DB, userID); err == nil && len(imgBytes) > 0 {
+			_ = os.WriteFile(headPath, imgBytes, 0644)
+		}
+	}()
+}
+
 func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 	idParam := strings.TrimSuffix(c.Params("id"), ".png")
 	userID, err := strconv.Atoi(idParam)
@@ -30,18 +54,19 @@ func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
 	}
 
-	cachePathFull := filepath.Join("static", "renders", "avatars", "full", idParam+".png")
-	cachePathHead := filepath.Join("static", "renders", "avatars", "headshots", idParam+".png")
+	cachePathFull := service.AvatarFullPath(userID)
+	cachePathHead := service.AvatarHeadPath(userID)
 
 	targetCache := cachePathFull
 	if isHeadshot {
 		targetCache = cachePathHead
 	}
 
-	if imgBytes, err := os.ReadFile(targetCache); err == nil {
-		c.Set("Content-Type", "image/png")
-		c.Set("Cache-Control", "public, max-age=86400")
-		return c.Send(imgBytes)
+	if fi, err := os.Stat(targetCache); err == nil && fi.Size() > 0 {
+		if imgBytes, err := os.ReadFile(targetCache); err == nil && len(imgBytes) > 0 {
+			setAvatarNoCache(c)
+			return c.Send(imgBytes)
+		}
 	}
 
 	imgBytesFull, err := renderer.RenderUser(database.DB, userID)
@@ -59,8 +84,7 @@ func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 	_ = os.WriteFile(cachePathFull, imgBytesFull, 0644)
 	_ = os.WriteFile(cachePathHead, imgBytesHead, 0644)
 
-	c.Set("Content-Type", "image/png")
-	c.Set("Cache-Control", "public, max-age=86400")
+	setAvatarNoCache(c)
 	if isHeadshot {
 		return c.Send(imgBytesHead)
 	}
@@ -89,10 +113,12 @@ func ShopRenderGet(c fiber.Ctx) error {
 	}
 
 	cachePath := filepath.Join("static", "renders", "shop", normType, idParam+".png")
-	if imgBytes, err := os.ReadFile(cachePath); err == nil {
-		c.Set("Content-Type", "image/png")
-		c.Set("Cache-Control", "public, max-age=86400")
-		return c.Send(imgBytes)
+	if fi, err := os.Stat(cachePath); err == nil && fi.Size() > 0 {
+		if imgBytes, err := os.ReadFile(cachePath); err == nil && len(imgBytes) > 0 {
+			c.Set("Content-Type", "image/png")
+			c.Set("Cache-Control", "public, max-age=86400")
+			return c.Send(imgBytes)
+		}
 	}
 
 	imgBytes, err := renderer.RenderShopItem(normType, itemID)
@@ -100,8 +126,15 @@ func ShopRenderGet(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
-	_ = os.WriteFile(cachePath, imgBytes, 0644)
+	if len(imgBytes) > 0 {
+		_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+		tmpPath := cachePath + ".tmp"
+		if err := os.WriteFile(tmpPath, imgBytes, 0644); err == nil {
+			_ = os.Rename(tmpPath, cachePath)
+		} else {
+			_ = os.Remove(tmpPath)
+		}
+	}
 
 	c.Set("Content-Type", "image/png")
 	c.Set("Cache-Control", "public, max-age=86400")
@@ -116,10 +149,12 @@ func AvatarOutfitGet(c fiber.Ctx) error {
 	}
 
 	cachePath := filepath.Join("static", "renders", "outfits", idParam+".png")
-	if imgBytes, err := os.ReadFile(cachePath); err == nil {
-		c.Set("Content-Type", "image/png")
-		c.Set("Cache-Control", "public, max-age=86400")
-		return c.Send(imgBytes)
+	if fi, err := os.Stat(cachePath); err == nil && fi.Size() > 0 {
+		if imgBytes, err := os.ReadFile(cachePath); err == nil && len(imgBytes) > 0 {
+			c.Set("Content-Type", "image/png")
+			c.Set("Cache-Control", "public, max-age=86400")
+			return c.Send(imgBytes)
+		}
 	}
 
 	imgBytes, err := renderer.RenderOutfit(database.DB, outfitID)
@@ -127,8 +162,15 @@ func AvatarOutfitGet(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
-	_ = os.WriteFile(cachePath, imgBytes, 0644)
+	if len(imgBytes) > 0 {
+		_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+		tmpPath := cachePath + ".tmp"
+		if err := os.WriteFile(tmpPath, imgBytes, 0644); err == nil {
+			_ = os.Rename(tmpPath, cachePath)
+		} else {
+			_ = os.Remove(tmpPath)
+		}
+	}
 
 	c.Set("Content-Type", "image/png")
 	c.Set("Cache-Control", "public, max-age=86400")
@@ -148,7 +190,7 @@ func AvatarDataGet(c fiber.Ctx) error {
 	}
 
 	headColor, larmColor, rarmColor, torsoColor, llegColor, rlegColor := models.DefaultHeadColor, models.DefaultArmColor, models.DefaultArmColor, models.DefaultTorsoColor, models.DefaultLegColor, models.DefaultLegColor
-	face := 0
+	face, shirt, pants, tshirt, tool, hat1, hat2, hat3, hat4, hat5 := 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 	if avatarData != nil {
 		headColor = avatarData.HeadColor
@@ -158,6 +200,15 @@ func AvatarDataGet(c fiber.Ctx) error {
 		llegColor = avatarData.LLegColor
 		rlegColor = avatarData.RLegColor
 		face = avatarData.Face
+		shirt = avatarData.Shirt
+		pants = avatarData.Pants
+		tshirt = avatarData.TShirt
+		tool = avatarData.Tool
+		hat1 = avatarData.Hat1
+		hat2 = avatarData.Hat2
+		hat3 = avatarData.Hat3
+		hat4 = avatarData.Hat4
+		hat5 = avatarData.Hat5
 	}
 
 	formatColor := func(hex string) string {
@@ -175,6 +226,15 @@ func AvatarDataGet(c fiber.Ctx) error {
 		"lleg_color":  formatColor(llegColor),
 		"rleg_color":  formatColor(rlegColor),
 		"face_id":     face,
+		"shirt":       shirt,
+		"pants":       pants,
+		"tshirt":      tshirt,
+		"tool":        tool,
+		"hat1":        hat1,
+		"hat2":        hat2,
+		"hat3":        hat3,
+		"hat4":        hat4,
+		"hat5":        hat5,
 	})
 }
 
@@ -244,6 +304,7 @@ func AvatarUpdateColorsPost(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 	}
+	refreshAvatarRendersAsync(user.ID)
 
 	return c.JSON(fiber.Map{
 		"success":    true,
@@ -276,6 +337,7 @@ func AvatarWearItemPost(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 	}
+	refreshAvatarRendersAsync(user.ID)
 
 	return c.JSON(fiber.Map{
 		"success":    true,
@@ -308,6 +370,7 @@ func AvatarUnwearItemPost(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 	}
+	refreshAvatarRendersAsync(user.ID)
 
 	return c.JSON(fiber.Map{
 		"success":    true,
@@ -417,6 +480,7 @@ func AvatarWearOutfitPost(c fiber.Ctx) error {
 	if err := service.Avatar.WearOutfit(user.ID, outfitID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
+	refreshAvatarRendersAsync(user.ID)
 
 	return c.JSON(fiber.Map{
 		"success":    true,
@@ -490,7 +554,7 @@ func AvatarReRenderPost(c fiber.Ctx) error {
 	}
 
 	if service.Avatar != nil {
-		service.Avatar.InvalidateRenderCache(user.ID)
+		refreshAvatarRendersAsync(user.ID)
 	}
 
 	return c.JSON(fiber.Map{

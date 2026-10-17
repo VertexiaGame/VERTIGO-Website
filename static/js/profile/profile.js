@@ -13,9 +13,11 @@ const MAX_RADIUS = 12.0;
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
 export class AvatarViewer {
-    constructor(container, userId) {
+    constructor(container, userId, options = {}) {
         this.container = container;
         this.userId = userId;
+        this.dummy = !!options.dummy;
+        this.toolPose = !!options.toolPose;
 
         this.target = new THREE.Vector3(0, 0.8, 0);
         this.spherical = {
@@ -101,6 +103,10 @@ export class AvatarViewer {
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        if (this.renderer.domElement && this.renderer.domElement.style) {
+            this.renderer.domElement.style.touchAction = 'none';
+            this.renderer.domElement.style.display = 'block';
+        }
 
         if (THREE.NeutralToneMapping) {
             this.renderer.toneMapping = THREE.NeutralToneMapping;
@@ -152,9 +158,18 @@ export class AvatarViewer {
         this.boundPointerMove = this.onPointerMove.bind(this);
         this.boundPointerUp = this.onPointerUp.bind(this);
         this.boundWheel = this.onWheel.bind(this);
+        this.boundContextMenu = e => e.preventDefault();
 
-        this.container.addEventListener('pointerdown', this.boundPointerDown);
-        window.addEventListener('pointermove', this.boundPointerMove);
+        if (this.container && this.container.style) {
+            this.container.style.touchAction = 'none';
+        }
+        if (this.renderer && this.renderer.domElement && this.renderer.domElement.style) {
+            this.renderer.domElement.style.touchAction = 'none';
+        }
+
+        this.container.addEventListener('pointerdown', this.boundPointerDown, { passive: false });
+        this.container.addEventListener('contextmenu', this.boundContextMenu);
+        window.addEventListener('pointermove', this.boundPointerMove, { passive: false });
         window.addEventListener('pointerup', this.boundPointerUp);
         window.addEventListener('pointercancel', this.boundPointerUp);
         this.container.addEventListener('wheel', this.boundWheel, { passive: false });
@@ -163,6 +178,7 @@ export class AvatarViewer {
     removeEventListeners() {
         if (this.container) {
             this.container.removeEventListener('pointerdown', this.boundPointerDown);
+            this.container.removeEventListener('contextmenu', this.boundContextMenu);
             this.container.removeEventListener('wheel', this.boundWheel);
         }
         window.removeEventListener('pointermove', this.boundPointerMove);
@@ -214,6 +230,10 @@ export class AvatarViewer {
     }
 
     onPointerDown(e) {
+        if (e.cancelable && e.pointerType === 'touch') {
+            try { e.preventDefault(); } catch {}
+        }
+        try { this.container.setPointerCapture(e.pointerId); } catch {}
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (this.activePointers.size === 1) {
             this.isDragging = true;
@@ -227,6 +247,9 @@ export class AvatarViewer {
 
     onPointerMove(e) {
         if (!this.activePointers.has(e.pointerId)) return;
+        if (e.cancelable && e.pointerType === 'touch' && this.activePointers.size > 0) {
+            try { e.preventDefault(); } catch {}
+        }
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
         if (this.activePointers.size === 1 && this.isDragging) {
@@ -238,9 +261,11 @@ export class AvatarViewer {
         } else if (this.activePointers.size === 2 && this.initialPinchDistance !== null) {
             const pts = Array.from(this.activePointers.values());
             const currentDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-            const deltaDistance = this.initialPinchDistance - currentDistance;
-            this.zoomCamera(deltaDistance * 0.01);
-            this.initialPinchDistance = currentDistance;
+            if (currentDistance > 0) {
+                const deltaDistance = this.initialPinchDistance - currentDistance;
+                this.zoomCamera(deltaDistance * 0.015);
+                this.initialPinchDistance = currentDistance;
+            }
         }
     }
 
@@ -309,9 +334,92 @@ export class AvatarViewer {
         }
     }
 
+    preloadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(new Error('missing image'));
+            img.src = url;
+        });
+    }
+
+    async resolveFaceUrl(faceId) {
+        const urls = [`/assets/uploads/shop/faces/${faceId}.png`, `/assets/faces/${faceId}.png`];
+        for (const url of urls) {
+            try {
+                return await this.preloadImage(url);
+            } catch {}
+        }
+        return null;
+    }
+
+    async fetchItemTransform(id) {
+        try {
+            const response = await fetch(`/api/v1/shop/items/${id}`);
+            if (!response.ok) return null;
+            const detail = await response.json();
+            const raw = detail ? detail.transform : null;
+            if (!raw) return null;
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (!parsed || typeof parsed !== 'object') return null;
+            return parsed;
+        } catch {
+            return null;
+        }
+    }
+
+    hasStoredPosition(transform) {
+        if (!transform || typeof transform !== 'object') return false;
+        const cand = (transform.placement && transform.placement.position) || transform.position;
+        if (!cand) return false;
+        return [cand.x, cand.y, cand.z].every(n => typeof n === 'number' && isFinite(n));
+    }
+
+    poseToolArm(obj) {
+        obj.updateMatrixWorld(true);
+        const c = new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3());
+        obj.traverse(child => {
+            if (child.isMesh && child.geometry) {
+                child.geometry.translate(-c.x, -c.y, -c.z);
+                child.geometry.rotateX(-Math.PI / 2);
+                child.geometry.translate(c.x, c.y + 0.5, c.z + 0.4);
+            }
+        });
+    }
+
+    loadClothTexture(textureLoader, type, id, tex) {
+        return new Promise(resolve => {
+            if (!id || id <= 0) {
+                resolve(tex || null);
+                return;
+            }
+            const urls = [`/assets/uploads/shop/${type}/${id}.png`, `/assets/shop/${type}/${id}.png`];
+            const tryNext = index => {
+                if (index >= urls.length) {
+                    resolve(tex || null);
+                    return;
+                }
+                const loaded = textureLoader.load(urls[index], () => resolve(loaded), undefined, () => tryNext(index + 1));
+                if (loaded) loaded.colorSpace = THREE.SRGBColorSpace;
+            };
+            tryNext(0);
+        });
+    }
+
     async renderAvatar(data) {
         const faceId = data ? data.face_id : 0;
-        const faceUrl = `/assets/faces/${faceId}.png`;
+        const faceUrl = await this.resolveFaceUrl(faceId);
+
+        const textureLoader = new THREE.TextureLoader();
+        const shirtTex = await this.loadClothTexture(textureLoader, 'shirts', data ? data.shirt : 0);
+        const pantsTex = await this.loadClothTexture(textureLoader, 'pants', data ? data.pants : 0);
+        const tshirtTex = await this.loadClothTexture(textureLoader, 'tshirts', data ? data.tshirt : 0);
+
+        const partTexture = name => {
+            if (name === 'Torso' || name === 'LeftArm' || name === 'RightArm') return shirtTex;
+            if (name === 'LeftLeg' || name === 'RightLeg') return pantsTex;
+            return null;
+        };
 
         const bodyParts = [
             { name: 'Head', file: 'Head.obj', color: data ? data.head_color : '#f3b700', isHead: true },
@@ -335,9 +443,210 @@ export class AvatarViewer {
 
         const results = await Promise.all(partPromises);
 
+        let headObj = null;
+        let leftArmObj = null;
         for (const { part, obj } of results) {
             if (!obj) continue;
 
+            let material;
+            if (part.isHead) {
+                const headTex = await this.createHeadTexture(part.color, faceUrl);
+                material = new THREE.MeshStandardMaterial({
+                    map: headTex,
+                    roughness: 0.6,
+                    metalness: 0.0,
+                    emissive: new THREE.Color(0xffffff),
+                    emissiveMap: headTex,
+                    emissiveIntensity: 0.2
+                });
+            } else {
+                const clothTex = partTexture(part.name);
+                if (clothTex) {
+                    material = new THREE.MeshStandardMaterial({
+                        map: clothTex,
+                        color: new THREE.Color(part.color),
+                        roughness: 0.6,
+                        metalness: 0.0
+                    });
+                } else {
+                    material = new THREE.MeshStandardMaterial({
+                        color: new THREE.Color(part.color),
+                        roughness: 0.6,
+                        metalness: 0.0,
+                        emissive: new THREE.Color(part.color),
+                        emissiveIntensity: 0.2
+                    });
+                }
+            }
+
+            obj.traverse(child => {
+                if (child.isMesh) {
+                    child.material = material;
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            if (part.isHead) headObj = obj;
+            if (part.name === 'LeftArm') leftArmObj = obj;
+            this.avatarGroup.add(obj);
+        }
+
+        if (tshirtTex) {
+            try {
+                const tshirtObj = await loader.loadAsync('/assets/char/TShirt.obj');
+                if (tshirtObj) {
+                    const tshirtMat = new THREE.MeshStandardMaterial({
+                        map: tshirtTex,
+                        color: new THREE.Color(0xffffff),
+                        roughness: 0.6,
+                        metalness: 0.0
+                    });
+                    tshirtObj.traverse(child => {
+                        if (child.isMesh) {
+                            child.material = tshirtMat;
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    this.avatarGroup.add(tshirtObj);
+                }
+            } catch {}
+        }
+
+        if (data && data.tool > 0 && leftArmObj) {
+            this.poseToolArm(leftArmObj);
+        }
+
+        const hats = data ? [data.hat1, data.hat2, data.hat3, data.hat4, data.hat5].filter(id => id && id > 0) : [];
+        if (hats.length > 0 || (data && data.tool > 0)) {
+            const loadShopTexture = (type, id) => new Promise(resolve => {
+                const urls = [`/assets/uploads/shop/${type}/${id}.png`, `/assets/shop/${type}/${id}.png`];
+                const tryNext = index => {
+                    if (index >= urls.length) {
+                        resolve(null);
+                        return;
+                    }
+                    const tex = textureLoader.load(urls[index], () => resolve(tex), undefined, () => tryNext(index + 1));
+                    if (tex) tex.colorSpace = THREE.SRGBColorSpace;
+                };
+                tryNext(0);
+            });
+            const loadHatTexture = id => loadShopTexture('hat', id);
+            const loadToolTexture = id => loadShopTexture('gear', id);
+            for (const hatId of hats) {
+                try {
+                    let hatObj = null;
+                    const hatUrls = [`/assets/uploads/shop/hat/${hatId}.obj`, `/assets/shop/hat/${hatId}.obj`];
+                    for (const hatUrl of hatUrls) {
+                        try {
+                            hatObj = await loader.loadAsync(hatUrl);
+                            if (hatObj) break;
+                        } catch {}
+                    }
+                    if (!hatObj) continue;
+                    const hatTransform = await this.fetchItemTransform(hatId);
+                    const hatPositioned = this.hasStoredPosition(hatTransform);
+                    const hatTex = await loadHatTexture(hatId);
+                    const hatMat = new THREE.MeshStandardMaterial({
+                        color: hatTex ? new THREE.Color(0xffffff) : new THREE.Color(0xd6d6d6),
+                        map: hatTex || null,
+                        roughness: 0.6,
+                        metalness: 0.0
+                    });
+                    hatObj.traverse(child => {
+                        if (child.isMesh) {
+                            child.material = hatMat;
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            if (child.geometry && !child.geometry.attributes.normal) child.geometry.computeVertexNormals();
+                        }
+                    });
+                    if (!hatPositioned && headObj) {
+                        const headBox = new THREE.Box3().setFromObject(headObj);
+                        const headCenter = headBox.getCenter(new THREE.Vector3());
+                        const hatBox = new THREE.Box3().setFromObject(hatObj);
+                        const hatCenter = hatBox.getCenter(new THREE.Vector3());
+                        hatObj.position.sub(hatCenter).add(headCenter);
+                        hatObj.position.y += headBox.getSize(new THREE.Vector3()).y * 0.45;
+                    }
+                    this.avatarGroup.add(hatObj);
+                } catch {}
+            }
+            if (data && data.tool > 0) {
+                try {
+                    let toolObj = null;
+                    const toolUrls = [`/assets/uploads/shop/gear/${data.tool}.obj`, `/assets/shop/gear/${data.tool}.obj`];
+                    for (const toolUrl of toolUrls) {
+                        try {
+                            toolObj = await loader.loadAsync(toolUrl);
+                            if (toolObj) break;
+                        } catch {}
+                    }
+                    if (toolObj) {
+                        const toolTransform = await this.fetchItemTransform(data.tool);
+                        const toolPositioned = this.hasStoredPosition(toolTransform);
+                        const toolTex = await loadToolTexture(data.tool);
+                        const toolMat = new THREE.MeshStandardMaterial({
+                            color: toolTex ? new THREE.Color(0xffffff) : new THREE.Color(0xd6d6d6),
+                            map: toolTex || null,
+                            roughness: 0.6,
+                            metalness: 0.0
+                        });
+                        toolObj.traverse(child => {
+                            if (child.isMesh) {
+                                child.material = toolMat;
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                                if (child.geometry && !child.geometry.attributes.normal) child.geometry.computeVertexNormals();
+                            }
+                        });
+                        if (!toolPositioned) {
+                            toolObj.position.set(0.6, 0.2, 0.3);
+                            toolObj.rotation.set(0, 0, Math.PI / 2);
+                        }
+                        this.avatarGroup.add(toolObj);
+                    }
+                } catch {}
+            }
+        }
+
+        const box = new THREE.Box3().setFromObject(this.avatarGroup);
+        if (!box.isEmpty()) {
+            const center = box.getCenter(new THREE.Vector3());
+            if (!isNaN(center.x) && !isNaN(center.y) && !isNaN(center.z)) {
+                this.avatarGroup.position.x = -center.x;
+                this.avatarGroup.position.y = -center.y + 0.1;
+                this.avatarGroup.position.z = -center.z;
+                this.shadowPlane.position.y = box.min.y - center.y + 0.1;
+            }
+        }
+    }
+
+    async renderDummyAvatar(toolPose = false) {
+        const grey = '#B3B3B3';
+        const faceUrl = await this.resolveFaceUrl(0);
+        const bodyParts = [
+            { name: 'Head', file: 'Head.obj', color: grey, isHead: true },
+            { name: 'Torso', file: 'Torso.obj', color: grey },
+            { name: 'LeftArm', file: 'LeftArm.obj', color: grey },
+            { name: 'RightArm', file: 'RightArm.obj', color: grey },
+            { name: 'LeftLeg', file: 'LeftLeg.obj', color: grey },
+            { name: 'RightLeg', file: 'RightLeg.obj', color: grey }
+        ];
+        const loader = new OBJLoader();
+        const partPromises = bodyParts.map(async part => {
+            try {
+                const obj = await loader.loadAsync(`/assets/char/${part.file}`);
+                return { part, obj };
+            } catch {
+                return { part, obj: null };
+            }
+        });
+        const results = await Promise.all(partPromises);
+        let leftArmObj = null;
+        for (const { part, obj } of results) {
+            if (!obj) continue;
             let material;
             if (part.isHead) {
                 const headTex = await this.createHeadTexture(part.color, faceUrl);
@@ -358,7 +667,6 @@ export class AvatarViewer {
                     emissiveIntensity: 0.2
                 });
             }
-
             obj.traverse(child => {
                 if (child.isMesh) {
                     child.material = material;
@@ -366,10 +674,12 @@ export class AvatarViewer {
                     child.receiveShadow = true;
                 }
             });
-
+            if (part.name === 'LeftArm') leftArmObj = obj;
             this.avatarGroup.add(obj);
         }
-
+        if (toolPose && leftArmObj) {
+            this.poseToolArm(leftArmObj);
+        }
         const box = new THREE.Box3().setFromObject(this.avatarGroup);
         if (!box.isEmpty()) {
             const center = box.getCenter(new THREE.Vector3());
@@ -383,8 +693,12 @@ export class AvatarViewer {
     }
 
     async load() {
-        const data = await this.fetchAvatarData();
-        await this.renderAvatar(data);
+        if (this.dummy) {
+            await this.renderDummyAvatar(this.toolPose);
+        } else {
+            const data = await this.fetchAvatarData();
+            await this.renderAvatar(data);
+        }
         this.hideSpinner();
         this.animate();
     }
@@ -454,11 +768,57 @@ window.init3DAvatar = function(userId) {
     activeAvatarViewer.load();
 };
 
+window.scrollWearing = function(dir) {
+    const row = document.getElementById('prfWearingRow');
+    if (!row) return;
+    row.scrollBy({ left: dir * Math.max(120, row.clientWidth * 0.8), behavior: 'smooth' });
+};
+
+window.updateWearingArrows = function() {
+    const row = document.getElementById('prfWearingRow');
+    const left = document.getElementById('prfWearingLeft');
+    const right = document.getElementById('prfWearingRight');
+    if (!row || !left || !right) return;
+    const fits = row.scrollWidth <= row.clientWidth + 1;
+    left.style.display = fits ? 'none' : '';
+    right.style.display = fits ? 'none' : '';
+    if (!fits) {
+        left.style.opacity = row.scrollLeft <= 1 ? '0.35' : '';
+        right.style.opacity = row.scrollLeft >= row.scrollWidth - row.clientWidth - 1 ? '0.35' : '';
+    }
+};
+
 const initProfile = () => {
     if (typeof window.updateProfileTabIndicator === 'function') {
         setTimeout(window.updateProfileTabIndicator, 50);
         setTimeout(window.updateProfileTabIndicator, 150);
         setTimeout(window.updateProfileTabIndicator, 350);
+    }
+
+    if (typeof window.updateWearingArrows === 'function') {
+        window.updateWearingArrows();
+        setTimeout(() => window.updateWearingArrows(), 300);
+    }
+
+    const row = document.getElementById('prfWearingRow');
+    if (row && !row.dataset.arrowsBound) {
+        row.dataset.arrowsBound = '1';
+        row.addEventListener('scroll', () => window.updateWearingArrows(), { passive: true });
+    }
+
+    const bodyFig = document.querySelector('.prfbodyfig');
+    if (bodyFig && !bodyFig.dataset.tipBound) {
+        bodyFig.dataset.tipBound = '1';
+        const bodyTip = document.getElementById('prfBodyTip');
+        bodyFig.addEventListener('mouseleave', () => bodyFig.classList.remove('showtip'));
+        bodyFig.querySelectorAll('[data-tip]').forEach(part => {
+            part.addEventListener('mouseenter', () => {
+                if (!bodyTip) return;
+                bodyTip.textContent = part.dataset.tip;
+                bodyFig.classList.add('showtip');
+            });
+            part.addEventListener('mouseleave', () => bodyFig.classList.remove('showtip'));
+        });
     }
 
     const container = document.getElementById('avatar3d');
@@ -470,6 +830,19 @@ const initProfile = () => {
 
 initProfile();
 
+if (!window.__prfCardNavBound) {
+    window.__prfCardNavBound = true;
+    document.addEventListener('click', function(event) {
+        const card = event.target.closest ? event.target.closest('#prfWearingRow .shp-card[data-id]') : null;
+        if (card && !event.target.closest('button') && !event.target.closest('a')) {
+            const id = card.getAttribute('data-id');
+            if (id) {
+                window.navigateWithHistory('/shop/item/' + encodeURIComponent(id));
+            }
+        }
+    });
+}
+
 document.addEventListener('htmx:afterSettle', initProfile);
 document.addEventListener('htmx:beforeTransition', () => {
     if (activeAvatarViewer) {
@@ -480,5 +853,8 @@ document.addEventListener('htmx:beforeTransition', () => {
 window.addEventListener('resize', () => {
     if (typeof window.updateProfileTabIndicator === 'function') {
         window.updateProfileTabIndicator();
+    }
+    if (typeof window.updateWearingArrows === 'function') {
+        window.updateWearingArrows();
     }
 });

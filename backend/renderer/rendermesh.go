@@ -9,7 +9,7 @@ import (
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
-	"image/png"
+	_ "image/png"
 	"io"
 	"math"
 	"os"
@@ -18,6 +18,31 @@ import (
 
 	"github.com/fogleman/fauxgl"
 )
+
+type renderedMesh struct {
+	mesh *fauxgl.Mesh
+	tex  fauxgl.Texture
+}
+
+var renderedLRU = newLRUCache[string, *renderedMesh](32)
+
+func renderCacheKey(filePath, texturePath string) string {
+	key := fileStatKey(filePath)
+	if key == "" {
+		return ""
+	}
+	if texturePath != "" {
+		tk := fileStatKey(texturePath)
+		if tk == "" {
+			return ""
+		}
+		return key + "|" + tk
+	}
+	if strings.ToLower(filepath.Ext(filePath)) == ".glb" {
+		return key + "|glbtex"
+	}
+	return key
+}
 
 type gltfJSON struct {
 	Accessors []struct {
@@ -356,18 +381,51 @@ func loadMeshFile(path string) (*fauxgl.Mesh, error) {
 	return fauxgl.LoadMesh(path)
 }
 
-func rendermesh(filePath, texturePath string) ([]byte, error) {
-	mesh, err := loadMeshFile(filePath)
+func MeshTriangleCount(path string) (int, error) {
+	mesh, err := loadMeshFile(path)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	if mesh == nil || len(mesh.Triangles) == 0 {
-		return nil, errors.New("mesh has no triangles")
+	if mesh == nil {
+		return 0, errors.New("invalid mesh file")
 	}
+	return len(mesh.Triangles), nil
+}
 
-	mesh = mesh.Copy()
-	mesh.BiUnitCube()
-	mesh.SmoothNormalsThreshold(fauxgl.Radians(30))
+func rendermesh(filePath, texturePath string) ([]byte, error) {
+	var mesh *fauxgl.Mesh
+	var tex fauxgl.Texture
+	key := renderCacheKey(filePath, texturePath)
+	if key != "" {
+		if e, ok := renderedLRU.get(key); ok {
+			mesh, tex = e.mesh, e.tex
+		}
+	}
+	if mesh == nil {
+		loaded, err := loadMeshFile(filePath)
+		if err != nil {
+			return nil, err
+		}
+		if loaded == nil || len(loaded.Triangles) == 0 {
+			return nil, errors.New("mesh has no triangles")
+		}
+
+		loaded = loaded.Copy()
+		loaded.BiUnitCube()
+		loaded.SmoothNormalsThreshold(fauxgl.Radians(30))
+
+		var t fauxgl.Texture
+		if texturePath != "" {
+			t, _ = loadTextureCached(texturePath)
+		}
+		if t == nil && strings.ToLower(filepath.Ext(filePath)) == ".glb" {
+			t = extractGLBTexture(filePath)
+		}
+		if key != "" {
+			renderedLRU.add(key, &renderedMesh{loaded, t})
+		}
+		mesh, tex = loaded, t
+	}
 
 	context := contextPool.Get().(*fauxgl.Context)
 	defer contextPool.Put(context)
@@ -398,8 +456,11 @@ func rendermesh(filePath, texturePath string) ([]byte, error) {
 	}
 	maxNDC := 0.0
 	for _, p := range corners {
+		if !finiteVec(p) {
+			continue
+		}
 		nx, ny, _, w := getNDC(matrixcm, p)
-		if w > 0.01 {
+		if w > 0.01 && !math.IsNaN(nx) && !math.IsNaN(ny) && !math.IsInf(nx, 0) && !math.IsInf(ny, 0) {
 			if math.Abs(nx) > maxNDC {
 				maxNDC = math.Abs(nx)
 			}
@@ -410,18 +471,16 @@ func rendermesh(filePath, texturePath string) ([]byte, error) {
 	}
 	if maxNDC > 0.85 {
 		factor := maxNDC / 0.80
+		if factor > maxAutoZoomFactor {
+			factor = maxAutoZoomFactor
+		}
 		newTan := math.Tan(fov*math.Pi/360.0) * factor
 		fov = 2 * math.Atan(newTan) * 180.0 / math.Pi
+		if fov > maxFov {
+			fov = maxFov
+		}
 		projection = fauxgl.Perspective(fov, aspect, 0.1, 1000)
 		matrixcm = projection.Mul(view)
-	}
-
-	var tex fauxgl.Texture
-	if texturePath != "" {
-		tex, _ = fauxgl.LoadTexture(texturePath)
-	}
-	if tex == nil && strings.ToLower(filepath.Ext(filePath)) == ".glb" {
-		tex = extractGLBTexture(filePath)
 	}
 
 	if tex != nil {
@@ -434,13 +493,7 @@ func rendermesh(filePath, texturePath string) ([]byte, error) {
 
 	context.DrawMesh(mesh)
 
-	img := downsample(context.ColorBuffer, ScaleFactor)
-
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return encodePNG(downsample(context.ColorBuffer, ScaleFactor))
 }
 
 func RenderMesh(filePath string) ([]byte, error) {

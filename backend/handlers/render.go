@@ -1,10 +1,20 @@
 package handlers
 
 import (
+	"html/template"
+	"strconv"
+	"time"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"vertexia-frontend/backend/service"
 )
+
+var assetVersion = strconv.FormatInt(time.Now().Unix(), 10)
+
+func AssetVersion() string {
+	return assetVersion
+}
 
 func GetActiveUser(c fiber.Ctx) string {
 	sess := session.FromContext(c)
@@ -50,6 +60,7 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 	}
 
 	username := GetActiveUser(c)
+	data["AssetV"] = assetVersion
 	if username != "" {
 		data["Username"] = username
 		data["IsLoggedIn"] = true
@@ -59,6 +70,9 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		userID := 0
 		pendingFriends := 0
 		isAdmin := false
+		disableAutoplay := false
+		reducedMotion := false
+		customCSS := template.CSS("")
 		if service.User != nil {
 			u, err := service.User.GetUserByUsername(username)
 			if err == nil && u != nil {
@@ -66,6 +80,11 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 				bits = u.Bits
 				userID = u.ID
 				isAdmin = u.HasAdminAccess()
+				disableAutoplay = u.DisableAutoplay
+				reducedMotion = u.ReducedMotion
+				if u.CustomCSS.Valid {
+					customCSS = template.CSS(u.CustomCSS.String)
+				}
 				if service.Friend != nil {
 					pendingFriends, _ = service.Friend.GetPendingRequestCount(u.ID)
 				}
@@ -76,6 +95,9 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		data["UserID"] = userID
 		data["IsAdmin"] = isAdmin
 		data["PendingFriendRequestsCount"] = pendingFriends
+		data["ViewerDisableAutoplay"] = disableAutoplay
+		data["ViewerReducedMotion"] = reducedMotion
+		data["ViewerCustomCSS"] = customCSS
 	} else {
 		data["Username"] = ""
 		data["IsLoggedIn"] = false
@@ -84,6 +106,9 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		data["UserID"] = 0
 		data["IsAdmin"] = false
 		data["PendingFriendRequestsCount"] = 0
+		data["ViewerDisableAutoplay"] = false
+		data["ViewerReducedMotion"] = false
+		data["ViewerCustomCSS"] = template.CSS("")
 	}
 
 	return c.Render(view, data, layout)

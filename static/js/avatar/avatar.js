@@ -198,6 +198,19 @@ window.refreshAvatarPreview = function() {
     if (!img || !lay || !lay.dataset.userid) return;
     if (box) box.classList.add('loading');
     img.src = '/avatar/' + lay.dataset.userid + '.png?t=' + Date.now();
+    window.refreshNavbarHeadshots(lay.dataset.userid);
+};
+
+window.refreshNavbarHeadshots = function(userId) {
+    if (!userId) {
+        const lay = document.querySelector('.avtlay');
+        userId = lay ? lay.dataset.userid : null;
+    }
+    if (!userId) return;
+    const busted = '/api/v1/avatar/headshot/' + userId + '.png?t=' + Date.now();
+    document.querySelectorAll('.pfpimg, .mobhead').forEach(function(img) {
+        img.src = busted;
+    });
 };
 
 window.avatarPost = async function(url, params) {
@@ -516,6 +529,19 @@ const initAvatarPage = () => {
                 preview.onerror();
             }
         }
+        (function bustAvatarPreview() {
+            try {
+                var base = preview.getAttribute('src') || '';
+                if (base.indexOf('/avatar/') === -1) return;
+                var clean = base.split('?')[0];
+                var busted = clean + '?t=' + Date.now();
+                if (preview.src !== busted) {
+                    if (chrBox) chrBox.classList.add('loading');
+                    preview.src = busted;
+                }
+            } catch(e){}
+        })();
+        window.refreshNavbarHeadshots();
     }
 
     const searchInput = document.getElementById('avtSearch');

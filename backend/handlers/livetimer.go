@@ -59,6 +59,7 @@ func LiveTimerGet(c fiber.Ctx) error {
 		return c.Redirect().To("/")
 	}
 	data["Title"] = "VERTEXIA - LiveTimer"
+	data["AssetV"] = AssetVersion()
 	return c.Render("pages/livetimer", data, "")
 }
 

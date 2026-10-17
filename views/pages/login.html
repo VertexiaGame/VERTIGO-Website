@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="/static/css/forms.css">
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -17,7 +17,8 @@
             <div class="frmlay">
                 <div class="frmmain">
                     <h2 class="frmttl">Log In</h2>
-                    <form action="/login" method="POST" hx-boost="false">
+                    <form action="/login{{if .Next}}?next={{.Next}}{{end}}" method="POST" hx-boost="false">
+                        {{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}
                         <div class="frmgrp">
                             <div class="frmincnt">
                                 <input type="text" name="identifier" class="frmin" placeholder="Username or Email" required>
@@ -107,3 +108,4 @@
 </script>
 {{end}}
 <script async defer src="https://cdn.jsdelivr.net/npm/altcha/dist/altcha.min.js" type="module"></script>
+

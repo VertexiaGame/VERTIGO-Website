@@ -61,7 +61,7 @@ window.switchFriendsTab = function(tabName, event) {
     } catch (e) {}
 };
 
-const initFriendsPage = () => {
+window.initFriendsPage = function() {
     setTimeout(() => {
         window.updateFriendsTabIndicator();
         window.updateFriendsViewportHeight();
@@ -76,11 +76,15 @@ const initFriendsPage = () => {
     }, 350);
 };
 
-initFriendsPage();
+window.initFriendsPage();
 
-document.addEventListener('htmx:afterSettle', initFriendsPage);
-
-window.addEventListener('resize', () => {
-    window.updateFriendsTabIndicator();
-    window.updateFriendsViewportHeight();
-});
+if (!window.__friendsPageWired) {
+    window.__friendsPageWired = true;
+    document.addEventListener('htmx:afterSettle', function() {
+        window.initFriendsPage();
+    });
+    window.addEventListener('resize', function() {
+        window.updateFriendsTabIndicator();
+        window.updateFriendsViewportHeight();
+    });
+}

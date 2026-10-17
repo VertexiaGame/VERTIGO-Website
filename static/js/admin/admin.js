@@ -3,12 +3,23 @@ let adminPollTimer = null;
 let currentAdminUserPage = 1;
 let currentAdminLogsPage = 1;
 let currentAdminAssetPage = 1;
+let currentAdminShopItemPage = 1;
+let currentAdminBannerPage = 1;
 const activeAdmin3DViewers = new Map();
 
 const adminAssetTypeNames = {
     image: 'Image',
     mesh: 'Mesh',
     sound: 'Sound'
+};
+
+const adminShopItemTypeNames = {
+    hat: 'Hat',
+    faces: 'Face',
+    shirts: 'Shirt',
+    tshirts: 'T-Shirt',
+    pants: 'Pants',
+    gear: 'Gear'
 };
 
 if (typeof window.escapeHTML !== 'function') {
@@ -74,6 +85,13 @@ class AdminMeshViewer {
             this.renderer.toneMapping = THREE.NeutralToneMapping;
         }
         this.renderer.toneMappingExposure = 1.0;
+        if (this.renderer.domElement && this.renderer.domElement.style) {
+            this.renderer.domElement.style.touchAction = 'none';
+            this.renderer.domElement.style.display = 'block';
+        }
+        if (this.container && this.container.style) {
+            this.container.style.touchAction = 'none';
+        }
         this.container.appendChild(this.renderer.domElement);
 
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x888888, 0.85);
@@ -219,25 +237,62 @@ class AdminMeshViewer {
     }
 
     bindEvents() {
+        this.activePointers = new Map();
+        this.initialPinchDistance = null;
+
         this.boundPointerDown = e => {
-            this.isDragging = true;
-            this.pointer = { x: e.clientX, y: e.clientY };
+            if (e.cancelable && e.pointerType === 'touch') {
+                try { e.preventDefault(); } catch (_) {}
+            }
             try { this.container.setPointerCapture(e.pointerId); } catch (_) {}
+            this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (this.activePointers.size === 1) {
+                this.isDragging = true;
+                this.pointer = { x: e.clientX, y: e.clientY };
+            } else if (this.activePointers.size === 2) {
+                this.isDragging = false;
+                const pts = Array.from(this.activePointers.values());
+                this.initialPinchDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            }
         };
 
         this.boundPointerMove = e => {
-            if (!this.isDragging) return;
-            const dx = e.clientX - this.pointer.x;
-            const dy = e.clientY - this.pointer.y;
-            this.pointer = { x: e.clientX, y: e.clientY };
+            if (!this.activePointers.has(e.pointerId)) return;
+            if (e.cancelable && e.pointerType === 'touch') {
+                try { e.preventDefault(); } catch (_) {}
+            }
+            this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (this.activePointers.size === 1 && this.isDragging) {
+                const dx = e.clientX - this.pointer.x;
+                const dy = e.clientY - this.pointer.y;
+                this.pointer = { x: e.clientX, y: e.clientY };
 
-            this.spherical.theta -= dx * 0.008;
-            this.spherical.phi += dy * 0.008;
-            this.spherical.phi = Math.max(-1.45, Math.min(1.45, this.spherical.phi));
+                this.spherical.theta -= dx * 0.008;
+                this.spherical.phi += dy * 0.008;
+                this.spherical.phi = Math.max(-1.45, Math.min(1.45, this.spherical.phi));
+            } else if (this.activePointers.size === 2 && this.initialPinchDistance !== null) {
+                const pts = Array.from(this.activePointers.values());
+                const currentDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                if (currentDistance > 0) {
+                    const deltaDistance = this.initialPinchDistance - currentDistance;
+                    this.targetRadius = Math.max(this.minRadius, Math.min(this.maxRadius, this.targetRadius + deltaDistance * 0.01));
+                    this.initialPinchDistance = currentDistance;
+                }
+            }
         };
 
         this.boundPointerUp = e => {
-            this.isDragging = false;
+            this.activePointers.delete(e.pointerId);
+            if (this.activePointers.size < 2) {
+                this.initialPinchDistance = null;
+            }
+            if (this.activePointers.size === 1) {
+                this.isDragging = true;
+                const p = Array.from(this.activePointers.values())[0];
+                this.pointer = { x: p.x, y: p.y };
+            } else if (this.activePointers.size === 0) {
+                this.isDragging = false;
+            }
             try { this.container.releasePointerCapture(e.pointerId); } catch (_) {}
         };
 
@@ -246,10 +301,13 @@ class AdminMeshViewer {
             this.targetRadius = Math.max(this.minRadius, Math.min(this.maxRadius, this.targetRadius + e.deltaY * 0.004));
         };
 
-        this.container.addEventListener('pointerdown', this.boundPointerDown);
-        this.container.addEventListener('pointermove', this.boundPointerMove);
+        this.boundContextMenu = e => e.preventDefault();
+
+        this.container.addEventListener('pointerdown', this.boundPointerDown, { passive: false });
+        this.container.addEventListener('pointermove', this.boundPointerMove, { passive: false });
         this.container.addEventListener('pointerup', this.boundPointerUp);
         this.container.addEventListener('pointercancel', this.boundPointerUp);
+        this.container.addEventListener('contextmenu', this.boundContextMenu);
         this.container.addEventListener('wheel', this.boundWheel, { passive: false });
     }
 
@@ -279,6 +337,7 @@ class AdminMeshViewer {
         this.container.removeEventListener('pointermove', this.boundPointerMove);
         this.container.removeEventListener('pointerup', this.boundPointerUp);
         this.container.removeEventListener('pointercancel', this.boundPointerUp);
+        this.container.removeEventListener('contextmenu', this.boundContextMenu);
         this.container.removeEventListener('wheel', this.boundWheel);
 
         if (this.scene) {
@@ -410,6 +469,10 @@ window.switchAdminTab = function(tabName, event) {
     window.updateAdminTabIndicator();
     window.updateAdminUrl(tabName);
 
+    if (tabName === 'servers' && window.fetchAdminGServers) {
+        window.fetchAdminGServers();
+    }
+
     const viewport = document.querySelector('.settabvwp');
     const currentHeight = currentContent ? currentContent.offsetHeight : 0;
 
@@ -475,6 +538,10 @@ const pollAdminStatus = () => {
             if (gcEl) gcEl.textContent = data.gc_cycles;
         })
         .catch(() => {});
+    const serversTab = document.getElementById('tab-servers');
+    if (serversTab && serversTab.classList.contains('active') && window.fetchAdminGServers) {
+        window.fetchAdminGServers();
+    }
 };
 
 window.fetchAdminUsers = function(page = 1) {
@@ -559,8 +626,10 @@ window.renderAdminUserTable = function(data) {
 };
 
 window.viewAdminUser = function(userId) {
-    if (window.htmx) {
-        htmx.ajax('GET', `/admin/users/${userId}`, { target: 'body', pushUrl: true });
+    if (window.navigateWithHistory) {
+        window.navigateWithHistory(`/admin/users/${userId}`);
+    } else if (window.htmx) {
+        htmx.ajax('GET', `/admin/users/${userId}`, { target: 'body' });
     } else {
         window.location.href = `/admin/users/${userId}`;
     }
@@ -802,6 +871,330 @@ window.confirmRejectAsset = function(id, event) {
     window.reviewAdminAsset(id, 'reject', note);
 };
 
+window.updateShopItemTabIndicator = function() {
+    const indicator = document.querySelector('.adm-shopcat-tabs .tabind');
+    const activeTab = document.querySelector('.adm-shopcat-tabs .tabbtn.active');
+    if (indicator && activeTab) {
+        indicator.style.left = activeTab.offsetLeft + 'px';
+        indicator.style.width = activeTab.offsetWidth + 'px';
+        indicator.style.height = activeTab.offsetHeight + 'px';
+        indicator.style.top = activeTab.offsetTop + 'px';
+    }
+};
+
+window.filterAdminShopItemCategory = function(category, event) {
+    const filterInput = document.getElementById('admShopItemFilter');
+    if (filterInput) filterInput.value = category;
+
+    const clickedBtn = event ? event.currentTarget : null;
+    if (clickedBtn) {
+        document.querySelectorAll('.adm-shopcat-tabs .tabbtn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        clickedBtn.classList.add('active');
+        window.updateShopItemTabIndicator();
+    }
+
+    window.fetchAdminShopItems(1);
+};
+
+window.fetchAdminShopItems = function(page = 1) {
+    currentAdminShopItemPage = page;
+    const filter = document.getElementById('admShopItemFilter');
+    const category = filter ? filter.value : '';
+
+    const grid = document.getElementById('admShopItemsGrid');
+    if (!grid) return;
+
+    fetch(`/api/v1/admin/shop?category=${encodeURIComponent(category)}&page=${page}&limit=12`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.error) return;
+            window.renderAdminShopItems(data);
+        })
+        .catch(() => {});
+};
+
+window.adminShopItemPrice = function(item) {
+    const bucks = Number(item.bucks) || 0;
+    const bits = Number(item.bits) || 0;
+    if (bucks <= 0 && bits <= 0) return 'Free';
+    const parts = [];
+    if (bucks > 0) parts.push(`${bucks} Vertices`);
+    if (bits > 0) parts.push(`${bits} Tickets`);
+    return parts.join(' + ');
+};
+
+window.renderAdminShopItems = function(data) {
+    const grid = document.getElementById('admShopItemsGrid');
+    const pgnTxt = document.getElementById('admShopItemsPgnTxt');
+    const prevBtn = document.getElementById('admShopItemsPrevBtn');
+    const nextBtn = document.getElementById('admShopItemsNextBtn');
+
+    if (!grid) return;
+
+    const page = data.page || 1;
+    const totalPages = Math.max(1, data.total_pages || 1);
+
+    if (!data.items || data.items.length === 0) {
+        grid.innerHTML = '<div class="frnemt adm-emt">No shop items awaiting review</div>';
+        if (pgnTxt) pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = (page <= 1);
+        if (nextBtn) nextBtn.disabled = (page >= totalPages);
+        window.updateAdminViewportHeight();
+        return;
+    }
+
+    let html = '';
+    data.items.forEach(item => {
+        const safeName = window.escapeHTML(item.name);
+        const safeOwner = window.escapeHTML(item.creator_name);
+        const safeDesc = window.escapeHTML(item.description);
+        const safeTypeName = window.escapeHTML(adminShopItemTypeNames[item.type] || item.type);
+        const typeIcon = item.type === 'faces' ? 'fa-face-smile' : ((item.type === 'shirts' || item.type === 'tshirts' || item.type === 'pants') ? 'fa-shirt' : 'fa-cube');
+
+        let dateStr = '';
+        if (item.createdat) {
+            const created = new Date(item.createdat);
+            dateStr = created.toLocaleString('en-US', {
+                month: 'short', day: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }
+
+        html += `
+            <div class="adm-card" data-id="${item.id}">
+                <div class="adm-cardhdr">
+                    <h3 class="adm-cardttl"><i class="fa-solid ${typeIcon}"></i><span>${safeName}</span></h3>
+                    <span class="adm-badge adm-badge-${item.type}">${safeTypeName}</span>
+                </div>
+                <div class="adm-rendcrd">
+                    <img src="/avatar/shop/${item.type}/${item.id}" alt="${safeName}" class="adm-rendimg" loading="lazy" onerror="this.src='/static/useful/temp/pfp.png';">
+                </div>
+                <div class="adm-rowlst">
+                    <div class="adm-row"><span class="adm-lbl">Owner</span><span class="adm-val"><a href="/user/${item.cid}" hx-get="/user/${item.cid}" hx-target="body" hx-push-url="true" class="adm-owner-link">@${safeOwner}</a></span></div>
+                    <div class="adm-row"><span class="adm-lbl">Submitted</span><span class="adm-val">${dateStr}</span></div>
+                    <div class="adm-row"><span class="adm-lbl">Price</span><span class="adm-val">${window.escapeHTML(window.adminShopItemPrice(item))}</span></div>
+                    ${safeDesc ? `<div class="adm-row"><span class="adm-lbl">Description</span><span class="adm-val">${safeDesc}</span></div>` : ''}
+                </div>
+                <div class="adm-modbtns">
+                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminShopItem(${item.id}, 'approve')">
+                        <span>Approve</span>
+                    </button>
+                    <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.promptRejectShopItem(${item.id}, '${safeName}')">
+                        <span>Reject</span>
+                    </button>
+                    <a href="/shop/item/${item.id}" target="_blank" rel="noopener" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                        <span>View</span>
+                    </a>
+                </div>
+            </div>
+        `;
+    });
+
+    grid.innerHTML = html;
+
+    if (pgnTxt) pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+    if (prevBtn) prevBtn.disabled = (page <= 1);
+    if (nextBtn) nextBtn.disabled = (page >= totalPages);
+
+    window.updateAdminViewportHeight();
+};
+
+window.promptRejectShopItem = function(id, name) {
+    if (window.showModal) {
+        const safeName = window.escapeHTML(name || 'this item');
+        window.showModal({
+            title: 'Reject Shop Item',
+            subtitle: `Item #${id} (${safeName})`,
+            body: `
+                <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">Are you sure you want to reject this item? It will stay hidden from the shop.</p>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                    <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.closeModal()">
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.confirmRejectShopItem(${id}, event)">
+                        <span>Reject</span>
+                    </button>
+                </div>
+            `
+        });
+    } else {
+        window.reviewAdminShopItem(id, 'reject');
+    }
+};
+
+window.confirmRejectShopItem = function(id, event) {
+    if (event) event.preventDefault();
+    if (window.closeModal) window.closeModal();
+    window.reviewAdminShopItem(id, 'reject');
+};
+
+window.reviewAdminShopItem = function(id, action) {
+    const csrfInput = document.getElementById('admShopCsrf');
+
+    const body = new URLSearchParams();
+    if (csrfInput) body.set('csrf', csrfInput.value);
+
+    fetch(`/admin/shop/${id}/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        },
+        body: body.toString()
+    })
+        .then(res => {
+            if (!res.ok) throw new Error('Review failed');
+            window.fetchAdminShopItems(currentAdminShopItemPage);
+        })
+        .catch(() => {});
+};
+
+window.fetchAdminBanners = function(page = 1) {
+    currentAdminBannerPage = page;
+
+    const grid = document.getElementById('admBannersGrid');
+    if (!grid) return;
+
+    fetch(`/api/v1/admin/banners?page=${page}&limit=12`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.error) return;
+            window.renderAdminBanners(data);
+        })
+        .catch(() => {});
+};
+
+window.adminBannerStyle = function(banner) {
+    const a = '#' + (banner.color_a || '7423CB');
+    const b = '#' + (banner.color_b || '912ADF');
+    const angle = Math.min(360, Math.max(0, Number(banner.angle) || 135));
+    if (banner.banner_type === 'gradient') return `background:linear-gradient(${angle}deg,${a},${b});`;
+    if (banner.banner_type === 'image') return `background:url('/static/uploads/banners/${banner.id}.png') center/cover no-repeat;`;
+    return `background:${a};`;
+};
+
+window.renderAdminBanners = function(data) {
+    const grid = document.getElementById('admBannersGrid');
+    const pgnTxt = document.getElementById('admBannersPgnTxt');
+    const prevBtn = document.getElementById('admBannersPrevBtn');
+    const nextBtn = document.getElementById('admBannersNextBtn');
+
+    if (!grid) return;
+
+    const page = data.page || 1;
+    const totalPages = Math.max(1, data.total_pages || 1);
+
+    if (!data.banners || data.banners.length === 0) {
+        grid.innerHTML = '<div class="frnemt adm-emt">No banners awaiting review</div>';
+        if (pgnTxt) pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = (page <= 1);
+        if (nextBtn) nextBtn.disabled = (page >= totalPages);
+        window.updateAdminViewportHeight();
+        return;
+    }
+
+    let html = '';
+    data.banners.forEach(banner => {
+        const safeOwner = window.escapeHTML(banner.username || '');
+        const typeName = banner.banner_type === 'gradient' ? 'Gradient' : (banner.banner_type === 'image' ? 'Image' : 'Color');
+        const style = window.adminBannerStyle(banner);
+
+        let dateStr = '';
+        if (banner.created_at) {
+            const created = new Date(banner.created_at);
+            dateStr = created.toLocaleString('en-US', {
+                month: 'short', day: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }
+
+        html += `
+            <div class="adm-card" data-id="${banner.id}">
+                <div class="adm-cardhdr">
+                    <h3 class="adm-cardttl"><i class="fa-solid fa-image"></i><span>${typeName} Banner</span></h3>
+                    <span class="adm-badge adm-badge-image">${typeName}</span>
+                </div>
+                <div style="width:100%;aspect-ratio:16/5;border-radius:8px;border:1px solid #D4D4D4;background:#D4D4D4;box-sizing:border-box;${style}"></div>
+                <div class="adm-rowlst">
+                    <div class="adm-row"><span class="adm-lbl">Owner</span><span class="adm-val"><a href="/user/${banner.user_id}" hx-get="/user/${banner.user_id}" hx-target="body" hx-push-url="true" class="adm-owner-link">@${safeOwner}</a></span></div>
+                    <div class="adm-row"><span class="adm-lbl">Submitted</span><span class="adm-val">${dateStr}</span></div>
+                </div>
+                <div class="adm-modbtns">
+                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminBanner(${banner.id}, 'approve')">
+                        <span>Approve</span>
+                    </button>
+                    <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.promptRejectBanner(${banner.id}, '${safeOwner}')">
+                        <span>Reject</span>
+                    </button>
+                    <a href="/user/${banner.user_id}" target="_blank" rel="noopener" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                        <span>View</span>
+                    </a>
+                </div>
+            </div>
+        `;
+    });
+
+    grid.innerHTML = html;
+
+    if (pgnTxt) pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+    if (prevBtn) prevBtn.disabled = (page <= 1);
+    if (nextBtn) nextBtn.disabled = (page >= totalPages);
+
+    window.updateAdminViewportHeight();
+};
+
+window.promptRejectBanner = function(id, username) {
+    if (window.showModal) {
+        const safeOwner = window.escapeHTML(username || 'this user');
+        window.showModal({
+            title: 'Reject Profile Banner',
+            subtitle: `Banner #${id} (@${safeOwner})`,
+            body: `
+                <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">Are you sure you want to reject this banner? The user's current banner stays.</p>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                    <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.closeModal()">
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.confirmRejectBanner(${id}, event)">
+                        <span>Reject</span>
+                    </button>
+                </div>
+            `
+        });
+    } else {
+        window.reviewAdminBanner(id, 'reject');
+    }
+};
+
+window.confirmRejectBanner = function(id, event) {
+    if (event) event.preventDefault();
+    if (window.closeModal) window.closeModal();
+    window.reviewAdminBanner(id, 'reject');
+};
+
+window.reviewAdminBanner = function(id, action) {
+    const csrfInput = document.getElementById('admBannerCsrf');
+
+    const body = new URLSearchParams();
+    if (csrfInput) body.set('csrf', csrfInput.value);
+
+    fetch(`/admin/banners/${id}/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        },
+        body: body.toString()
+    })
+        .then(res => {
+            if (!res.ok) throw new Error('Review failed');
+            window.fetchAdminBanners(currentAdminBannerPage);
+        })
+        .catch(() => {});
+};
+
 window.reviewAdminAsset = function(id, action, customNote) {
     const csrfInput = document.getElementById('admAssetsCsrf');
     const note = customNote !== undefined ? customNote : '';
@@ -832,6 +1225,138 @@ window.reviewAdminAsset = function(id, action, customNote) {
         .catch(() => {});
 };
 
+window.fetchAdminGServers = function() {
+    const grid = document.getElementById('admGsGrid');
+    if (!grid) return;
+    fetch('/api/v1/admin/gs')
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.error) return;
+            window.renderAdminGServers(data);
+        })
+        .catch(() => {});
+    fetch('/api/v1/admin/gs/health')
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.error) return;
+            window.renderAdminGSHealth(data);
+        })
+        .catch(() => {});
+};
+
+window.renderAdminGSHealth = function(data) {
+    const binEl = document.getElementById('admGsBin');
+    const redisEl = document.getElementById('admGsRedis');
+    const logsEl = document.getElementById('admGsLogs');
+    if (binEl) {
+        const bin = data.binary || {};
+        if (bin.exists) {
+            binEl.innerHTML = '<span class="adm-stat"><span class="adm-ind adm-ind-online"></span>Found</span>';
+            binEl.title = (bin.path || '') + ' (' + (bin.size || 0) + ' bytes)';
+        } else {
+            binEl.innerHTML = '<span class="adm-stat"><span class="adm-ind adm-ind-offline"></span>Missing</span>';
+            binEl.title = bin.path || '';
+        }
+    }
+    if (redisEl) {
+        const redis = data.redis || {};
+        if (redis.ok) {
+            redisEl.innerHTML = '<span class="adm-stat"><span class="adm-ind adm-ind-online"></span>' + window.escapeHTML(redis.addr || 'up') + '</span>';
+        } else {
+            redisEl.innerHTML = '<span class="adm-stat"><span class="adm-ind adm-ind-offline"></span>Down (memory fallback)</span>';
+            redisEl.title = redis.error || '';
+        }
+    }
+    if (logsEl) {
+        const logs = data.logs || {};
+        if (logs.writable) {
+            logsEl.innerHTML = '<span class="adm-stat"><span class="adm-ind adm-ind-online"></span>Writable</span>';
+            logsEl.title = logs.dir || '';
+        } else {
+            logsEl.innerHTML = '<span class="adm-stat"><span class="adm-ind adm-ind-offline"></span>Not writable</span>';
+            logsEl.title = logs.dir || '';
+        }
+    }
+};
+
+window.renderAdminGServers = function(data) {
+    const grid = document.getElementById('admGsGrid');
+    if (!grid) return;
+    const totalEl = document.getElementById('admGsTotal');
+    const playersEl = document.getElementById('admGsPlayers');
+    const portsEl = document.getElementById('admGsPorts');
+    const servers = data.servers || [];
+    if (totalEl) totalEl.textContent = data.total || 0;
+    if (playersEl) playersEl.textContent = data.players || 0;
+    if (portsEl) {
+        const ports = data.ports || {};
+        const claimed = ports.claimed || [];
+        portsEl.textContent = (ports.min || '') + '-' + (ports.max || '') + ' (' + claimed.length + ' claimed)';
+    }
+    if (servers.length === 0) {
+        grid.innerHTML = '<div class="frnemt adm-emt">No active gameservers</div>';
+        window.updateAdminViewportHeight();
+        return;
+    }
+    let html = '';
+    servers.forEach(s => {
+        const safeId = window.escapeHTML(s.id);
+        const ind = s.alive ? 'adm-ind-online' : 'adm-ind-offline';
+        const stateLabel = s.alive ? window.escapeHTML(s.status || '') : 'unreachable';
+        let age = '';
+        if (s.created_unix) {
+            const secs = Math.max(0, Math.floor(Date.now() / 1000 - s.created_unix));
+            age = formatUptimeJS(secs);
+        }
+        html +=
+            '<div class="adm-card" data-id="' + safeId + '">' +
+            '<div class="adm-cardhdr"><h3 class="adm-cardttl"><i class="fa-solid fa-server"></i><span>' + safeId + '</span></h3>' +
+            '<span class="adm-stat"><span class="adm-ind ' + ind + '"></span>' + stateLabel + '</span></div>' +
+            '<div class="adm-rowlst">' +
+            '<div class="adm-row"><span class="adm-lbl">Game</span><span class="adm-val"><a href="/play/' + s.game_id + '" hx-get="/play/' + s.game_id + '" hx-target="body" hx-push-url="true" class="adm-owner-link">#' + s.game_id + '</a></span></div>' +
+            '<div class="adm-row"><span class="adm-lbl">Address</span><span class="adm-val">' + window.escapeHTML(s.host || '') + ':' + s.port + '</span></div>' +
+            '<div class="adm-row"><span class="adm-lbl">Players</span><span class="adm-val">' + s.player_count + ' / ' + s.max_players + '</span></div>' +
+            (age ? '<div class="adm-row"><span class="adm-lbl">Uptime</span><span class="adm-val">' + window.escapeHTML(age) + '</span></div>' : '') +
+            '</div>' +
+            '<div class="adm-modbtns">' +
+            '<button type="button" class="primary hpywrn hpyinl hpysm" onclick="window.drainGameserver(\'' + safeId + '\')"><span>Drain</span></button>' +
+            '<button type="button" class="primary hpydng hpyinl hpysm" onclick="window.promptKillGameserver(\'' + safeId + '\')"><span>Kill</span></button>' +
+            '</div></div>';
+    });
+    grid.innerHTML = html;
+    window.updateAdminViewportHeight();
+};
+
+window.drainGameserver = function(id) {
+    fetch('/api/v1/admin/gs/' + encodeURIComponent(id) + '/drain', {method: 'POST'})
+        .then(() => { window.fetchAdminGServers(); })
+        .catch(() => {});
+};
+
+window.promptKillGameserver = function(id) {
+    if (window.showModal) {
+        window.showModal({
+            title: 'Kill Gameserver?',
+            subtitle: id,
+            body:
+                '<p style="font-family:Ubuntu,sans-serif;font-size:14px;color:#3D3D3D;margin:0;">This winds the server down immediately and disconnects everyone on it. Empty servers shut down on their own; only kill servers that are stuck or misbehaving.</p>' +
+                '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">' +
+                '<button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.closeModal()"><span>Cancel</span></button>' +
+                '<button type="button" class="primary hpydng hpyinl hpysm" onclick="window.confirmKillGameserver(\'' + window.escapeHTML(id) + '\')"><span>Kill</span></button>' +
+                '</div>'
+        });
+    } else {
+        window.confirmKillGameserver(id);
+    }
+};
+
+window.confirmKillGameserver = function(id) {
+    if (window.closeModal) window.closeModal();
+    fetch('/api/v1/admin/gs/' + encodeURIComponent(id) + '/kill', {method: 'POST'})
+        .then(() => { window.fetchAdminGServers(); })
+        .catch(() => {});
+};
+
 const initAdminPage = () => {
     window.destroyAllAdmin3DViewers();
     if (adminUptimeTimer) clearInterval(adminUptimeTimer);
@@ -840,17 +1365,23 @@ const initAdminPage = () => {
     setTimeout(() => {
         window.updateAdminTabIndicator();
         window.updateAssetTabIndicator();
+        window.updateShopItemTabIndicator();
         window.updateAdminViewportHeight();
     }, 50);
     setTimeout(() => {
         window.updateAdminTabIndicator();
         window.updateAssetTabIndicator();
+        window.updateShopItemTabIndicator();
         window.updateAdminViewportHeight();
     }, 150);
 
     updateLiveUptime();
     adminUptimeTimer = setInterval(updateLiveUptime, 1000);
     adminPollTimer = setInterval(pollAdminStatus, 5000);
+    const serversTab = document.getElementById('tab-servers');
+    if (serversTab && serversTab.classList.contains('active') && window.fetchAdminGServers) {
+        window.fetchAdminGServers();
+    }
 };
 
 initAdminPage();
@@ -865,5 +1396,6 @@ document.addEventListener('htmx:beforeTransition', () => {
 window.addEventListener('resize', () => {
     window.updateAdminTabIndicator();
     window.updateAssetTabIndicator();
+    window.updateShopItemTabIndicator();
     window.updateAdminViewportHeight();
 });

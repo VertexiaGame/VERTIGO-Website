@@ -1,0 +1,88 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Studio</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search">
+            </div>
+            <div class="barbtns">
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane">
+            <div class="frmlay">
+                <div class="frmmain">
+                    <h2 class="frmttl">Authorize Studio</h2>
+                    <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 0 0 16px;">
+                        VERTEXIA Studio is requesting access to your account. If you authorize, Studio will log you in as {{.DisplayName}} (@{{.Username}}).
+                    </p>
+                    <ul class="frmsbarlst" style="margin-bottom: 20px;">
+                        <li>Verify your identity for publishing and playtesting</li>
+                        <li>Stay signed in on this device until you sign out from Studio</li>
+                    </ul>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <form method="POST" action="/studio/auth/allow" hx-boost="false">
+                            <input type="hidden" name="state" value="{{.State}}">
+                            <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}">
+                            <button type="submit" class="primary hpysuc hpyinl hpysm">
+                                <span>Authorize</span>
+                            </button>
+                        </form>
+                        <form method="POST" action="/studio/auth/deny" hx-boost="false">
+                            <input type="hidden" name="state" value="{{.State}}">
+                            <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}">
+                            <button type="submit" class="primary hpydng hpyinl hpysm">
+                                <span>Deny</span>
+                            </button>
+                        </form>
+                    </div>
+                    <p style="font-family: 'Ubuntu', sans-serif; font-size: 13px; color: #444444; line-height: 1.4; margin: 20px 0 0; word-break: break-all;">
+                        Redirecting back to {{.RedirectURI}}
+                    </p>
+                    {{if .State}}<p style="font-family: 'Ubuntu', sans-serif; font-size: 11px; color: #888888; line-height: 1.4; margin: 8px 0 0;">State: {{.State}}</p>{{end}}
+                </div>
+                <div class="frmsbar">
+                    <div class="frmsbarsec">
+                        <h3 class="frmsbarttl">Logged in as</h3>
+                        <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 0;">
+                            {{.DisplayName}} (@{{.Username}})
+                        </p>
+                        <p style="font-family: 'Ubuntu', sans-serif; font-size: 11px; color: #888888; line-height: 1.4; margin: 4px 0 0;">ID: {{.UserID}}</p>
+                    </div>
+                    <div class="frmsbarsec">
+                        <h3 class="frmsbarttl">Not you?</h3>
+                        <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 0;">
+                            <a href="/logout?next={{.RedirectURI}}" class="frmsbarlnk">Switch account</a>
+                        </p>
+                    </div>
+                    <div class="frmsbarsec">
+                        <h3 class="frmsbarttl">Before you continue</h3>
+                        <ul class="frmsbarlst">
+                            <li>This page expires in 10 minutes.</li>
+                            <li>Only authorize Studio on devices you trust.</li>
+                        </ul>
+                        <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 12px 0 0;">
+                            <a href="/" hx-get="/" hx-target="body" hx-push-url="true" class="frmsbarlnk">Cancel and go home</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function(){
+    var state = "{{.State}}";
+    if(!state) return;
+    var interval = setInterval(function(){
+        fetch('/api/v1/studio/poll?state=' + encodeURIComponent(state), {credentials:'same-origin'})
+            .then(function(r){ return r.json(); })
+            .then(function(j){ if(j.code){ clearInterval(interval); } })
+            .catch(function(){});
+    }, 2000);
+})();
+</script>
+

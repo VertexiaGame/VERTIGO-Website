@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="/static/css/forms.css">
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -17,7 +17,8 @@
             <div class="frmlay">
                 <div class="frmmain">
                     <h2 class="frmttl">Create Account</h2>
-                    <form action="/register" method="POST" hx-boost="false">
+                    <form action="/register{{if .Next}}?next={{.Next}}{{end}}" method="POST" hx-boost="false">
+                        {{if .Next}}<input type="hidden" name="next" value="{{.Next}}">{{end}}
                         <div class="frmgrp">
                             <div class="frmincnt">
                                 <input type="text" name="username" class="frmin" placeholder="Username" required>
@@ -130,3 +131,4 @@
 </script>
 {{end}}
 <script async defer src="https://cdn.jsdelivr.net/npm/altcha/dist/altcha.min.js" type="module"></script>
+

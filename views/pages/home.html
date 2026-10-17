@@ -1,7 +1,7 @@
 {{if .IsLoggedIn}}
-<link rel="stylesheet" href="/static/css/dash.css">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
 {{else}}
-<link rel="stylesheet" href="/static/css/land.css">
+<link rel="stylesheet" href="/static/css/land.css?v={{.AssetV}}">
 {{end}}
 <div class="wrap">
     <div class="cont">

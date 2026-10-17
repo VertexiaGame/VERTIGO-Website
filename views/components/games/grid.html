@@ -1,0 +1,7 @@
+<div class="shp-grid" id="gameGrid">
+    {{range $idx, $game := .Items}}
+    {{template "components/games/card" $game}}
+    {{else}}
+    <div class="feedemt" style="grid-column: 1 / -1;">No games found matching your filters.</div>
+    {{end}}
+</div>

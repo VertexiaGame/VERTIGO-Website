@@ -6,6 +6,7 @@ import (
 	"html"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"vertexia-frontend/backend/models"
@@ -24,10 +25,17 @@ func NewAvatarService(avatarRepo *repository.AvatarRepository, userRepo *reposit
 	}
 }
 
+func AvatarFullPath(userID int) string {
+	return filepath.Join("uploads", "av", strconv.Itoa(userID)+".png")
+}
+
+func AvatarHeadPath(userID int) string {
+	return filepath.Join("uploads", "av", strconv.Itoa(userID)+"_head.png")
+}
+
 func (s *AvatarService) InvalidateRenderCache(userID int) {
-	idStr := fmt.Sprintf("%d.png", userID)
-	_ = os.Remove(filepath.Join("static", "renders", "avatars", "full", idStr))
-	_ = os.Remove(filepath.Join("static", "renders", "avatars", "headshots", idStr))
+	_ = os.Remove(AvatarFullPath(userID))
+	_ = os.Remove(AvatarHeadPath(userID))
 }
 
 func (s *AvatarService) GetAvatar(userID int) (*models.Avatar, error) {

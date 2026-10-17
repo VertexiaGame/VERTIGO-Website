@@ -13,7 +13,7 @@
             <div class="setcrd">
                 <h3 class="setttl" id="crtAssetTitle">Create {{if eq .ActiveAssetType "mesh"}}Mesh{{else if eq .ActiveAssetType "sound"}}Sound{{else}}Image{{end}}</h3>
                 <span class="setinf">Upload a reusable asset for games and creation</span>
-                <form class="crtformel" onsubmit="return window.submitAsset(event)">
+                <form class="crtformel" hx-boost="false" method="POST" action="/create/assets" enctype="multipart/form-data" onsubmit="return window.submitAsset(event)">
                     <input type="hidden" id="crtAssetTypeInput" name="type" value="{{.ActiveAssetType}}">
                     <div class="crtfld">
                         <label class="crtlbl" for="crtAssetName">Name</label>
@@ -65,6 +65,10 @@
                             <span class="ttptxt">PNG, JPG, WEBP, GIF</span>
                         </div>
                     </div>
+                    <div class="crtprog" id="crtAssetProg" hidden>
+                        <div class="crtprogtrack"><div class="crtprogbar" id="crtAssetProgBar"></div></div>
+                        <span class="crtprogtxt" id="crtAssetProgTxt">Uploading… 0%</span>
+                    </div>
                     <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
                         <button type="submit" class="primary hpyprim hpyinl hpysm" id="crtAssetSubmitBtn">
                             <span>Upload Asset</span>
@@ -83,8 +87,8 @@
                 <div class="shp-card" id="crtAssetPreviewCard">
                     <div class="avtitmimg" id="crtAssetImgWrap">
                         <img src="/static/useful/temp/pfp.png" alt="" class="avtldimg" id="crtAssetPreviewImg" onerror="this.src='/static/useful/temp/pfp.png';">
-                        <i class="fa-solid fa-music" id="crtAssetPreviewAudioIcon" style="display: none; font-size: 40px; color: #C1C1C1;"></i>
-                        <i class="fa-solid fa-cube" id="crtAssetPreviewMeshIcon" style="display: none; font-size: 40px; color: #C1C1C1;"></i>
+                        <i class="fa-solid fa-music" id="crtAssetPreviewAudioIcon" style="display: none; font-size: 40px; color: #A9A9A9;"></i>
+                        <i class="fa-solid fa-cube" id="crtAssetPreviewMeshIcon" style="display: none; font-size: 40px; color: #A9A9A9;"></i>
                         <span class="avtitmbdg adm-badge-image" id="crtAssetPreviewBadge">Image</span>
                     </div>
                     <div class="avtitmmeta">

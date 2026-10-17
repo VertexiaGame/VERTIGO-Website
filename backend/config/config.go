@@ -36,6 +36,25 @@ type Config struct {
 	LiveTimerEnabled       bool
 	LiveTimerDuration      time.Duration
 	LiveTimerEnd           time.Time
+	SiteLockEnabled        bool
+	SiteLockPassword       string
+	RedisAddr              string
+	RedisPassword          string
+	RedisDB                int
+	GSMEnabled             bool
+	GSMServerBin           string
+	GSMServerWorkdir       string
+	GSMServerMap           string
+	GSMBindHost            string
+	GSMPublicHost          string
+	GSMPortMin             int
+	GSMPortMax             int
+	GSMMaxPlayersDefault   int
+	GSMMinPlayersDefault   int
+	GSMIdleTimeout         time.Duration
+	GSMReapInterval        time.Duration
+	GSMShutdownGrace       time.Duration
+	GSMServerLogsDir       string
 }
 
 var Global *Config
@@ -62,6 +81,10 @@ func parseLiveTimerDuration(val string) time.Duration {
 		}
 	}
 	return 0
+}
+
+func (c *Config) IsSiteLockActive() bool {
+	return c != nil && c.SiteLockEnabled && c.SiteLockPassword != ""
 }
 
 func (c *Config) IsLiveTimerActive() bool {
@@ -91,6 +114,15 @@ func Load() (*Config, error) {
 	serverReadTimeout, _ := time.ParseDuration(os.Getenv("SERVER_READ_TIMEOUT"))
 	serverWriteTimeout, _ := time.ParseDuration(os.Getenv("SERVER_WRITE_TIMEOUT"))
 	serverIdleTimeout, _ := time.ParseDuration(os.Getenv("SERVER_IDLE_TIMEOUT"))
+	if serverReadTimeout <= 0 {
+		serverReadTimeout = 120 * time.Second
+	}
+	if serverWriteTimeout <= 0 {
+		serverWriteTimeout = 120 * time.Second
+	}
+	if serverIdleTimeout <= 0 {
+		serverIdleTimeout = 60 * time.Second
+	}
 	limiterMax, _ := strconv.Atoi(os.Getenv("LIMITER_MAX"))
 	limiterExpiration, _ := time.ParseDuration(os.Getenv("LIMITER_EXPIRATION"))
 	sessionSecure, _ := strconv.ParseBool(os.Getenv("SESSION_SECURE"))
@@ -98,6 +130,72 @@ func Load() (*Config, error) {
 	sessionIdleTimeout, _ := time.ParseDuration(os.Getenv("SESSION_IDLE_TIMEOUT"))
 	sessionAbsoluteTimeout, _ := time.ParseDuration(os.Getenv("SESSION_ABSOLUTE_TIMEOUT"))
 	altchaHMACKey := os.Getenv("ALTCHA_HMAC_KEY")
+	redisAddr := strings.TrimSpace(os.Getenv("REDIS_ADDR"))
+	if redisAddr == "" {
+		redisAddr = "127.0.0.1:6379"
+	}
+	redisDB, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
+	gsmEnabled := true
+	if raw := strings.TrimSpace(os.Getenv("GSM_ENABLED")); raw != "" {
+		if parsed, err := strconv.ParseBool(raw); err == nil {
+			gsmEnabled = parsed
+		}
+	}
+	gsmPortMin, _ := strconv.Atoi(os.Getenv("GSM_PORT_MIN"))
+	if gsmPortMin <= 0 {
+		gsmPortMin = 5100
+	}
+	gsmPortMax, _ := strconv.Atoi(os.Getenv("GSM_PORT_MAX"))
+	if gsmPortMax <= 0 {
+		gsmPortMax = 5250
+	}
+	if gsmPortMax < gsmPortMin {
+		gsmPortMax = gsmPortMin
+	}
+	gsmMaxPlayers, _ := strconv.Atoi(os.Getenv("GSM_MAX_PLAYERS_DEFAULT"))
+	if gsmMaxPlayers <= 0 {
+		gsmMaxPlayers = 100
+	}
+	gsmMinPlayers, _ := strconv.Atoi(os.Getenv("GSM_MIN_PLAYERS_DEFAULT"))
+	if gsmMinPlayers <= 0 {
+		gsmMinPlayers = 2
+	}
+	gsmIdleTimeout, _ := time.ParseDuration(os.Getenv("GSM_IDLE_TIMEOUT"))
+	if gsmIdleTimeout <= 0 {
+		gsmIdleTimeout = 5 * time.Minute
+	}
+	gsmReapInterval, _ := time.ParseDuration(os.Getenv("GSM_REAP_INTERVAL"))
+	if gsmReapInterval <= 0 {
+		gsmReapInterval = 15 * time.Second
+	}
+	gsmShutdownGrace, _ := time.ParseDuration(os.Getenv("GSM_SHUTDOWN_GRACE"))
+	if gsmShutdownGrace <= 0 {
+		gsmShutdownGrace = 10 * time.Second
+	}
+	gsmServerBin := strings.TrimSpace(os.Getenv("GSM_SERVER_BIN"))
+	if gsmServerBin == "" {
+		gsmServerBin = `C:\Users\xampp\Documents\VERTIGO-Full\A\target\debug\RaveEngineServer.exe`
+	}
+	gsmServerWorkdir := strings.TrimSpace(os.Getenv("GSM_SERVER_WORKDIR"))
+	if gsmServerWorkdir == "" {
+		gsmServerWorkdir = `C:\Users\xampp\Documents\VERTIGO-Full\A\target\debug`
+	}
+	gsmServerMap := strings.TrimSpace(os.Getenv("GSM_SERVER_MAP"))
+	if gsmServerMap == "" {
+		gsmServerMap = "assets/maps/default.vrtx"
+	}
+	gsmBindHost := strings.TrimSpace(os.Getenv("GSM_BIND_HOST"))
+	if gsmBindHost == "" {
+		gsmBindHost = "127.0.0.1"
+	}
+	gsmPublicHost := strings.TrimSpace(os.Getenv("GSM_PUBLIC_HOST"))
+	if gsmPublicHost == "" {
+		gsmPublicHost = gsmBindHost
+	}
+	gsmLogsDir := strings.TrimSpace(os.Getenv("GSM_SERVER_LOGS_DIR"))
+	if gsmLogsDir == "" {
+		gsmLogsDir = "./logs/gsm"
+	}
 
 	liveTimerEnabled, _ := strconv.ParseBool(os.Getenv("LIVETIMER_ENABLED"))
 	liveTimerDuration := parseLiveTimerDuration(os.Getenv("LIVETIMER_DURATION"))
@@ -105,6 +203,9 @@ func Load() (*Config, error) {
 		liveTimerDuration = time.Hour
 	}
 	liveTimerEnd := time.Now().Add(liveTimerDuration)
+
+	siteLockEnabled, _ := strconv.ParseBool(os.Getenv("SITELOCK_ENABLED"))
+	siteLockPassword := os.Getenv("SITELOCK_PASSWORD")
 
 	cfg := &Config{
 		DBUser:                 os.Getenv("DB_USER"),
@@ -131,6 +232,25 @@ func Load() (*Config, error) {
 		LiveTimerEnabled:       liveTimerEnabled,
 		LiveTimerDuration:      liveTimerDuration,
 		LiveTimerEnd:           liveTimerEnd,
+		SiteLockEnabled:        siteLockEnabled,
+		SiteLockPassword:       siteLockPassword,
+		RedisAddr:              redisAddr,
+		RedisPassword:          os.Getenv("REDIS_PASSWORD"),
+		RedisDB:                redisDB,
+		GSMEnabled:             gsmEnabled,
+		GSMServerBin:           gsmServerBin,
+		GSMServerWorkdir:       gsmServerWorkdir,
+		GSMServerMap:           gsmServerMap,
+		GSMBindHost:            gsmBindHost,
+		GSMPublicHost:          gsmPublicHost,
+		GSMPortMin:             gsmPortMin,
+		GSMPortMax:             gsmPortMax,
+		GSMMaxPlayersDefault:   gsmMaxPlayers,
+		GSMMinPlayersDefault:   gsmMinPlayers,
+		GSMIdleTimeout:         gsmIdleTimeout,
+		GSMReapInterval:        gsmReapInterval,
+		GSMShutdownGrace:       gsmShutdownGrace,
+		GSMServerLogsDir:       gsmLogsDir,
 	}
 
 	Global = cfg

@@ -42,6 +42,20 @@ func (s *UserService) GetUserByUnikey(unikey string) (*models.User, error) {
 	return s.userRepo.GetByUnikey(unikey)
 }
 
+func (s *UserService) GetUsersByUnikeys(unikeys []string) ([]*models.User, error) {
+	if s.userRepo == nil {
+		return nil, nil
+	}
+	return s.userRepo.GetByUnikeys(unikeys)
+}
+
+func (s *UserService) GetUsersByUsernames(usernames []string) ([]*models.User, error) {
+	if s.userRepo == nil {
+		return nil, nil
+	}
+	return s.userRepo.GetByUsernames(usernames)
+}
+
 func (s *UserService) SearchAdminUsers(search string, powerFilter int, limit, offset int) ([]*models.User, int, error) {
 	return s.userRepo.SearchAdminUsers(search, powerFilter, limit, offset)
 }
@@ -234,14 +248,53 @@ func (s *UserService) UpdateSocials(userID int, socialsMap map[string]string) er
 	return s.userRepo.UpdateSocials(userID, string(bytesData))
 }
 
-func (s *UserService) UpdateMusicID(userID int, trackID int64) error {
-	if s.cooldown != nil {
+func (s *UserService) UpdateMusicID(userID int, trackID int64) error {	if s.cooldown != nil {
 		key := fmt.Sprintf("action:music:%d", userID)
 		if allowed, remaining := s.cooldown.Allow(key); !allowed {
 			return fmt.Errorf("Please wait %s before performing this action again", s.cooldown.FormatRemaining(remaining))
 		}
 	}
 	return s.userRepo.UpdateMusicID(userID, trackID)
+}
+
+func (s *UserService) UpdateBannerEffect(userID int, effect string) error {
+	if s.cooldown != nil {
+		key := fmt.Sprintf("action:bannereffect:%d", userID)
+		if allowed, remaining := s.cooldown.Allow(key); !allowed {
+			return fmt.Errorf("Please wait %s before performing this action again", s.cooldown.FormatRemaining(remaining))
+		}
+	}
+	return s.userRepo.UpdateBannerEffect(userID, models.NormalizeBannerEffect(effect))
+}
+
+func (s *UserService) UpdateBannerTextBg(userID int, enabled bool, color, border, text string, opacity int) error {
+	if s.cooldown != nil {
+		key := fmt.Sprintf("action:bannertextbg:%d", userID)
+		if allowed, remaining := s.cooldown.Allow(key); !allowed {
+			return fmt.Errorf("Please wait %s before performing this action again", s.cooldown.FormatRemaining(remaining))
+		}
+	}
+	if opacity < 0 {
+		opacity = 0
+	}
+	if opacity > 100 {
+		opacity = 100
+	}
+	return s.userRepo.UpdateBannerTextBg(userID, enabled, models.NormalizeBannerHex(color, "F0F0F0"), models.NormalizeBannerHex(border, "A9A9A9"), models.NormalizeBannerHex(text, "1A202C"), opacity)
+}
+
+func (s *UserService) UpdatePersonalization(userID int, disableAutoplay bool, reducedMotion bool, customCSS string) error {
+	return s.userRepo.UpdatePersonalization(userID, disableAutoplay, reducedMotion, SanitizeCustomCSS(customCSS))
+}
+
+var customCSSStyleClose = regexp.MustCompile(`(?i)</style`)
+
+func SanitizeCustomCSS(css string) string {
+	css = strings.TrimSpace(css)
+	if utf8.RuneCountInString(css) > 10000 {
+		css = string([]rune(css)[:10000])
+	}
+	return customCSSStyleClose.ReplaceAllString(css, "")
 }
 
 func (s *UserService) GetProfileData(userID int, activeUsername string) (*models.User, bool, int, int, int, error) {

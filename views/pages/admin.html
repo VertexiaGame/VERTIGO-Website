@@ -1,9 +1,9 @@
-<link rel="stylesheet" href="/static/css/forms.css">
-<link rel="stylesheet" href="/static/css/inputs.css">
-<link rel="stylesheet" href="/static/css/set.css">
-<link rel="stylesheet" href="/static/css/dash.css">
-<link rel="stylesheet" href="/static/css/frn.css">
-<link rel="stylesheet" href="/static/css/admin.css">
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/frn.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/admin.css?v={{.AssetV}}">
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -25,9 +25,12 @@
                         <div class="tablst">
                             <div class="tabind"></div>
                             <button class="tabbtn{{if eq .ActiveTab "status"}} active{{end}}" onclick="window.switchAdminTab('status', event)">Status</button>
+                            <button class="tabbtn{{if eq .ActiveTab "servers"}} active{{end}}" onclick="window.switchAdminTab('servers', event)">Servers</button>
                             <button class="tabbtn{{if eq .ActiveTab "users"}} active{{end}}" onclick="window.switchAdminTab('users', event)">Users</button>
                             <button class="tabbtn{{if eq .ActiveTab "reports"}} active{{end}}" onclick="window.switchAdminTab('reports', event)">Reports</button>
                             <button class="tabbtn{{if eq .ActiveTab "assets"}} active{{end}}" onclick="window.switchAdminTab('assets', event)">Assets</button>
+                            <button class="tabbtn{{if eq .ActiveTab "shop"}} active{{end}}" onclick="window.switchAdminTab('shop', event)">Shop Items</button>
+                            <button class="tabbtn{{if eq .ActiveTab "banners"}} active{{end}}" onclick="window.switchAdminTab('banners', event)">Banners</button>
                             <button class="tabbtn{{if eq .ActiveTab "logs"}} active{{end}}" onclick="window.switchAdminTab('logs', event)">Logs</button>
                         </div>
 
@@ -161,6 +164,33 @@
                                                     <span class="adm-val">{{if .LiveTimerActive}}<span class="adm-stat"><span class="adm-ind adm-ind-online"></span>On{{else}}Off{{end}}</span>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tab-servers" class="settabcntnt">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Game Servers</h3>
+
+                                    <div class="adm-rowlst" style="margin-bottom: 12px;">
+                                        <div class="adm-row"><span class="adm-lbl">Active servers</span><span class="adm-val highlight" id="admGsTotal">0</span></div>
+                                        <div class="adm-row"><span class="adm-lbl">Players in servers</span><span class="adm-val" id="admGsPlayers">0</span></div>
+                                        <div class="adm-row"><span class="adm-lbl">Ports</span><span class="adm-val" id="admGsPorts">—</span></div>
+                                        <div class="adm-row"><span class="adm-lbl">Binary</span><span class="adm-val" id="admGsBin">—</span></div>
+                                        <div class="adm-row"><span class="adm-lbl">Redis</span><span class="adm-val" id="admGsRedis">—</span></div>
+                                        <div class="adm-row"><span class="adm-lbl">Logs dir</span><span class="adm-val" id="admGsLogs">—</span></div>
+                                    </div>
+
+                                    <div class="adm-fltrbar">
+                                        <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.fetchAdminGServers()">
+                                            <span>Refresh</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="admGsListContainer">
+                                        <div class="adm-grid" id="admGsGrid">
+                                            <div class="frnemt adm-emt">No active gameservers</div>
                                         </div>
                                     </div>
                                 </div>
@@ -327,6 +357,137 @@
                                 </div>
                             </div>
 
+                            <div id="tab-shop" class="settabcntnt">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Shop Item Approvals</h3>
+
+                                    <div class="adm-fltrbar">
+                                        <div class="tabcnt settabcnt adm-shopcat-tabs" style="margin: 0 !important; max-width: 100% !important;">
+                                            <div class="tablst">
+                                                <div class="tabind"></div>
+                                                <button type="button" class="tabbtn active" data-category="" onclick="window.filterAdminShopItemCategory('', event)">All</button>
+                                                <button type="button" class="tabbtn" data-category="hat" onclick="window.filterAdminShopItemCategory('hat', event)">Hats</button>
+                                                <button type="button" class="tabbtn" data-category="faces" onclick="window.filterAdminShopItemCategory('faces', event)">Faces</button>
+                                                <button type="button" class="tabbtn" data-category="shirts" onclick="window.filterAdminShopItemCategory('shirts', event)">Shirts</button>
+                                                <button type="button" class="tabbtn" data-category="tshirts" onclick="window.filterAdminShopItemCategory('tshirts', event)">T-Shirts</button>
+                                                <button type="button" class="tabbtn" data-category="pants" onclick="window.filterAdminShopItemCategory('pants', event)">Pants</button>
+                                                <button type="button" class="tabbtn" data-category="gear" onclick="window.filterAdminShopItemCategory('gear', event)">Gear</button>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" id="admShopItemFilter" value="">
+                                        <input type="hidden" name="csrf" value="{{.CSRF}}" id="admShopCsrf">
+                                    </div>
+
+                                    <div id="admShopItemListContainer">
+                                        <div class="adm-grid" id="admShopItemsGrid">
+                                            {{range .ShopItems}}
+                                            <div class="adm-card" data-id="{{.ID}}">
+                                                <div class="adm-cardhdr">
+                                                    <h3 class="adm-cardttl">
+                                                        <i class="fa-solid {{if eq .Type "faces"}}fa-face-smile{{else if or (eq .Type "shirts") (eq .Type "tshirts") (eq .Type "pants")}}fa-shirt{{else}}fa-cube{{end}}"></i>
+                                                        <span>{{.Name}}</span>
+                                                    </h3>
+                                                    <span class="adm-badge adm-badge-{{.Type}}">{{.TypeName}}</span>
+                                                </div>
+                                                <div class="adm-rendcrd">
+                                                    <img src="/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" class="adm-rendimg" loading="lazy" onerror="this.src='/static/useful/temp/pfp.png';">
+                                                </div>
+                                                <div class="adm-rowlst">
+                                                    <div class="adm-row"><span class="adm-lbl">Owner</span><span class="adm-val"><a href="/user/{{.CID}}" hx-get="/user/{{.CID}}" hx-target="body" hx-push-url="true" class="adm-owner-link">@{{.CreatorName}}</a></span></div>
+                                                    <div class="adm-row"><span class="adm-lbl">Submitted</span><span class="adm-val">{{.CreatedAt.Format "Jan 02, 2006 15:04"}}</span></div>
+                                                    <div class="adm-row"><span class="adm-lbl">Price</span><span class="adm-val">{{if and (eq .Bucks 0) (eq .Bits 0)}}Free{{else}}{{if gt .Bucks 0}}{{.Bucks}} Vertices{{end}}{{if and (gt .Bucks 0) (gt .Bits 0)}} + {{end}}{{if gt .Bits 0}}{{.Bits}} Tickets{{end}}{{end}}</span></div>
+                                                    {{if .Description}}
+                                                    <div class="adm-row"><span class="adm-lbl">Description</span><span class="adm-val">{{.Description}}</span></div>
+                                                    {{end}}
+                                                </div>
+                                                <div class="adm-modbtns">
+                                                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminShopItem({{.ID}}, 'approve')">
+                                                        <span>Approve</span>
+                                                    </button>
+                                                    <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.promptRejectShopItem({{.ID}}, '{{.Name}}')">
+                                                        <span>Reject</span>
+                                                    </button>
+                                                    <a href="/shop/item/{{.ID}}" target="_blank" rel="noopener" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                                                        <span>View</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            {{else}}
+                                            <div class="frnemt adm-emt">No shop items awaiting review</div>
+                                            {{end}}
+                                        </div>
+                                    </div>
+
+                                    <div class="adm-pgncnt">
+                                        <span class="adm-pgntxt" id="admShopItemsPgnTxt">Page 1 of {{.TotalShopItemPages}}</span>
+                                        <div class="adm-pgnbtns">
+                                            <button type="button" class="primary hpyprim hpyinl hpysm" id="admShopItemsPrevBtn" onclick="window.fetchAdminShopItems(currentAdminShopItemPage - 1)" disabled>
+                                                <span>Prev</span>
+                                            </button>
+                                            <button type="button" class="primary hpyprim hpyinl hpysm" id="admShopItemsNextBtn" onclick="window.fetchAdminShopItems(currentAdminShopItemPage + 1)">
+                                                <span>Next</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tab-banners" class="settabcntnt">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Profile Banner Approvals</h3>
+
+                                    <div class="adm-fltrbar">
+                                        <input type="hidden" name="csrf" value="{{.CSRF}}" id="admBannerCsrf">
+                                    </div>
+
+                                    <div id="admBannerListContainer">
+                                        <div class="adm-grid" id="admBannersGrid">
+                                            {{range .Banners}}
+                                            <div class="adm-card" data-id="{{.ID}}">
+                                                <div class="adm-cardhdr">
+                                                    <h3 class="adm-cardttl">
+                                                        <i class="fa-solid fa-image"></i>
+                                                        <span>{{.TypeName}} Banner</span>
+                                                    </h3>
+                                                    <span class="adm-badge adm-badge-image">{{.TypeName}}</span>
+                                                </div>
+                                                <div style="width:100%;aspect-ratio:16/5;border-radius:8px;border:1px solid #D4D4D4;background:#D4D4D4;box-sizing:border-box;{{.Style}}"></div>
+                                                <div class="adm-rowlst">
+                                                    <div class="adm-row"><span class="adm-lbl">Owner</span><span class="adm-val"><a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="adm-owner-link">@{{.Username}}</a></span></div>
+                                                    <div class="adm-row"><span class="adm-lbl">Submitted</span><span class="adm-val">{{.CreatedAt.Format "Jan 02, 2006 15:04"}}</span></div>
+                                                </div>
+                                                <div class="adm-modbtns">
+                                                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminBanner({{.ID}}, 'approve')">
+                                                        <span>Approve</span>
+                                                    </button>
+                                                    <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.promptRejectBanner({{.ID}}, '{{.Username}}')">
+                                                        <span>Reject</span>
+                                                    </button>
+                                                    <a href="/user/{{.UserID}}" target="_blank" rel="noopener" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                                                        <span>View</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            {{else}}
+                                            <div class="frnemt adm-emt">No banners awaiting review</div>
+                                            {{end}}
+                                        </div>
+                                    </div>
+
+                                    <div class="adm-pgncnt">
+                                        <span class="adm-pgntxt" id="admBannersPgnTxt">Page 1 of {{.TotalBannerPages}}</span>
+                                        <div class="adm-pgnbtns">
+                                            <button type="button" class="primary hpyprim hpyinl hpysm" id="admBannersPrevBtn" onclick="window.fetchAdminBanners(currentAdminBannerPage - 1)" disabled>
+                                                <span>Prev</span>
+                                            </button>
+                                            <button type="button" class="primary hpyprim hpyinl hpysm" id="admBannersNextBtn" onclick="window.fetchAdminBanners(currentAdminBannerPage + 1)">
+                                                <span>Next</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div id="tab-logs" class="settabcntnt">
                                 <div class="setcrd">
                                     <h3 class="setttl">Logs</h3>
@@ -391,5 +552,5 @@
     </div>
 </div>
 
-<script src="/static/js/elements/modal.js"></script>
-<script src="/static/js/admin/admin.js"></script>
+<script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/admin/admin.js?v={{.AssetV}}"></script>

@@ -1,0 +1,26 @@
+<div class="shp-card" data-id="{{.ID}}">
+    <div class="avtitmimg">
+        <img src="/static/uploads/games/{{.ID}}.png" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
+    </div>
+    <div class="avtitmmeta">
+        <span class="avtitmnm">{{.Name}}</span>
+        <span class="avtitmcr">by {{.CreatorName}}</span>
+    </div>
+    <div class="shp-price-row gam-stats">
+        {{if .HasRating}}
+        <span class="shp-price-val" title="{{.Likes}} likes, {{.Dislikes}} dislikes">
+            <i class="fa-solid fa-thumbs-up gam-stat-ico" style="color: {{.LikeColor}};"></i>
+            <span style="color: {{.LikeColor}};">{{.LikePct}}%</span>
+        </span>
+        {{else}}
+        <span class="shp-price-val gam-norating" title="No ratings yet">
+            <i class="fa-solid fa-thumbs-up gam-stat-ico"></i>
+            <span>&mdash;</span>
+        </span>
+        {{end}}
+        <span class="shp-price-val" title="{{.Playing}} playing">
+            <i class="fa-solid fa-user gam-stat-ico"></i>
+            <span>{{.Playing}}</span>
+        </span>
+    </div>
+</div>

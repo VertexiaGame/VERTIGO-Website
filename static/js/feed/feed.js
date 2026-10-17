@@ -12,6 +12,10 @@ const REPLY_ICON = '<i class="fa-solid fa-reply"></i>';
 const FLAG_ICON = '<i class="fa-solid fa-flag"></i>';
 const REACT_ICON = '<i class="fa-regular fa-face-laugh-squint"></i>';
 const MAX_THREAD_DEPTH = 3;
+let feedSocketRetries = 0;
+let feedSocketReconnectTimer = null;
+const FEED_SOCKET_MAX_RETRIES = 3;
+const FEED_SOCKET_RETRY_DELAYS = [1000, 2500, 5000];
 
 const updateOdometer = (element, value) => {
     const valString = String(value);
@@ -126,7 +130,76 @@ const toggleExpandFeedPost = element => {
         postItem.classList.toggle('expanded');
         postCard.classList.toggle('expanded');
         element.classList.toggle('expanded');
+        updateSeeMoreForPost(postItem);
     }
+};
+
+const ensureSeeMoreLink = postWrapper => {
+    const card = postWrapper.querySelector('.pstcrd');
+    const body = postWrapper.querySelector('.pbdy');
+    if (!card || !body) return null;
+    let more = card.querySelector('.pbmore');
+    if (!more) {
+        more = document.createElement('a');
+        more.className = 'pbmore';
+        more.href = '#';
+        more.textContent = 'See More...';
+        more.style.display = 'none';
+        more.onclick = e => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleExpandFeedPost(body);
+        };
+        card.appendChild(more);
+    }
+    return more;
+};
+
+const updateSeeMoreForPost = postWrapper => {
+    if (!postWrapper || postWrapper.style.display === 'none') return;
+    const body = postWrapper.querySelector('.pbdy');
+    const card = postWrapper.querySelector('.pstcrd');
+    if (!body || !card) return;
+    const more = ensureSeeMoreLink(postWrapper);
+    if (!more) return;
+    const isExpanded = body.classList.contains('expanded');
+    if (isExpanded) {
+        if (postWrapper.dataset.wasTruncated === '1') {
+            more.textContent = 'See Less';
+            more.style.display = '';
+        } else {
+            more.style.display = 'none';
+        }
+        return;
+    }
+    let laidOut = false;
+    try {
+        laidOut = !!(body.offsetWidth || body.offsetHeight || (body.getClientRects && body.getClientRects().length));
+    } catch {
+        laidOut = false;
+    }
+    if (!laidOut) {
+        more.style.display = 'none';
+        return;
+    }
+    let truncated = false;
+    try {
+        truncated = body.scrollHeight > body.clientHeight + 2;
+    } catch {
+        truncated = false;
+    }
+    if (truncated) {
+        postWrapper.dataset.wasTruncated = '1';
+        more.textContent = 'See More...';
+        more.style.display = '';
+    } else {
+        postWrapper.dataset.wasTruncated = '0';
+        more.style.display = 'none';
+    }
+};
+
+const updateAllSeeMore = () => {
+    document.querySelectorAll('.pstitm').forEach(updateSeeMoreForPost);
 };
 
 const incrementReaction = element => {
@@ -376,16 +449,28 @@ const toggleInlineReplyInput = targetEl => {
     input.focus();
 };
 
-const focusSinglePost = postItem => {
+const focusSinglePost = (postItem, opts) => {
     const postsList = document.querySelector('.pstlst');
-    if (!postsList) return;
+    if (!postsList || !postItem) return;
 
     activeFocusedPostId = postItem.dataset.id;
+
+    const push = !opts || opts.push !== false;
+    if (push) {
+        try {
+            const target = `/feed/${activeFocusedPostId}`;
+            if (window.location.pathname !== target) {
+                history.pushState({ feedPostId: activeFocusedPostId }, '', target);
+            }
+        } catch {}
+    }
 
     const allPosts = postsList.querySelectorAll('.pstitm');
     allPosts.forEach(p => {
         if (p !== postItem) {
             p.style.display = 'none';
+        } else {
+            p.style.display = '';
         }
     });
 
@@ -401,7 +486,7 @@ const focusSinglePost = postItem => {
         backBtn = document.createElement('a');
         backBtn.id = 'backToFeedBtn';
         backBtn.className = 'bkcbtn';
-        backBtn.href = '#';
+        backBtn.href = '/';
         backBtn.textContent = 'Back to Feed';
         backBtn.onclick = e => {
             e.preventDefault();
@@ -411,9 +496,18 @@ const focusSinglePost = postItem => {
     }
 
     loadPostComments(postItem, true);
+    requestAnimationFrame(() => updateSeeMoreForPost(postItem));
 };
 
-const resetFeedView = () => {
+const resetFeedView = opts => {
+    const push = !opts || opts.push !== false;
+    if (push) {
+        try {
+            if (window.location.pathname.startsWith('/feed/')) {
+                history.pushState({ feed: true }, '', '/');
+            }
+        } catch {}
+    }
     activeFocusedPostId = null;
     const postsList = document.querySelector('.pstlst');
     if (!postsList) return;
@@ -435,6 +529,7 @@ const resetFeedView = () => {
         p.style.display = '';
         loadPostComments(p, false);
     });
+    requestAnimationFrame(updateAllSeeMore);
 };
 
 const createPost = post => {
@@ -539,8 +634,10 @@ const fetchFeedPosts = (tabName, offset = 0, limit = 10) => {
                     const countSpan = wrapper.querySelector('.rctcnt');
                     const reactions = post.reactions ?? post.Reactions ?? 0;
                     animateReactionCounter(countSpan, reactions);
+                    requestAnimationFrame(() => updateSeeMoreForPost(wrapper));
                 });
                 feedOffset = offset + data.length;
+                requestAnimationFrame(updateAllSeeMore);
             } else {
                 if (offset === 0 && tabName === 'friends') {
                     const placeholder = document.createElement('div');
@@ -613,6 +710,24 @@ const setupGlobalDelegation = () => {
     if (listenersInitialized) return;
     listenersInitialized = true;
 
+    window.addEventListener('popstate', () => {
+        const postsList = document.querySelector('.pstlst');
+        if (!postsList) return;
+        const m = window.location.pathname.match(/^\/feed\/(\d+)/);
+        if (m) {
+            const id = m[1];
+            if (activeFocusedPostId === String(id)) return;
+            const wrapper = document.querySelector(`.pstitm[data-id="${id}"]`);
+            if (wrapper) {
+                focusSinglePost(wrapper, { push: false });
+            }
+            return;
+        }
+        if (activeFocusedPostId) {
+            resetFeedView({ push: false });
+        }
+    });
+
     document.addEventListener('click', e => {
         const tabBtn = e.target.closest('.tabbtn');
         if (tabBtn) {
@@ -674,6 +789,7 @@ const setupGlobalDelegation = () => {
     });
 
     window.addEventListener('resize', updateTabIndicator);
+    window.addEventListener('resize', () => requestAnimationFrame(updateAllSeeMore));
     window.addEventListener('scroll', onWindowScroll);
 };
 
@@ -697,20 +813,38 @@ const onWindowScroll = () => {
     }
 };
 
+const clearFeedSocketReconnect = () => {
+    if (feedSocketReconnectTimer) {
+        clearTimeout(feedSocketReconnectTimer);
+        feedSocketReconnectTimer = null;
+    }
+};
+
+const closeFeedSocket = () => {
+    clearFeedSocketReconnect();
+    if (feedSocket) {
+        const socket = feedSocket;
+        feedSocket = null;
+        window.feedSocket = null;
+        try {
+            socket.close();
+        } catch {
+        }
+    } else {
+        window.feedSocket = null;
+    }
+};
+
 const initFeed = () => {
     const tabContainer = document.querySelector('.tabcnt');
     const postsList = document.querySelector('.pstlst');
 
     if (!tabContainer || !postsList) {
-        if (feedSocket) {
-            feedSocket.close();
-            feedSocket = null;
-            window.feedSocket = null;
-        }
+        closeFeedSocket();
         return;
     }
 
-    resetFeedView();
+    resetFeedView({ push: false });
 
     currentTab = 'worldwide';
     feedOffset = document.querySelectorAll('.pstitm').length || 10;
@@ -733,6 +867,13 @@ const initFeed = () => {
     setTimeout(updateTabIndicator, 50);
     setTimeout(updateTabIndicator, 150);
     setTimeout(updateTabIndicator, 300);
+    requestAnimationFrame(updateAllSeeMore);
+    setTimeout(updateAllSeeMore, 150);
+    try {
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => requestAnimationFrame(updateAllSeeMore));
+        }
+    } catch {}
 
     if (postObserver) {
         postObserver.disconnect();
@@ -742,6 +883,7 @@ const initFeed = () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.remove('offscreen');
+                requestAnimationFrame(() => updateSeeMoreForPost(entry.target));
             } else {
                 entry.target.classList.add('offscreen');
             }
@@ -754,15 +896,91 @@ const initFeed = () => {
         postObserver.observe(item);
     });
 
-    if (feedSocket) {
-        feedSocket.close();
+    let focusedId = tabContainer.dataset.focusedId || '';
+    if (focusedId === '0') focusedId = '';
+    if (!focusedId) {
+        const m = window.location.pathname.match(/^\/feed\/(\d+)/);
+        if (m) focusedId = m[1];
     }
+    if (focusedId) {
+        const wrapper = document.querySelector(`.pstitm[data-id="${focusedId}"]`);
+        if (wrapper) {
+            try {
+                if (history.state == null) {
+                    history.replaceState({ feed: true }, '', '/');
+                    history.pushState({ feedPostId: String(focusedId) }, '', `/feed/${focusedId}`);
+                }
+            } catch {}
+            focusSinglePost(wrapper, { push: false });
+        } else {
+            fetch(`/api/v1/feed/${focusedId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('not found');
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data || !data.id) return;
+                    const created = createPost(data);
+                    postsList.insertBefore(created, postsList.firstChild);
+                    if (postObserver) postObserver.observe(created);
+                    const cnt = created.querySelector('.rctcnt');
+                    animateReactionCounter(cnt, data.reactions ?? 0);
+                    requestAnimationFrame(() => updateSeeMoreForPost(created));
+                    try {
+                        if (history.state == null) {
+                            history.replaceState({ feed: true }, '', '/');
+                            history.pushState({ feedPostId: String(data.id) }, '', `/feed/${data.id}`);
+                        }
+                    } catch {}
+                    focusSinglePost(created, { push: false });
+                })
+                .catch(() => {});
+        }
+    }
+
+    feedSocketRetries = 0;
+    connectFeedSocket();
+};
+
+const connectFeedSocket = () => {
+    const tabContainer = document.querySelector('.tabcnt');
+    const postsList = document.querySelector('.pstlst');
+    if (!tabContainer || !postsList) {
+        closeFeedSocket();
+        return;
+    }
+    if (!tabContainer.dataset.activeUser) {
+        closeFeedSocket();
+        return;
+    }
+    closeFeedSocket();
 
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
     feedSocket = new WebSocket(`${wsProtocol}://${location.host}/ws/feed`);
     window.feedSocket = feedSocket;
+    const socket = feedSocket;
 
-    feedSocket.onmessage = event => {
+    socket.onopen = () => {
+        if (feedSocket !== socket) return;
+        feedSocketRetries = 0;
+    };
+
+    socket.onclose = event => {
+        if (feedSocket !== socket) return;
+        feedSocket = null;
+        window.feedSocket = null;
+        if (event.code === 1000) return;
+        if (feedSocketRetries >= FEED_SOCKET_MAX_RETRIES) return;
+        const delay = FEED_SOCKET_RETRY_DELAYS[Math.min(feedSocketRetries, FEED_SOCKET_RETRY_DELAYS.length - 1)];
+        feedSocketRetries++;
+        clearFeedSocketReconnect();
+        feedSocketReconnectTimer = setTimeout(() => {
+            feedSocketReconnectTimer = null;
+            connectFeedSocket();
+        }, delay);
+    };
+
+    socket.onmessage = event => {
         let data;
         try {
             data = JSON.parse(event.data);
@@ -787,6 +1005,7 @@ const initFeed = () => {
 
                     const countSpan = wrapper.querySelector('.rctcnt');
                     animateReactionCounter(countSpan, data.reactions ?? 0);
+                    requestAnimationFrame(() => updateSeeMoreForPost(wrapper));
                 }
             }
             break;
@@ -864,17 +1083,13 @@ initFeed();
 document.addEventListener('htmx:afterSettle', initFeed);
 
 document.addEventListener('htmx:beforeHistorySave', () => {
-    resetFeedView();
+    resetFeedView({ push: false });
 });
 
 document.addEventListener('htmx:beforeTransition', () => {
-    resetFeedView();
+    resetFeedView({ push: false });
     if (postObserver) {
         postObserver.disconnect();
     }
-    if (feedSocket) {
-        feedSocket.close();
-        feedSocket = null;
-        window.feedSocket = null;
-    }
+    closeFeedSocket();
 });

@@ -6,6 +6,7 @@ window.currentTrackData = null;
 window.currentMusicVolume = 0.5;
 
 const MUSIC_FADE_MS = 1200;
+const MANUAL_TOGGLE_FADE_MS = 300;
 const PROFILE_MUSIC_VOLUME = 0.25;
 
 function cancelMusicFade() {
@@ -15,7 +16,7 @@ function cancelMusicFade() {
     }
 }
 
-function fadeMusicVolume(target, onDone) {
+function fadeMusicVolume(target, onDone, fadeMs) {
     cancelMusicFade();
     const audio = window.currentAudio;
     if (!audio || audio.volume === target) {
@@ -23,7 +24,8 @@ function fadeMusicVolume(target, onDone) {
         return;
     }
     const start = audio.volume;
-    const steps = Math.max(1, Math.round(MUSIC_FADE_MS / 16));
+    const total = fadeMs || MUSIC_FADE_MS;
+    const steps = Math.max(1, Math.round(total / 16));
     let step = 0;
     musicFadeTimer = setInterval(() => {
         step++;
@@ -37,16 +39,19 @@ function fadeMusicVolume(target, onDone) {
 }
 
 function playCurrentAudio() {
-    window.currentAudio.play().catch(() => {});
-    fadeMusicVolume(window.currentMusicVolume);
+    updateMusicPlayerUI(true);
+    window.currentAudio.play().catch(() => updateMusicPlayerUI(false));
+    fadeMusicVolume(window.currentMusicVolume, null, MANUAL_TOGGLE_FADE_MS);
 }
 
 function pauseCurrentAudio() {
     if (window.currentAudio.paused) {
         cancelMusicFade();
+        updateMusicPlayerUI(false);
         return;
     }
-    fadeMusicVolume(0, () => window.currentAudio.pause());
+    updateMusicPlayerUI(false);
+    fadeMusicVolume(0, () => window.currentAudio.pause(), MANUAL_TOGGLE_FADE_MS);
 }
 
 function formatMusicTime(seconds) {
@@ -54,6 +59,13 @@ function formatMusicTime(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+function getTrackCover(track) {
+    if (track && track.album && (track.album.cover_medium || track.album.cover_small)) {
+        return track.album.cover_medium || track.album.cover_small;
+    }
+    return '/static/useful/temp/pfp.png';
 }
 
 function setElementsText(ids, text) {
@@ -272,7 +284,7 @@ window.loadSettingsSavedMusic = function(musicId) {
                 return;
             }
 
-            const cover = (track.album && track.album.cover_small) ? track.album.cover_small : '/static/useful/temp/pfp.png';
+            const cover = getTrackCover(track);
             const artist = (track.artist && track.artist.name) ? track.artist.name : 'Unknown Artist';
             const preview = track.preview || '';
 
@@ -324,7 +336,7 @@ window.initProfileMusicPlayer = function() {
         .then(track => {
             if (!track || !track.id || track.error) return;
 
-            const cover = (track.album && track.album.cover_small) ? track.album.cover_small : '/static/useful/temp/pfp.png';
+            const cover = getTrackCover(track);
             const artist = (track.artist && track.artist.name) ? track.artist.name : 'Unknown Artist';
             const preview = track.preview || '';
 
@@ -343,6 +355,13 @@ window.initProfileMusicPlayer = function() {
             window.currentAudio.src = preview;
             window.currentAudio.volume = 0;
             window.currentAudio.loop = true;
+
+            let noAutoplay = widget.dataset.noAutoplay === 'true';
+            if (noAutoplay) {
+                window.currentAudio.volume = PROFILE_MUSIC_VOLUME;
+                updateMusicPlayerUI(false);
+                return;
+            }
 
             const playPromise = window.currentAudio.play();
             if (playPromise !== undefined) {
@@ -496,7 +515,7 @@ window.searchMusic = function(event) {
 
             let html = '';
             data.data.forEach(track => {
-                const cover = (track.album && track.album.cover_small) ? track.album.cover_small : '/static/useful/temp/pfp.png';
+                const cover = getTrackCover(track);
                 const artist = (track.artist && track.artist.name) ? track.artist.name : 'Unknown Artist';
                 const preview = track.preview || '';
 
