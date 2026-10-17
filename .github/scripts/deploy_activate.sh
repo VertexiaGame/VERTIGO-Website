@@ -37,7 +37,38 @@ supervisorctl_bin() {
   fi
 }
 
+site_pids() {
+  local pid cwd
+  for pid in $(pgrep -f vertexiafrontend || true); do
+    cwd="$(readlink "/proc/$pid/cwd" 2>/dev/null || true)"
+    if [ "$cwd" = "${DEPLOY_PATH%/}" ]; then
+      echo "$pid"
+    fi
+  done
+}
+
+kill_site_processes() {
+  local pid
+  for pid in $(site_pids); do
+    kill "$pid" || true
+  done
+  sleep 1
+  for pid in $(site_pids); do
+    kill -9 "$pid" || true
+  done
+  sleep 1
+  if [ -n "$(site_pids)" ]; then
+    return 1
+  fi
+}
+
 restart_service() {
+  local script="/www/server/go_project/vhost/scripts/$SERVICE_NAME.sh"
+  if [ -f "$script" ]; then
+    kill_site_processes
+    timeout 20 bash "$script"
+    return
+  fi
   local supctl
   supctl="$(supervisorctl_bin)"
   if [ -n "$supctl" ] && "$supctl" restart "$SERVICE_NAME"; then
@@ -51,7 +82,7 @@ restart_service() {
 
 if ! restart_service; then
   echo "::error::Failed to restart '$SERVICE_NAME' for commit $RELEASE_SHA"
-  echo "::error::try 'sudo systemctl restart $SERVICE_NAME'"
+  echo "::error::try 'sudo systemctl restart $SERVICE_NAME' or verify the aaPanel Go project name matches vars.SERVICE_NAME"
   if [ "$has_prev" = "true" ]; then
     rm -f "$DEPLOY_PATH/vertexia-frontend"
     cp "$DEPLOY_PATH/vertexia-frontend.prev" "$DEPLOY_PATH/vertexia-frontend"
