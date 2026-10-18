@@ -18,7 +18,11 @@ func Setup(app *fiber.App) {
 			if path != "/sitelock" &&
 				!strings.HasPrefix(path, "/static") &&
 				!strings.HasPrefix(path, "/assets") &&
-				path != "/favicon.ico" {
+				path != "/favicon.ico" &&
+				!strings.HasPrefix(path, "/api/v1/studio/") &&
+				!strings.HasPrefix(path, "/api/v1/gameserver/") &&
+				!strings.HasPrefix(path, "/api/v1/asset") &&
+				path != "/api/v1/auth/validate" {
 				if c.Get("HX-Request") == "true" {
 					c.Set("HX-Redirect", "/sitelock")
 					return c.SendStatus(fiber.StatusFound)

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -102,6 +103,39 @@ func (c *Config) LiveTimerRemaining() time.Duration {
 	return rem
 }
 
+func detectServerHost() string {
+	if conn, err := net.Dial("udp", "8.8.8.8:80"); err == nil {
+		addr, _ := conn.LocalAddr().(*net.UDPAddr)
+		_ = conn.Close()
+		if addr != nil && !addr.IP.IsLoopback() && !addr.IP.IsUnspecified() {
+			return addr.IP.String()
+		}
+	}
+	if interfaces, err := net.Interfaces(); err == nil {
+		for _, iface := range interfaces {
+			if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+				continue
+			}
+			addrs, err := iface.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, addr := range addrs {
+				ipNet, ok := addr.(*net.IPNet)
+				if !ok {
+					continue
+				}
+				ip := ipNet.IP.To4()
+				if ip == nil || ip.IsLoopback() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() {
+					continue
+				}
+				return ip.String()
+			}
+		}
+	}
+	return ""
+}
+
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 
@@ -190,7 +224,11 @@ func Load() (*Config, error) {
 	}
 	gsmPublicHost := strings.TrimSpace(os.Getenv("GSM_PUBLIC_HOST"))
 	if gsmPublicHost == "" {
-		gsmPublicHost = gsmBindHost
+		if detected := detectServerHost(); detected != "" {
+			gsmPublicHost = detected
+		} else {
+			gsmPublicHost = gsmBindHost
+		}
 	}
 	gsmLogsDir := strings.TrimSpace(os.Getenv("GSM_SERVER_LOGS_DIR"))
 	if gsmLogsDir == "" {
