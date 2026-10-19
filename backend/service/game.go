@@ -109,7 +109,7 @@ func validateGameInputWithWarnings(name, description, genre, tags, triggerWarnin
 		}
 	}
 	normTags := strings.Join(tagList, ", ")
-	if len(normTags) > 255 {
+	if len(normTags) > 26 {
 		return "", "", "", "", "", errors.New("game tags are too long")
 	}
 	return name, description, normGenre, normTags, triggerWarnings, nil

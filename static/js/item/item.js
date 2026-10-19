@@ -215,6 +215,10 @@
             ];
         }
 
+        isClothing() {
+            return ['shirts', 'tshirts', 'pants'].includes(this.itemType);
+        }
+
         async init() {
             this.container.innerHTML = '';
             const THREE = window.THREE || (await import('three'));
@@ -332,7 +336,8 @@
                 color: tex ? new THREE.Color(0xffffff) : new THREE.Color(0xd6d6d6),
                 map: tex || null,
                 roughness: 0.6,
-                metalness: 0.0
+                metalness: 0.0,
+                transparent: this.isClothing()
             });
             model.traverse(function(child) {
                 if (child.isMesh) {

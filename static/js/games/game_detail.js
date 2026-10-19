@@ -27,9 +27,6 @@ window.switchGameDetailTab = function(tabName, event) {
     window.updateGameDetailTabIndicator();
     if (tabName === 'servers') {
         window.refreshGameServers(null);
-        window.startGameServersPolling();
-    } else {
-        window.stopGameServersPolling();
     }
 };
 
@@ -208,25 +205,6 @@ window.renderGameServers = function(data) {
     if (window.htmx) window.htmx.process(list);
 };
 
-window.startGameServersPolling = function() {
-    window.stopGameServersPolling();
-    window.gameServersInterval = setInterval(function() {
-        const pane = document.getElementById('gamDetPaneServers');
-        if (!pane || pane.hidden || !document.getElementById('gamSrvList')) {
-            window.stopGameServersPolling();
-            return;
-        }
-        window.refreshGameServers(null);
-    }, 10000);
-};
-
-window.stopGameServersPolling = function() {
-    if (window.gameServersInterval) {
-        clearInterval(window.gameServersInterval);
-        window.gameServersInterval = null;
-    }
-};
-
 window.rateGame = function(rating, event) {
     if (event) {
         event.preventDefault();
@@ -376,14 +354,44 @@ window.moveGameBanner = function(direction, event) {
     window.showGameBannerSlide(window.gameBannerIndex + direction);
 };
 
-window.closeTriggerWarningsModal = function() {
+window.triggerWarningsAcceptedKey = function(modal) {
+    const gameId = modal.getAttribute('data-game-id') || window.gameDetailGameId();
+    if (!gameId) return '';
+    return 'triggerWarningsAccepted:' + gameId;
+};
+
+window.closeTriggerWarningsModal = function(accepted) {
     const btn = document.getElementById('triggerWarningsContinue');
     if (btn && btn.disabled) return;
+    const modal = document.getElementById('triggerWarningsModal');
+    if (modal) {
+        modal.classList.remove('active');
+        if (accepted) {
+            const key = window.triggerWarningsAcceptedKey(modal);
+            if (key) {
+                try {
+                    localStorage.setItem(key, modal.getAttribute('data-warnings') || '');
+                } catch (e) {}
+            }
+        }
+    }
+    if (window.triggerWarningsTimer) {
+        clearInterval(window.triggerWarningsTimer);
+        window.triggerWarningsTimer = null;
+    }
+};
+
+window.triggerWarningsGoBack = function() {
     const modal = document.getElementById('triggerWarningsModal');
     if (modal) modal.classList.remove('active');
     if (window.triggerWarningsTimer) {
         clearInterval(window.triggerWarningsTimer);
         window.triggerWarningsTimer = null;
+    }
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.navigateWithHistory('/play');
     }
 };
 
@@ -397,6 +405,18 @@ window.initTriggerWarningsModal = function() {
         }
         return;
     }
+    const key = window.triggerWarningsAcceptedKey(modal);
+    let accepted = '';
+    if (key) {
+        try {
+            accepted = localStorage.getItem(key) || '';
+        } catch (e) {}
+    }
+    if (accepted && accepted === (modal.getAttribute('data-warnings') || '')) {
+        modal.classList.remove('active');
+        return;
+    }
+    modal.classList.add('active');
     const label = btn.querySelector('span');
     if (window.triggerWarningsTimer) {
         clearInterval(window.triggerWarningsTimer);
@@ -421,7 +441,6 @@ window.initTriggerWarningsModal = function() {
 const initGameDetailPage = () => {
     window.ratingGameInFlight = false;
     window.joinGameInFlight = false;
-    window.stopGameServersPolling();
     window.gameBannerIndex = 0;
     const aboutBtn = document.querySelector('.gam-det-tabbtn[data-tab="about"]');
     if (aboutBtn) {
@@ -487,7 +506,6 @@ initGameDetailPage();
 document.addEventListener('htmx:afterSettle', initGameDetailPage);
 document.addEventListener('htmx:beforeTransition', function() {
     window.removeEventListener('resize', window.updateGameDetailTabIndicator);
-    window.stopGameServersPolling();
     if (window.triggerWarningsTimer) {
         clearInterval(window.triggerWarningsTimer);
         window.triggerWarningsTimer = null;

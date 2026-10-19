@@ -157,7 +157,7 @@
     </div>
 </div>
 {{if .Game.TriggerWarningsText}}
-<div id="triggerWarningsModal" class="movl active">
+<div id="triggerWarningsModal" class="movl" data-game-id="{{.Game.ID}}" data-warnings="{{.Game.TriggerWarningsText}}">
     <div class="mcard" onclick="event.stopPropagation()">
         <div class="mhdr">
             <h3 class="mtitle">Trigger warnings</h3>
@@ -165,7 +165,8 @@
         <div class="mbody">
             <p style="font-family:Ubuntu,sans-serif;font-size:14px;color:#3D3D3D;line-height:1.5;margin:0;">The creator has described the trigger warnings of the game as the following:<br><br><strong>{{.Game.TriggerWarningsText}}</strong>.<br><br>Please make sure you're comfortable with these topics!!</p>
             <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
-                <button type="button" class="primary hpyprim hpyinl hpysm" id="triggerWarningsContinue" onclick="window.closeTriggerWarningsModal()"><span>Continue</span></button>
+                <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.triggerWarningsGoBack()"><span>Go back</span></button>
+                <button type="button" class="primary hpyprim hpyinl hpysm" id="triggerWarningsContinue" onclick="window.closeTriggerWarningsModal(true)"><span>Continue</span></button>
             </div>
         </div>
     </div>

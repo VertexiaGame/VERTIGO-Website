@@ -1547,8 +1547,8 @@ window.submitGame = function(event) {
         window.createShowError('Game descriptions must be 1000 characters or fewer.');
         return false;
     }
-    if (tags.length > 255) {
-        window.createShowError('Game tags must be 255 characters or fewer.');
+    if (tags.length > 26) {
+        window.createShowError('Game tags must be 26 characters or fewer.');
         return false;
     }
     if (file && !window.checkGameImageFile(file, 'icon')) return false;
@@ -1728,8 +1728,8 @@ window.submitGameEdit = function(event, gameId) {
         window.createShowError('Game descriptions must be 1000 characters or fewer.');
         return false;
     }
-    if (tags.length > 255) {
-        window.createShowError('Game tags must be 255 characters or fewer.');
+    if (tags.length > 26) {
+        window.createShowError('Game tags must be 26 characters or fewer.');
         return false;
     }
     if (triggerWarnings.length > 500) {

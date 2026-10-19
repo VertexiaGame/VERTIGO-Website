@@ -148,6 +148,10 @@
     margin: 0 0 2px 0 !important;
     text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8) !important;
     transition: font-size 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
 }
 .carcnt:hover .carnm {
     font-size: 24px !important;

@@ -324,6 +324,34 @@ export class AvatarViewer {
         });
     }
 
+    async createClothTexture(baseColor, clothTexture) {
+        return new Promise(resolve => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(0, 0, 512, 512);
+
+            const finishTexture = () => {
+                const tex = new THREE.CanvasTexture(canvas);
+                if (THREE.SRGBColorSpace) {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                }
+                resolve(tex);
+            };
+
+            if (!clothTexture || !clothTexture.image) {
+                finishTexture();
+                return;
+            }
+
+            ctx.drawImage(clothTexture.image, 0, 0, 512, 512);
+            finishTexture();
+        });
+    }
+
     async fetchAvatarData() {
         try {
             const response = await fetch(`/api/v1/avatar/data/${this.userId}`);
@@ -463,8 +491,8 @@ export class AvatarViewer {
                 const clothTex = partTexture(part.name);
                 if (clothTex) {
                     material = new THREE.MeshStandardMaterial({
-                        map: clothTex,
-                        color: new THREE.Color(part.color),
+                        map: await this.createClothTexture(part.color, clothTex),
+                        color: new THREE.Color(0xffffff),
                         roughness: 0.6,
                         metalness: 0.0
                     });
@@ -500,7 +528,8 @@ export class AvatarViewer {
                         map: tshirtTex,
                         color: new THREE.Color(0xffffff),
                         roughness: 0.6,
-                        metalness: 0.0
+                        metalness: 0.0,
+                        transparent: true
                     });
                     tshirtObj.traverse(child => {
                         if (child.isMesh) {
