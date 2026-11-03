@@ -20,21 +20,23 @@ import (
 var startTime = time.Now()
 
 type AdminUserView struct {
-	ID           int    `json:"id"`
-	Username     string `json:"username"`
-	DisplayName  string `json:"display_name"`
-	Mail         string `json:"mail"`
-	Unikey       string `json:"unikey"`
-	Power        int    `json:"power"`
-	RoleName     string `json:"role_name"`
-	RoleDisplay  string `json:"role_display"`
-	Bits         string `json:"bits"`
-	Bucks        string `json:"bucks"`
-	LastOnline   string `json:"last_online"`
-	CreationDate string `json:"creation_date"`
-	Views        int    `json:"views"`
-	Pronouns     string `json:"pronouns"`
-	Description  string `json:"description"`
+	ID               int    `json:"id"`
+	Username         string `json:"username"`
+	DisplayName      string `json:"display_name"`
+	Mail             string `json:"mail"`
+	Unikey           string `json:"unikey"`
+	Power            int    `json:"power"`
+	RoleName         string `json:"role_name"`
+	RoleDisplay      string `json:"role_display"`
+	Bits             string `json:"bits"`
+	Bucks            string `json:"bucks"`
+	LastOnline       string `json:"last_online"`
+	CreationDate     string `json:"creation_date"`
+	Views            int    `json:"views"`
+	Pronouns         string `json:"pronouns"`
+	Description      string `json:"description"`
+	CertifiedCreator bool   `json:"certified_creator"`
+	ContributorBadge bool   `json:"contributor_badge"`
 }
 
 type ModHistoryView struct {
@@ -263,16 +265,18 @@ func formatUserForAdmin(u *models.User, adminPower int) AdminUserView {
 	}
 
 	view := AdminUserView{
-		ID:           u.ID,
-		Username:     u.Username,
-		DisplayName:  dispName,
-		Power:        u.Power,
-		RoleName:     u.RoleName(),
-		RoleDisplay:  u.RoleDisplayName(),
-		CreationDate: u.CreationDate.Format("Jan 02, 2006"),
-		Views:        u.Views,
-		Pronouns:     u.Pronouns,
-		Description:  u.Description,
+		ID:               u.ID,
+		Username:         u.Username,
+		DisplayName:      dispName,
+		Power:            u.Power,
+		RoleName:         u.RoleName(),
+		RoleDisplay:      u.RoleDisplayName(),
+		CreationDate:     u.CreationDate.Format("Jan 02, 2006"),
+		Views:            u.Views,
+		Pronouns:         u.Pronouns,
+		Description:      u.Description,
+		CertifiedCreator: u.CertifiedCreator,
+		ContributorBadge: u.ContributorBadge,
 	}
 
 	if adminPower >= models.PowerModerator {
@@ -393,58 +397,76 @@ func AdminIndex(c fiber.Ctx) error {
 		initialBanners = []*models.Banner{}
 	}
 
+	var initialClanMedia []*models.Clan
+	totalClanMedia := 0
+	totalClanMediaPages := 1
+	if service.Clan != nil {
+		initialClanMedia, totalClanMedia, _ = service.Clan.GetPendingMediaClans(1, 12)
+		if totalClanMedia > 0 {
+			totalClanMediaPages = (totalClanMedia + 12 - 1) / 12
+		}
+	}
+	if initialClanMedia == nil {
+		initialClanMedia = []*models.Clan{}
+	}
+
 	activeTab := c.Query("tab", "status")
 	switch activeTab {
-	case "status", "servers", "users", "reports", "assets", "shop", "banners", "logs":
+	case "status", "servers", "users", "reports", "assets", "shop", "banners", "clanmedia", "logs", "filter":
 	default:
 		activeTab = "status"
 	}
 
 	return Render(c, "pages/admin", fiber.Map{
-		"Title":           "Admin - VERTEXIA",
-		"AdminUser":       user,
-		"RoleName":        user.RoleName(),
-		"RoleDisplayName": user.RoleDisplayName(),
-		"ActiveTab":       activeTab,
-		"StartTimeMs":     startTime.UnixMilli(),
-		"Uptime":          stats["uptime"],
-		"StartTime":       startTime.Format("Jan 02, 2006 15:04"),
-		"CompilationDate": getCompilationDate(),
-		"GoVersion":       runtime.Version(),
-		"OSArch":          fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-		"NumGoroutines":   stats["goroutines"],
-		"NumCPU":          runtime.NumCPU(),
-		"CPUUsage":        stats["cpu_usage"],
-		"MemAlloc":        stats["mem_alloc"],
-		"MemSys":          stats["mem_sys"],
-		"SysMemTotal":     stats["sys_mem_total"],
-		"SysMemUsed":      stats["sys_mem_used"],
-		"SysMemPct":       stats["sys_mem_pct"],
-		"NumGC":           m.NumGC,
-		"DBConnected":     dbConnected,
-		"DBMaxOpen":       dbMaxOpen,
-		"DBOpenConns":     dbOpenConns,
-		"DBInUse":         dbInUse,
-		"DBIdle":          dbIdle,
-		"DBWaitCount":     dbWaitCount,
-		"DBWaitDuration":  dbWaitDuration,
-		"UserCount":       userCount,
-		"GameCount":       gameCount,
-		"LiveTimerActive": liveTimerActive,
-		"Users":           userViews,
-		"TotalUsers":      totalUsers,
-		"Logs":            initialLogs,
-		"TotalLogPages":   totalLogPages,
-		"Assets":          initialAssets,
-		"TotalAssets":     totalAssets,
-		"TotalAssetPages": totalAssetPages,
-		"ShopItems":       initialShopItems,
-		"TotalShopItems":  totalShopItems,
-		"TotalShopItemPages": totalShopItemPages,
-		"Banners":         initialBanners,
-		"TotalBanners":    totalBanners,
-		"TotalBannerPages": totalBannerPages,
-		"CSRF":            getCSRFToken(c),
+		"Title":               "Admin - VERTEXIA",
+		"AdminUser":           user,
+		"RoleName":            user.RoleName(),
+		"RoleDisplayName":     user.RoleDisplayName(),
+		"ActiveTab":           activeTab,
+		"StartTimeMs":         startTime.UnixMilli(),
+		"Uptime":              stats["uptime"],
+		"StartTime":           startTime.Format("Jan 02, 2006 15:04"),
+		"CompilationDate":     getCompilationDate(),
+		"GoVersion":           runtime.Version(),
+		"OSArch":              fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		"NumGoroutines":       stats["goroutines"],
+		"NumCPU":              runtime.NumCPU(),
+		"CPUUsage":            stats["cpu_usage"],
+		"MemAlloc":            stats["mem_alloc"],
+		"MemSys":              stats["mem_sys"],
+		"SysMemTotal":         stats["sys_mem_total"],
+		"SysMemUsed":          stats["sys_mem_used"],
+		"SysMemPct":           stats["sys_mem_pct"],
+		"NumGC":               m.NumGC,
+		"DBConnected":         dbConnected,
+		"DBMaxOpen":           dbMaxOpen,
+		"DBOpenConns":         dbOpenConns,
+		"DBInUse":             dbInUse,
+		"DBIdle":              dbIdle,
+		"DBWaitCount":         dbWaitCount,
+		"DBWaitDuration":      dbWaitDuration,
+		"UserCount":           userCount,
+		"GameCount":           gameCount,
+		"LiveTimerActive":     liveTimerActive,
+		"FilterReady":         service.Filter != nil,
+		"MaxContent":          filterTestMaxContent,
+		"Users":               userViews,
+		"TotalUsers":          totalUsers,
+		"Logs":                initialLogs,
+		"TotalLogPages":       totalLogPages,
+		"Assets":              initialAssets,
+		"TotalAssets":         totalAssets,
+		"TotalAssetPages":     totalAssetPages,
+		"ShopItems":           initialShopItems,
+		"TotalShopItems":      totalShopItems,
+		"TotalShopItemPages":  totalShopItemPages,
+		"Banners":             initialBanners,
+		"TotalBanners":        totalBanners,
+		"TotalBannerPages":    totalBannerPages,
+		"ClanMedia":           initialClanMedia,
+		"TotalClanMedia":      totalClanMedia,
+		"TotalClanMediaPages": totalClanMediaPages,
+		"CSRF":                getCSRFToken(c),
 	}, "layouts/main")
 }
 
@@ -487,14 +509,15 @@ func AdminUserViewPage(c fiber.Ctx) error {
 	}
 
 	return Render(c, "pages/admin_user", fiber.Map{
-		"Title":       fmt.Sprintf("Admin - User #%d - VERTEXIA", targetUser.ID),
-		"AdminUser":   adminUser,
-		"TargetUser":  userView,
-		"ModHistory":  historyViews,
-		"Avatar":      avatarData,
-		"Outfits":     outfits,
-		"CanModerate": canModerate,
-		"CSRF":        getCSRFToken(c),
+		"Title":           fmt.Sprintf("Admin - User #%d - VERTEXIA", targetUser.ID),
+		"AdminUser":       adminUser,
+		"TargetUser":      userView,
+		"ModHistory":      historyViews,
+		"Avatar":          avatarData,
+		"Outfits":         outfits,
+		"CanModerate":     canModerate,
+		"CanManageBadges": adminUser.Power >= models.PowerHeadManager,
+		"CSRF":            getCSRFToken(c),
 	}, "layouts/main")
 }
 
@@ -679,6 +702,32 @@ func AdminScrubPost(c fiber.Ctx) error {
 	}
 
 	return adminRedirectToUser(c, targetID)
+}
+
+func AdminBadgePost(c fiber.Ctx) error {
+	adminUser, targetUser, err := adminTargetForAction(c)
+	if err != nil || adminUser == nil || targetUser == nil {
+		return err
+	}
+
+	if adminUser.Power < models.PowerHeadManager {
+		return adminModerationError(c, "You do not have permission to manage badges")
+	}
+
+	granted := c.FormValue("granted") == "true"
+	switch c.Params("badge") {
+	case "creator":
+		err = service.User.SetCertifiedCreator(adminUser, targetUser.ID, granted)
+	case "contributor":
+		err = service.User.SetContributorBadge(adminUser, targetUser.ID, granted)
+	default:
+		return adminModerationError(c, "Unknown badge")
+	}
+	if err != nil {
+		return adminModerationError(c, err.Error())
+	}
+
+	return adminRedirectToUser(c, targetUser.ID)
 }
 
 func AdminModhistRetractPost(c fiber.Ctx) error {

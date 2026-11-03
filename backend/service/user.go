@@ -248,13 +248,18 @@ func (s *UserService) UpdateSocials(userID int, socialsMap map[string]string) er
 	return s.userRepo.UpdateSocials(userID, string(bytesData))
 }
 
-func (s *UserService) UpdateMusicID(userID int, trackID int64) error {	if s.cooldown != nil {
+func (s *UserService) UpdateMusicID(userID int, trackID int64) error {
+	if s.cooldown != nil {
 		key := fmt.Sprintf("action:music:%d", userID)
 		if allowed, remaining := s.cooldown.Allow(key); !allowed {
 			return fmt.Errorf("Please wait %s before performing this action again", s.cooldown.FormatRemaining(remaining))
 		}
 	}
 	return s.userRepo.UpdateMusicID(userID, trackID)
+}
+
+func (s *UserService) UpdatePrivacy(userID int, hideInventory bool) error {
+	return s.userRepo.UpdatePrivacy(userID, hideInventory)
 }
 
 func (s *UserService) UpdateBannerEffect(userID int, effect string) error {
@@ -283,8 +288,8 @@ func (s *UserService) UpdateBannerTextBg(userID int, enabled bool, color, border
 	return s.userRepo.UpdateBannerTextBg(userID, enabled, models.NormalizeBannerHex(color, "F0F0F0"), models.NormalizeBannerHex(border, "A9A9A9"), models.NormalizeBannerHex(text, "1A202C"), opacity)
 }
 
-func (s *UserService) UpdatePersonalization(userID int, disableAutoplay bool, reducedMotion bool, customCSS string) error {
-	return s.userRepo.UpdatePersonalization(userID, disableAutoplay, reducedMotion, SanitizeCustomCSS(customCSS))
+func (s *UserService) UpdatePersonalization(userID int, disableAutoplay bool, reducedMotion bool, disableBgdim bool, enableOneko bool, customCSS string) error {
+	return s.userRepo.UpdatePersonalization(userID, disableAutoplay, reducedMotion, disableBgdim, enableOneko, SanitizeCustomCSS(customCSS))
 }
 
 var customCSSStyleClose = regexp.MustCompile(`(?i)</style`)
@@ -295,6 +300,28 @@ func SanitizeCustomCSS(css string) string {
 		css = string([]rune(css)[:10000])
 	}
 	return customCSSStyleClose.ReplaceAllString(css, "")
+}
+
+func (s *UserService) setBadge(admin *models.User, targetID int, update func(int, bool) error, value bool) error {
+	if admin == nil {
+		return errors.New("Unauthorized")
+	}
+	if !admin.HasPower(models.PowerHeadManager) {
+		return errors.New("Insufficient permission")
+	}
+	target, err := s.userRepo.GetByID(targetID)
+	if err != nil || target == nil {
+		return errors.New("User not found")
+	}
+	return update(targetID, value)
+}
+
+func (s *UserService) SetCertifiedCreator(admin *models.User, targetID int, certified bool) error {
+	return s.setBadge(admin, targetID, s.userRepo.SetCertifiedCreator, certified)
+}
+
+func (s *UserService) SetContributorBadge(admin *models.User, targetID int, granted bool) error {
+	return s.setBadge(admin, targetID, s.userRepo.SetContributorBadge, granted)
 }
 
 func (s *UserService) GetProfileData(userID int, activeUsername string) (*models.User, bool, int, int, int, error) {

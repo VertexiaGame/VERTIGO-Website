@@ -20,6 +20,12 @@ const (
 	assetUploadTTL      = time.Hour
 	createPreviewMax    = 60
 	createPreviewTTL    = time.Minute
+	clanCreateMax       = 5
+	clanCreateTTL       = time.Hour
+	clanUpdateMax       = 30
+	clanUpdateTTL       = time.Hour
+	clanActionMax       = 120
+	clanActionTTL       = time.Minute
 )
 
 func rateLimitRetryAfter(c fiber.Ctx) int {
@@ -78,6 +84,9 @@ var (
 	shopCreateLimiter    = newUploadLimiter(shopCreateUploadMax, shopCreateUploadTTL)
 	assetUploadLimiter   = newUploadLimiter(assetUploadMax, assetUploadTTL)
 	createPreviewLimiter = newUploadLimiter(createPreviewMax, createPreviewTTL)
+	clanCreateLimiter    = newUploadLimiter(clanCreateMax, clanCreateTTL)
+	clanUpdateLimiter    = newUploadLimiter(clanUpdateMax, clanUpdateTTL)
+	clanActionLimiter    = newUploadLimiter(clanActionMax, clanActionTTL)
 )
 
 func GameCreateLimiter() fiber.Handler {
@@ -98,4 +107,16 @@ func AssetUploadLimiter() fiber.Handler {
 
 func CreatePreviewLimiter() fiber.Handler {
 	return createPreviewLimiter
+}
+
+func ClanCreateLimiter() fiber.Handler {
+	return clanCreateLimiter
+}
+
+func ClanUpdateLimiter() fiber.Handler {
+	return clanUpdateLimiter
+}
+
+func ClanActionLimiter() fiber.Handler {
+	return clanActionLimiter
 }

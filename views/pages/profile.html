@@ -1,7 +1,15 @@
 <link rel="stylesheet" href="/static/css/prof.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
 <script>
+window.profileTabPanes = {
+    about: 'prfTabAbout',
+    games: 'prfTabGames',
+    shop: 'prfTabShop',
+    inventory: 'prfTabInventory'
+};
+
 window.updateProfileTabIndicator = function() {
     const indicator = document.querySelector('.prftabind');
     const activeTab = document.querySelector('.prftabbtn.active');
@@ -10,6 +18,31 @@ window.updateProfileTabIndicator = function() {
         indicator.style.width = activeTab.offsetWidth + 'px';
         indicator.style.height = activeTab.offsetHeight + 'px';
         indicator.style.top = activeTab.offsetTop + 'px';
+    }
+};
+
+window.switchProfilePane = function(tabName) {
+    const paneIds = window.profileTabPanes;
+    const activeId = paneIds[tabName] || paneIds.about;
+    for (const key of Object.keys(paneIds)) {
+        const pane = document.getElementById(paneIds[key]);
+        if (!pane) continue;
+        pane.style.display = paneIds[key] === activeId ? '' : 'none';
+    }
+    const activePane = document.getElementById(activeId);
+    if (activePane) {
+        activePane.classList.remove('prfpanefade');
+        void activePane.offsetWidth;
+        activePane.classList.add('prfpanefade');
+    }
+    if (tabName === 'shop' && typeof window.applyProfileShopView === 'function') {
+        window.applyProfileShopView();
+    }
+    if (tabName === 'inventory' && typeof window.applyProfileInventoryView === 'function') {
+        window.applyProfileInventoryView();
+    }
+    if (typeof window.updateWearingArrows === 'function') {
+        setTimeout(window.updateWearingArrows, 50);
     }
 };
 
@@ -22,6 +55,8 @@ window.switchProfileTab = function(tabName, event) {
     if (!clickedTab) return;
 
     if (clickedTab.classList.contains('active')) return;
+
+    window.switchProfilePane(tabName);
 
     tabs.forEach(tab => tab.classList.remove('active'));
     clickedTab.classList.add('active');
@@ -51,8 +86,24 @@ window.switchProfileTab = function(tabName, event) {
                     </div>
                     <div class="prfmeta">
                         <h1 class="prfdn">
+                            {{if .WornClan}}{{template "components/clan/tag" .WornClan.TagInfo}}{{end}}
                             <span>{{.ProfileUser.DisplayName}}</span>
                             {{if .ProfileUser.Pronouns}}<span class="prfprn">({{.ProfileUser.Pronouns}})</span>{{end}}
+                            {{if ge .ProfileUser.Power 3}}
+                            <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_admin.png" alt="Administrator"><span class="ttptxt">This user is an official VERTEXIA administrator!</span></span>
+                            {{end}}
+                            {{if eq .ProfileUser.Power 2}}
+                            <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_mod.png" alt="Moderator"><span class="ttptxt">This user is a VERTEXIA moderator!</span></span>
+                            {{end}}
+                            {{if ge .FriendsCount 20}}
+                            <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_friendly.png" alt="Friendly"><span class="ttptxt">This user has more than 20 friends!</span></span>
+                            {{end}}
+                            {{if .ProfileUser.CertifiedCreator}}
+                            <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_creator.png" alt="Certified Creator"><span class="ttptxt">This user is a certified item creator!</span></span>
+                            {{end}}
+                            {{if .ProfileUser.ContributorBadge}}
+                            <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_contributor.png" alt="Contributor"><span class="ttptxt">This user contributed to the official VERTEXIA repository!</span></span>
+                            {{end}}
                         </h1>
                         <span class="prfun">@{{.ProfileUser.Username}}</span>
                         <div class="prfsts">
@@ -77,7 +128,7 @@ window.switchProfileTab = function(tabName, event) {
                         <button type="button" class="prftabbtn" onclick="window.switchProfileTab('inventory', event)">Inventory</button>
                     </div>
                 </div>
-                <div class="prfcrd">
+                <div class="prfcrd" id="prfTabAbout">
                     <div class="prfchrcrd" id="avatar3d" data-userid="{{.ProfileUser.ID}}"></div>
                     <div class="prfboxes-row">
                         <div class="prfsec">
@@ -142,6 +193,145 @@ window.switchProfileTab = function(tabName, event) {
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="prfcrd" id="prfTabGames" style="display: none;">
+                    {{if .ProfileGames}}
+                    <div class="shp-grid" id="prfGamesGrid">
+                        {{range .ProfileGames}}
+                        {{template "components/games/card" .}}
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div class="prfbox-card">
+                        <p class="prfboxtxt">{{if .IsOwnProfile}}You haven't created any games yet.{{else}}This user hasn't created any games yet.{{end}}</p>
+                    </div>
+                    {{end}}
+                </div>
+                <div class="prfcrd" id="prfTabShop" style="display: none;">
+                    {{if .UserShopItems}}
+                    <div class="prfshopcats" id="prfShopCats">
+                        <button type="button" class="shp-cat-item active" data-cat="all" onclick="window.filterProfileShop('all', event)">
+                            <i class="fa-solid fa-shapes"></i>
+                            <span>All</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="hat" onclick="window.filterProfileShop('hat', event)">
+                            <i class="fa-solid fa-hat-cowboy"></i>
+                            <span>Hats</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="faces" onclick="window.filterProfileShop('faces', event)">
+                            <i class="fa-solid fa-face-smile"></i>
+                            <span>Faces</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="shirts" onclick="window.filterProfileShop('shirts', event)">
+                            <i class="fa-solid fa-shirt"></i>
+                            <span>Shirts</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="tshirts" onclick="window.filterProfileShop('tshirts', event)">
+                            <i class="fa-solid fa-vest"></i>
+                            <span>T-Shirts</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="pants" onclick="window.filterProfileShop('pants', event)">
+                            <i><svg class="shp-pantsico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M154.9 96.4C158.5 77.6 175 64 194.2 64L446.7 64C465.9 64 482.4 77.6 486 96.4L494.7 141.8L495.1 143.9L440.4 143.9C427.1 143.9 416.4 154.6 416.4 167.9C416.4 181.2 427.1 191.9 440.4 191.9L504.3 191.9L567.1 518.5C571.3 540.2 557.1 561.2 535.4 565.3L425.4 586.5C403.7 590.7 382.7 576.5 378.6 554.8L321.3 256.7C321.2 256.3 320.9 256 320.5 256C320.1 256 319.7 256.3 319.7 256.7L262.3 554.8C258.1 576.5 237.2 590.7 215.5 586.5L105.5 565.3C83.8 561.1 69.6 540.2 73.8 518.5L136.6 191.9L200.5 191.9C213.8 191.9 224.5 181.2 224.5 167.9C224.5 154.6 213.8 143.9 200.5 143.9L145.8 143.9L146.2 141.8L154.9 96.4z"/></svg></i>
+                            <span>Pants</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="gear" onclick="window.filterProfileShop('gear', event)">
+                            <i class="fa-solid fa-wrench"></i>
+                            <span>Gear</span>
+                        </button>
+                    </div>
+                    <div class="shp-grid" id="prfShopGrid">
+                        {{range .UserShopItems}}
+                        {{template "components/shop/card" .}}
+                        {{end}}
+                        <div class="prfbox-card prfshop-hide" id="prfShopEmpty" style="grid-column: 1 / -1;">
+                            <p class="prfboxtxt">No items in this category.</p>
+                        </div>
+                    </div>
+                    <div class="prfshoppag" id="prfShopPagination" hidden>
+                        <button type="button" class="prfshoppagbtn" id="prfShopPrev" onclick="window.changeProfileShopPage(-1)" aria-label="Previous page">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span class="prfshoppaglbl" id="prfShopPageLbl">Page 1 of 1</span>
+                        <button type="button" class="prfshoppagbtn" id="prfShopNext" onclick="window.changeProfileShopPage(1)" aria-label="Next page">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    {{else}}
+                    <div class="prfbox-card">
+                        <p class="prfboxtxt">{{if .IsOwnProfile}}You haven't created any shop items yet.{{else}}This user hasn't created any shop items yet.{{end}}</p>
+                    </div>
+                    {{end}}
+                </div>
+                <div class="prfcrd" id="prfTabInventory" style="display: none;">
+                    {{if .InventoryPrivate}}
+                    <div class="prfbox-card">
+                        <p class="prfboxtxt"><i class="fa-solid fa-lock gam-lock" title="Private inventory"></i>This user's inventory is private.</p>
+                    </div>
+                    {{else if .ProfileInventory}}
+                    <div class="prfshopcats" id="prfInvCats">
+                        <button type="button" class="shp-cat-item active" data-cat="all" onclick="window.filterProfileInventory('all', event)">
+                            <i class="fa-solid fa-shapes"></i>
+                            <span>All</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="hat" onclick="window.filterProfileInventory('hat', event)">
+                            <i class="fa-solid fa-hat-cowboy"></i>
+                            <span>Hats</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="faces" onclick="window.filterProfileInventory('faces', event)">
+                            <i class="fa-solid fa-face-smile"></i>
+                            <span>Faces</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="shirts" onclick="window.filterProfileInventory('shirts', event)">
+                            <i class="fa-solid fa-shirt"></i>
+                            <span>Shirts</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="tshirts" onclick="window.filterProfileInventory('tshirts', event)">
+                            <i class="fa-solid fa-vest"></i>
+                            <span>T-Shirts</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="pants" onclick="window.filterProfileInventory('pants', event)">
+                            <i><svg class="shp-pantsico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M154.9 96.4C158.5 77.6 175 64 194.2 64L446.7 64C465.9 64 482.4 77.6 486 96.4L494.7 141.8L495.1 143.9L440.4 143.9C427.1 143.9 416.4 154.6 416.4 167.9C416.4 181.2 427.1 191.9 440.4 191.9L504.3 191.9L567.1 518.5C571.3 540.2 557.1 561.2 535.4 565.3L425.4 586.5C403.7 590.7 382.7 576.5 378.6 554.8L321.3 256.7C321.2 256.3 320.9 256 320.5 256C320.1 256 319.7 256.3 319.7 256.7L262.3 554.8C258.1 576.5 237.2 590.7 215.5 586.5L105.5 565.3C83.8 561.1 69.6 540.2 73.8 518.5L136.6 191.9L200.5 191.9C213.8 191.9 224.5 181.2 224.5 167.9C224.5 154.6 213.8 143.9 200.5 143.9L145.8 143.9L146.2 141.8L154.9 96.4z"/></svg></i>
+                            <span>Pants</span>
+                        </button>
+                        <button type="button" class="shp-cat-item" data-cat="gear" onclick="window.filterProfileInventory('gear', event)">
+                            <i class="fa-solid fa-wrench"></i>
+                            <span>Gear</span>
+                        </button>
+                    </div>
+                    <div class="shp-grid" id="prfInvGrid">
+                        {{range .ProfileInventory}}
+                        <div class="shp-card" data-id="{{.ID}}" data-type="{{.Type}}">
+                            <div class="avtitmimg">
+                                <img src="/api/v1/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
+                                {{if .IsEquipped}}<span class="avtitmbdg">Worn</span>{{end}}
+                            </div>
+                            <div class="avtitmmeta">
+                                <span class="avtitmnm">{{.Name}}</span>
+                                <span class="avtitmcr">by {{.CreatorName}}</span>
+                            </div>
+                            <div class="shp-price-row">
+                                <span class="avtitmcr">{{.TypeName}}</span>
+                            </div>
+                        </div>
+                        {{end}}
+                        <div class="prfbox-card prfshop-hide" id="prfInvEmpty" style="grid-column: 1 / -1;">
+                            <p class="prfboxtxt">No items in this category.</p>
+                        </div>
+                    </div>
+                    <div class="prfshoppag" id="prfInvPagination" hidden>
+                        <button type="button" class="prfshoppagbtn" id="prfInvPrev" onclick="window.changeProfileInventoryPage(-1)" aria-label="Previous page">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span class="prfshoppaglbl" id="prfInvPageLbl">Page 1 of 1</span>
+                        <button type="button" class="prfshoppagbtn" id="prfInvNext" onclick="window.changeProfileInventoryPage(1)" aria-label="Next page">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    {{else}}
+                    <div class="prfbox-card">
+                        <p class="prfboxtxt">{{if .IsOwnProfile}}You don't own any items yet.{{else}}This user doesn't own any items yet.{{end}}</p>
+                    </div>
+                    {{end}}
                 </div>
             </div>
         </div>

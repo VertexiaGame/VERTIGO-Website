@@ -9,9 +9,6 @@ import (
 
 var DB *sql.DB
 
-//TODO:
-
-//done
 
 func Connect(cfg *config.Config) error {
 	if !cfg.RunWithDatabase {
@@ -31,7 +28,6 @@ func Connect(cfg *config.Config) error {
 		return err
 	}
 
-	//get config
 	db.SetMaxOpenConns(cfg.DBMaxOpenConns)
 	db.SetMaxIdleConns(cfg.DBMaxIdleConns)
 	db.SetConnMaxLifetime(cfg.DBConnMaxLifetime)

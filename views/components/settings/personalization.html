@@ -23,6 +23,28 @@
 
             <div style="height: 1px; background: #d4d4d4; margin: 8px 0;"></div>
 
+            <div class="persrow">
+                <h3 class="setttl">Disable website background effect</h3>
+                <label class="tgl">
+                    <input type="checkbox" name="disable_bgdim" value="1" aria-label="Disable website background effect"{{if .DisableBgdim}} checked{{end}}>
+                    <span class="tgltrack"><span class="tglknob"></span></span>
+                </label>
+            </div>
+            <span class="setinf perssub">The credit tooltip will still be visible, but the contents of the website will not go opaque.</span>
+
+            <div style="height: 1px; background: #d4d4d4; margin: 8px 0;"></div>
+
+            <div class="persrow">
+                <h3 class="setttl">Enable Oneko</h3>
+                <label class="tgl">
+                    <input type="checkbox" name="enable_oneko" value="1" aria-label="Enable Oneko"{{if .EnableOneko}} checked{{end}}>
+                    <span class="tgltrack"><span class="tglknob"></span></span>
+                </label>
+            </div>
+            <span class="setinf perssub">cat follow mouse (real) (<a href="https://github.com/tylxr59/oneko.js" target="_blank" rel="noopener noreferrer" hx-boost="false">github</a>)</span>
+
+            <div style="height: 1px; background: #d4d4d4; margin: 8px 0;"></div>
+
             <div>
                 <h3 class="setttl">Website CSS</h3>
                 <span class="setinf">Custom CSS applied across the whole website for you.</span>

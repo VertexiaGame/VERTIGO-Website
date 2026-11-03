@@ -8,8 +8,8 @@
 }
 
 .adm-card {
-    background: #F0F0F0 !important;
-    border: 1px solid #D4D4D4 !important;
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--surface) !important;
     border-radius: 12px !important;
     padding: 16px !important;
     display: flex !important;
@@ -23,7 +23,7 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
-    border-bottom: 1px solid #D4D4D4 !important;
+    border-bottom: 1px solid var(--surface) !important;
     padding-bottom: 10px !important;
 }
 
@@ -31,7 +31,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 15px !important;
     font-weight: 500 !important;
-    color: #912ADF !important;
+    color: var(--accent) !important;
     margin: 0 !important;
     display: flex !important;
     align-items: center !important;
@@ -48,7 +48,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     white-space: nowrap !important;
 }
 
@@ -81,20 +81,20 @@
     width: 56px !important;
     height: 56px !important;
     object-fit: contain !important;
-    background: #D4D4D4 !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 8px !important;
     flex-shrink: 0 !important;
 }
 
 .adm-lbl {
-    color: #718096 !important;
+    color: var(--muted) !important;
     font-weight: 400 !important;
     flex-shrink: 0 !important;
 }
 
 .adm-val {
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     font-weight: 500 !important;
     font-variant-numeric: tabular-nums !important;
     text-align: right !important;
@@ -102,7 +102,7 @@
 }
 
 .adm-owner-link {
-    color: #912ADF !important;
+    color: var(--accent) !important;
     text-decoration: none !important;
     font-weight: 500 !important;
 }
@@ -112,7 +112,7 @@
 }
 
 .adm-val.highlight {
-    color: #912ADF !important;
+    color: var(--accent) !important;
     font-weight: 500 !important;
 }
 
@@ -126,11 +126,11 @@
 }
 
 .adm-ind-online {
-    background-color: #28A745 !important;
+    background-color: var(--success) !important;
 }
 
 .adm-ind-offline {
-    background-color: #DC3545 !important;
+    background-color: var(--danger) !important;
 }
 
 .adm-badge {
@@ -148,79 +148,79 @@
 }
 
 .adm-badge-owner {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    background: var(--grad-accent) !important;
 }
 
 .adm-badge-vertexia-team {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8 !important;
+    background: var(--grad-info) !important;
 }
 
 .adm-badge-head-manager {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+    background: var(--grad-warning) !important;
 }
 
 .adm-badge-moderator {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745 !important;
+    background: var(--grad-success) !important;
 }
 
 .adm-badge-trainee {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #718096 !important;
+    background: var(--grad-muted) !important;
 }
 
 .adm-badge-member {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #888888 !important;
+    background: var(--grad-muted) !important;
 }
 
 .adm-badge-image {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745 !important;
+    background: var(--grad-success) !important;
 }
 
 .adm-badge-mesh {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8 !important;
+    background: var(--grad-info) !important;
 }
 
 .adm-badge-sound {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+    background: var(--grad-warning) !important;
 }
 
 .adm-badge-approved {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745 !important;
+    background: var(--grad-success) !important;
 }
 
 .adm-badge-pending {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+    background: var(--grad-warning) !important;
 }
 
 .adm-badge-rejected {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #DC3545 !important;
+    background: var(--grad-danger) !important;
 }
 
 .adm-badge-declined {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #DC3545 !important;
+    background: var(--grad-danger) !important;
 }
 
 .adm-badge-hat {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8 !important;
+    background: var(--grad-info) !important;
 }
 
 .adm-badge-gear {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8 !important;
+    background: var(--grad-info) !important;
 }
 
 .adm-badge-faces {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745 !important;
+    background: var(--grad-success) !important;
 }
 
 .adm-badge-shirts {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+    background: var(--grad-warning) !important;
 }
 
 .adm-badge-tshirts {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+    background: var(--grad-warning) !important;
 }
 
 .adm-badge-pants {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22 !important;
+    background: var(--grad-warning) !important;
 }
 
 .adm-crdmeta {
@@ -230,7 +230,7 @@
     gap: 8px !important;
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 12px !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
 }
 
 .adm-emt {
@@ -292,14 +292,14 @@
     height: 36px !important;
     min-width: 160px !important;
     flex: 0 1 auto !important;
-    background-color: #D4D4D4 !important;
+    background-color: var(--surface) !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 6px !important;
     padding: 0 28px 0 10px !important;
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     outline: none !important;
     cursor: pointer !important;
     box-sizing: border-box !important;
@@ -318,13 +318,13 @@
 }
 
 .adm-select option {
-    background-color: #F0F0F0 !important;
-    color: #3D3D3D !important;
+    background-color: var(--surface-raised) !important;
+    color: var(--ink) !important;
 }
 
 .adm-panel {
-    background: #F0F0F0 !important;
-    border: 1px solid #D4D4D4 !important;
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--surface) !important;
     border-radius: 12px !important;
     padding: 16px !important;
     box-sizing: border-box !important;
@@ -339,8 +339,8 @@
     position: relative !important;
     width: 100% !important;
     height: 330px !important;
-    background: #D4D4D4 !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 12px !important;
     display: flex !important;
     align-items: center !important;
@@ -400,19 +400,19 @@
 }
 
 .adm-3d-toggle-btn:hover {
-    background: rgba(116, 35, 203, 0.85) !important;
+    background: rgba(145, 42, 223, 0.85) !important;
     transform: scale(1.05) !important;
 }
 
 .adm-3d-toggle-btn.active {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    background: var(--grad-accent) !important;
     border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .adm-3d-err {
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 13px !important;
-    color: #DC3545 !important;
+    color: var(--danger) !important;
     padding: 16px !important;
     text-align: center !important;
 }
@@ -430,7 +430,7 @@
 
 .adm-audio-ico {
     font-size: 48px !important;
-    color: #A9A9A9 !important;
+    color: var(--line) !important;
 }
 
 .adm-audio-player {
@@ -438,11 +438,38 @@
     max-width: 280px !important;
 }
 
+.adm-clnmedia-banner,
+.adm-clnmedia-icon {
+    border: 1px solid var(--line) !important;
+    border-radius: 8px !important;
+    background: var(--surface) !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+.adm-clnmedia-banner {
+    width: 100% !important;
+    aspect-ratio: 16 / 5 !important;
+}
+
+.adm-clnmedia-icon {
+    width: 72px !important;
+    height: 72px !important;
+}
+
+.adm-clnmedia-banner img,
+.adm-clnmedia-icon img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
 .adm-tblcnt {
     width: 100% !important;
     overflow-x: auto !important;
-    background: #F0F0F0 !important;
-    border: 1px solid #D4D4D4 !important;
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--surface) !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
 }
@@ -457,17 +484,17 @@
 .adm-usrtbl th {
     text-align: left !important;
     padding: 10px 14px !important;
-    background: #D4D4D4 !important;
-    color: #718096 !important;
+    background: var(--surface) !important;
+    color: var(--muted) !important;
     font-weight: 500 !important;
-    border-bottom: 2px solid #A9A9A9 !important;
+    border-bottom: 2px solid var(--line) !important;
     white-space: nowrap !important;
 }
 
 .adm-usrtbl td {
     padding: 10px 14px !important;
-    border-bottom: 1px solid #D4D4D4 !important;
-    color: #3D3D3D !important;
+    border-bottom: 1px solid var(--surface) !important;
+    color: var(--ink) !important;
     vertical-align: middle !important;
 }
 
@@ -476,13 +503,13 @@
 }
 
 .adm-usrtbl tr:hover td {
-    background: #F0F0F0 !important;
+    background: var(--surface-raised) !important;
 }
 
 .adm-tblemt {
     text-align: center !important;
     padding: 20px !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
 }
 
 .adm-act {
@@ -497,13 +524,13 @@
     flex-wrap: wrap !important;
     margin-top: 16px !important;
     padding-top: 12px !important;
-    border-top: 1px solid #D4D4D4 !important;
+    border-top: 1px solid var(--surface) !important;
 }
 
 .adm-pgntxt {
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 13px !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
 }
 
 .adm-pgnbtns {
@@ -531,6 +558,83 @@
 
 .adm-usrtbl td .primary {
     white-space: nowrap !important;
+}
+
+.adm-filter-box {
+    height: 132px !important;
+    margin-bottom: 12px !important;
+}
+
+.adm-filter-bar {
+    margin-bottom: 0 !important;
+}
+
+.adm-filter-status {
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+    color: var(--muted) !important;
+}
+
+.adm-filter-status.err {
+    color: var(--danger) !important;
+}
+
+.adm-filter-alert {
+    margin-bottom: 12px !important;
+    padding: 10px 12px !important;
+    background: var(--warning-soft) !important;
+    border: 1px solid var(--warning-line) !important;
+    border-radius: 8px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+    color: var(--warning-ink) !important;
+}
+
+.adm-filter-result {
+    width: 100% !important;
+    margin-top: 16px !important;
+}
+
+.adm-filter-result[hidden] {
+    display: none !important;
+}
+
+.adm-filter-reasons {
+    margin: 0 !important;
+    padding-left: 18px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+    color: var(--ink) !important;
+}
+
+.adm-filter-cat {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 13px !important;
+}
+
+.adm-filter-cat .adm-lbl {
+    flex: 1 1 auto !important;
+}
+
+.adm-filter-cat .adm-val {
+    flex: 0 0 auto !important;
+}
+
+.adm-filter-cat .adm-badge {
+    min-width: 62px !important;
+    justify-content: center !important;
+}
+
+.adm-filter-meta {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px 14px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 12px !important;
+    color: var(--muted) !important;
 }
 
 @media (max-width: 768px) {

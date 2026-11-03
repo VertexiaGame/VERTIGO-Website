@@ -37,10 +37,10 @@
     width: 100% !important;
     max-width: 346px !important;
     height: 330px !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
     border: none !important;
     border-radius: 0px 12px 12px 0px !important;
-    box-shadow: 4px 0 1px 0 #A9A9A9, 0 4px 1px 0 #A9A9A9, 0 -4px 1px 0 #A9A9A9 !important;
+    box-shadow: 4px 0 1px 0 var(--line), 0 4px 1px 0 var(--line), 0 -4px 1px 0 var(--line) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -65,7 +65,7 @@
 .carttl {
     font-size: 1.8rem !important;
     font-weight: bold !important;
-    color: #333333 !important;
+    color: var(--ink-soft) !important;
     margin-top: 0 !important;
     margin-bottom: 20px !important;
     font-family: 'Ubuntu', sans-serif !important;
@@ -180,7 +180,7 @@
     height: 52px !important;
     left: 0 !important;
     top: 34px !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 12px !important;
     transition: border-color 0.2s ease !important;
@@ -191,10 +191,10 @@
     box-shadow: none !important;
 }
 .feedinbox.inerr {
-    border-color: #ff3b30 !important;
+    border-color: var(--danger) !important;
 }
 .feedinbox.inerr:focus-within {
-    border-color: #ff3b30 !important;
+    border-color: var(--danger) !important;
 }
 .feedin,
 .feedin:focus,
@@ -216,7 +216,7 @@
     font-weight: 400 !important;
     font-size: 18px !important;
     line-height: 22px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     box-shadow: none !important;
 }
 .feedin::placeholder {
@@ -252,7 +252,7 @@
     position: absolute !important;
     top: 88px !important;
     left: 16px !important;
-    color: #ff3b30 !important;
+    color: var(--danger) !important;
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 13px !important;
     font-weight: 500 !important;
@@ -290,11 +290,11 @@
     background: rgba(120, 120, 120, 0.6) !important;
 }
 .rctbdg.reacted {
-    background: rgba(116, 35, 203, 0.45) !important;
+    background: rgba(145, 42, 223, 0.45) !important;
     border-color: rgba(255, 255, 255, 0.23) !important;
 }
 .rctbdg.reacted:hover {
-    background: rgba(116, 35, 203, 0.6) !important;
+    background: rgba(145, 42, 223, 0.6) !important;
 }
 .rctico {
     position: absolute !important;
@@ -349,7 +349,7 @@
     }
     50% {
         transform: scale(1.15) translateY(-2px);
-        background: rgba(116, 35, 203, 0.7) !important;
+        background: rgba(145, 42, 223, 0.7) !important;
     }
     100% {
         transform: scale(1);
@@ -382,10 +382,10 @@
     box-sizing: border-box !important;
     height: 34px !important;
     padding: 0 16px !important;
-    background: rgba(116, 35, 203, 0.15) !important;
+    background: rgba(145, 42, 223, 0.15) !important;
     border: 2px solid rgba(255, 255, 255, 0.1) !important;
     border-bottom: none !important;
-    border-radius: 8px 8px 0px 0px !important;
+    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0px 0px !important;
     color: rgba(255, 255, 255, 0.6) !important;
     font-family: 'Ubuntu' !important;
     font-style: normal !important;
@@ -401,7 +401,7 @@
 }
 .tabbtn:hover {
     color: #FFFFFF !important;
-    background: rgba(116, 35, 203, 0.25) !important;
+    background: rgba(145, 42, 223, 0.25) !important;
 }
 .tabbtn.active {
     color: #FFFFFF !important;
@@ -411,14 +411,22 @@
 .tabind {
     box-sizing: border-box !important;
     position: absolute !important;
-    background: rgba(116, 35, 203, 0.45) !important;
+    background: rgba(145, 42, 223, 0.45) !important;
     border: 2px solid rgba(255, 255, 255, 0.23) !important;
     border-bottom: none !important;
-    border-radius: 8px 8px 0px 0px !important;
+    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0px 0px !important;
     transition: left 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s cubic-bezier(0.25, 1, 0.5, 1), top 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
     z-index: 1 !important;
     pointer-events: none !important;
 }
+
+@supports (corner-shape: squircle) {
+    .tabbtn,
+    .tabind {
+        corner-shape: squircle !important;
+    }
+}
+
 .pstlst {
     position: relative !important;
     width: 100% !important;
@@ -498,8 +506,8 @@
     position: relative !important;
     width: 100% !important;
     min-height: 85px !important;
-    background: #D4D4D4 !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 12px !important;
     transition: min-height 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease !important;
 }
@@ -510,7 +518,7 @@
     left: -2px !important;
     top: -2px !important;
     border-radius: 10px 0px 0px 10px !important;
-    border-right: 2px solid #A9A9A9 !important;
+    border-right: 2px solid var(--line) !important;
     border-bottom: none !important;
     overflow: hidden !important;
     transition: border-bottom 0.2s ease, border-radius 0.2s ease !important;
@@ -523,7 +531,7 @@
 }
 .pstcrd.expanded .pstavt,
 .pstitm.expanded .pstavt {
-    border-bottom: 2px solid #A9A9A9 !important;
+    border-bottom: 2px solid var(--line) !important;
     border-bottom-left-radius: 10px !important;
 }
 .psthdr {
@@ -535,13 +543,36 @@
     align-items: baseline !important;
     gap: 12px !important;
 }
+.pstaut-wrap,
+.cmtaut-wrap {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+.pstaut-wrap {
+    font-size: 20px !important;
+    font-weight: 500 !important;
+}
+.cmtaut-wrap {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+.pstaut-wrap .pstaut,
+.cmtaut-wrap .cmtaut {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
 .pstaut {
     font-family: 'Ubuntu' !important;
     font-style: normal !important;
     font-weight: 500 !important;
     font-size: 20px !important;
     line-height: 24px !important;
-    color: #8B0000 !important;
+    color: var(--danger-ink) !important;
     text-decoration: none !important;
 }
 .pstaut:hover {
@@ -553,7 +584,7 @@
     font-weight: 400 !important;
     font-size: 13px !important;
     line-height: 24px !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
     user-select: none !important;
     flex-shrink: 0 !important;
     cursor: default !important;
@@ -585,7 +616,7 @@
     align-items: center !important;
     justify-content: center !important;
     font-size: 16px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     opacity: 0.25 !important;
     cursor: pointer !important;
     transition: transform 0.2s ease, opacity 0.2s ease !important;
@@ -603,7 +634,7 @@
     align-items: center !important;
     justify-content: center !important;
     font-size: 16px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     opacity: 1 !important;
     cursor: pointer !important;
     transition: transform 0.2s ease, opacity 0.2s ease !important;
@@ -620,7 +651,7 @@
     align-items: center !important;
     justify-content: center !important;
     font-size: 16px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     opacity: 0.25 !important;
     cursor: pointer !important;
     text-decoration: none !important;
@@ -642,7 +673,7 @@
     font-weight: 500 !important;
     font-size: 18px !important;
     line-height: 22px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
@@ -670,7 +701,7 @@
     font-size: 14px !important;
     font-weight: 500 !important;
     line-height: 18px !important;
-    color: #7423CB !important;
+    color: var(--accent) !important;
     cursor: pointer !important;
     text-decoration: none !important;
     display: inline-block;
@@ -754,7 +785,7 @@
     margin-top: 8px !important;
     margin-left: 23px !important;
     padding-left: 25px !important;
-    border-left: 2px solid #A9A9A9 !important;
+    border-left: 2px solid var(--line) !important;
     box-sizing: border-box !important;
     width: calc(100% - 23px) !important;
 }
@@ -773,7 +804,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 12px !important;
     font-weight: 500 !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
     margin-top: 2px !important;
     margin-bottom: 2px !important;
 }
@@ -783,7 +814,7 @@
 }
 
 .cmtrep a {
-    color: #912ADF !important;
+    color: var(--accent) !important;
     text-decoration: none !important;
     font-weight: 500 !important;
 }
@@ -798,9 +829,9 @@
     text-align: center !important;
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 14px !important;
-    color: #718096 !important;
-    background: #F0F0F0 !important;
-    border: 2px dashed #A9A9A9 !important;
+    color: var(--muted) !important;
+    background: var(--surface-raised) !important;
+    border: 2px dashed var(--line) !important;
     border-radius: 12px !important;
     box-sizing: border-box !important;
 }
@@ -816,8 +847,8 @@
     position: relative !important;
     box-sizing: border-box !important;
     width: 100% !important;
-    background: #D4D4D4 !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 12px !important;
     padding: 8px 65px 8px 56px !important;
     min-height: 48px !important;
@@ -832,7 +863,7 @@
     width: 48px !important;
     height: 48px !important;
     border-radius: 10px 0 0 10px !important;
-    border-right: 2px solid #A9A9A9 !important;
+    border-right: 2px solid var(--line) !important;
     overflow: hidden !important;
 }
 
@@ -853,14 +884,14 @@
     font-family: 'Ubuntu' !important;
     font-weight: 500 !important;
     font-size: 14px !important;
-    color: #8B0000 !important;
+    color: var(--danger-ink) !important;
     text-decoration: none !important;
 }
 
 .cmttme {
     font-family: 'Ubuntu' !important;
     font-size: 11px !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
 }
 
 .cmtrctbdg {
@@ -902,7 +933,7 @@
     font-family: 'Ubuntu' !important;
     font-size: 13px !important;
     line-height: 17px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     word-break: break-all !important;
 }
 
@@ -923,7 +954,7 @@
     position: relative !important;
     width: 100% !important;
     height: 38px !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
     border: 1px solid rgba(61, 61, 61, 0.3) !important;
     border-radius: 8px !important;
     box-sizing: border-box !important;
@@ -953,7 +984,7 @@
     font-family: 'Ubuntu' !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    color: #7423CB !important;
+    color: var(--accent) !important;
     cursor: pointer !important;
     display: block !important;
     margin-top: 1px !important;
@@ -970,7 +1001,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 14px !important;
     font-weight: 500 !important;
-    color: #7423CB !important;
+    color: var(--accent) !important;
     cursor: pointer !important;
     display: inline-block !important;
     margin-bottom: 12px !important;

@@ -50,6 +50,18 @@ func GetActiveUser(c fiber.Ctx) string {
 	return user.Username
 }
 
+func activeUserID(c fiber.Ctx) int {
+	username := GetActiveUser(c)
+	if username == "" || service.User == nil {
+		return 0
+	}
+	u, err := service.User.GetUserByUsername(username)
+	if err != nil || u == nil {
+		return 0
+	}
+	return u.ID
+}
+
 func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 	layout := "layouts/main"
 	if c.Get("HX-Request") == "true" {
@@ -72,6 +84,8 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		isAdmin := false
 		disableAutoplay := false
 		reducedMotion := false
+		disableBgdim := false
+		enableOneko := false
 		customCSS := template.CSS("")
 		if service.User != nil {
 			u, err := service.User.GetUserByUsername(username)
@@ -82,6 +96,8 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 				isAdmin = u.HasAdminAccess()
 				disableAutoplay = u.DisableAutoplay
 				reducedMotion = u.ReducedMotion
+				disableBgdim = u.DisableBgdim
+				enableOneko = u.EnableOneko
 				if u.CustomCSS.Valid {
 					customCSS = template.CSS(u.CustomCSS.String)
 				}
@@ -97,7 +113,16 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		data["PendingFriendRequestsCount"] = pendingFriends
 		data["ViewerDisableAutoplay"] = disableAutoplay
 		data["ViewerReducedMotion"] = reducedMotion
+		data["ViewerDisableBgdim"] = disableBgdim
+		data["ViewerEnableOneko"] = enableOneko
 		data["ViewerCustomCSS"] = customCSS
+		data["CSRF"] = getCSRFToken(c)
+		data["ViewerClan"] = nil
+		if service.Clan != nil && userID > 0 {
+			if worn, err := service.Clan.WornClan(userID); err == nil && worn != nil && worn.HasTag() {
+				data["ViewerClan"] = worn
+			}
+		}
 	} else {
 		data["Username"] = ""
 		data["IsLoggedIn"] = false
@@ -108,7 +133,10 @@ func Render(c fiber.Ctx, view string, data fiber.Map, layouts ...string) error {
 		data["PendingFriendRequestsCount"] = 0
 		data["ViewerDisableAutoplay"] = false
 		data["ViewerReducedMotion"] = false
+		data["ViewerDisableBgdim"] = false
+		data["ViewerEnableOneko"] = false
 		data["ViewerCustomCSS"] = template.CSS("")
+		data["ViewerClan"] = nil
 	}
 
 	return c.Render(view, data, layout)

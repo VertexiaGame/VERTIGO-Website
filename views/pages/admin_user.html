@@ -122,6 +122,33 @@
                     </div>
                 </div>
 
+                {{if .CanManageBadges}}
+                <div class="prfsec">
+                    <h2 class="prfboxttl">Badges</h2>
+                    <div class="adm-panel">
+                        <input type="hidden" name="csrf" value="{{.CSRF}}" id="admBadgeCsrf">
+                        <input type="hidden" name="granted" value="{{if .TargetUser.CertifiedCreator}}false{{else}}true{{end}}" id="admCertifiedBadgeValue">
+                        <input type="hidden" name="granted" value="{{if .TargetUser.ContributorBadge}}false{{else}}true{{end}}" id="admContributorBadgeValue">
+                        <div class="adm-rowlst">
+                            <div class="adm-row">
+                                <span class="adm-lbl">Certified Creator</span>
+                                <span class="adm-val">{{if .TargetUser.CertifiedCreator}}Granted{{else}}Not granted{{end}}</span>
+                                <button type="button" class="primary {{if .TargetUser.CertifiedCreator}}hpydng{{else}}hpyprim{{end}} hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/badges/creator" hx-include="#admBadgeCsrf, #admCertifiedBadgeValue" hx-target="body" hx-push-url="true" hx-confirm="{{if .TargetUser.CertifiedCreator}}Remove this user's creator badge?{{else}}Grant this user the creator badge?{{end}}">
+                                    <span>{{if .TargetUser.CertifiedCreator}}Remove Creator Badge{{else}}Grant Creator Badge{{end}}</span>
+                                </button>
+                            </div>
+                            <div class="adm-row">
+                                <span class="adm-lbl">Contributor</span>
+                                <span class="adm-val">{{if .TargetUser.ContributorBadge}}Granted{{else}}Not granted{{end}}</span>
+                                <button type="button" class="primary {{if .TargetUser.ContributorBadge}}hpydng{{else}}hpyprim{{end}} hpyinl hpysm" hx-post="/admin/users/{{.TargetUser.ID}}/badges/contributor" hx-include="#admBadgeCsrf, #admContributorBadgeValue" hx-target="body" hx-push-url="true" hx-confirm="{{if .TargetUser.ContributorBadge}}Remove this user's contributor badge?{{else}}Grant this user the contributor badge?{{end}}">
+                                    <span>{{if .TargetUser.ContributorBadge}}Remove Contributor Badge{{else}}Grant Contributor Badge{{end}}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+
                 {{if .CanModerate}}
                 <div class="prfsec">
                     <h2 class="prfboxttl">Moderation Actions</h2>

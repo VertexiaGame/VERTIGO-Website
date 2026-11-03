@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"{{if .ViewerReducedMotion}} class="reduced-motion"{{end}}>
+<html lang="en"{{if or .ViewerReducedMotion .ViewerDisableBgdim}} class="{{if .ViewerReducedMotion}}reduced-motion{{end}}{{if .ViewerDisableBgdim}} no-bgdim{{end}}"{{end}}{{if .ViewerEnableOneko}} data-oneko="1"{{end}}>
 <head>
     {{template "components/layout/head" .}}
 </head>

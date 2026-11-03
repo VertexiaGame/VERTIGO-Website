@@ -62,6 +62,34 @@ const buildAvatar = (userId, username, wrapperClass) => {
     return avt;
 };
 
+const buildClanTag = tag => {
+    if (!tag) return null;
+    const label = tag.label ?? tag.Label;
+    const slug = tag.slug ?? tag.Slug;
+    if (!label || !slug) return null;
+    const name = tag.name ?? tag.Name;
+    const style = tag.style ?? tag.Style;
+    const a = document.createElement('a');
+    a.className = 'cln-tag';
+    a.href = `/clans/${slug}`;
+    a.setAttribute('hx-get', `/clans/${slug}`);
+    a.setAttribute('hx-target', 'body');
+    a.setAttribute('hx-push-url', 'true');
+    if (name) a.title = name;
+    if (style) a.setAttribute('style', style);
+    a.textContent = label;
+    return a;
+};
+
+const buildAuthorLine = (tag, authorNode, wrapClass) => {
+    const wrap = document.createElement('span');
+    wrap.className = wrapClass;
+    const tagEl = buildClanTag(tag);
+    if (tagEl) wrap.appendChild(tagEl);
+    wrap.appendChild(authorNode);
+    return wrap;
+};
+
 const buildTimeTooltip = (timeAgo, fullDate, timeClass) => {
     const ttp = document.createElement('div');
     ttp.className = 'ttpcnt';
@@ -272,7 +300,7 @@ const createCommentElement = (comment, parentUser, depth = 0, includeReplies = t
     author.setAttribute('hx-push-url', 'true');
     author.textContent = comment.username;
 
-    header.appendChild(author);
+    header.appendChild(buildAuthorLine(comment.tag, author, 'cmtaut-wrap'));
     header.appendChild(buildTimeTooltip(comment.time_ago || 'Just now', comment.full_date || '', 'cmttme'));
     card.appendChild(header);
 
@@ -565,7 +593,7 @@ const createPost = post => {
     postAuthor.setAttribute('hx-push-url', 'true');
     postAuthor.textContent = username;
 
-    postHeader.appendChild(postAuthor);
+    postHeader.appendChild(buildAuthorLine(post.tag, postAuthor, 'pstaut-wrap'));
     postHeader.appendChild(buildTimeTooltip(timeAgo, fullDate, 'psttme'));
     postCard.appendChild(postHeader);
 

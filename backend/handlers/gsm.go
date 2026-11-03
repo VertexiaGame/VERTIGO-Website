@@ -137,7 +137,7 @@ func GameServersGet(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{"servers": []gsView{}, "total": 0})
 	}
 	game, err := service.Game.GetGameByID(gameID)
-	if err != nil || game == nil || game.Private || game.Locked {
+	if err != nil || game == nil || !game.VisibleTo(activeUserID(c)) {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Game not found"})
 	}
 	servers, err := service.GSM.Servers(gameID)

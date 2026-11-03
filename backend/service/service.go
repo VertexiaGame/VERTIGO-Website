@@ -8,6 +8,7 @@ import (
 
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/repository"
+	filtersvc "vertexia-frontend/backend/service/filter"
 	"vertexia-frontend/backend/service/gsm"
 )
 
@@ -22,10 +23,12 @@ var (
 	ModHistory *ModHistoryService
 	Avatar     *AvatarService
 	Shop       *ShopService
+	Clan       *ClanService
 	Asset      *AssetService
 	Banner     *BannerService
 	StudioAuth *StudioAuthService
 	GSM        *gsm.Manager
+	Filter     *filtersvc.Service
 )
 
 func Init(db *sql.DB) {
@@ -36,6 +39,7 @@ func Init(db *sql.DB) {
 	modHistRepo := repository.NewModHistoryRepository(db)
 	avatarRepo := repository.NewAvatarRepository(db)
 	shopRepo := repository.NewShopRepository(db)
+	clanRepo := repository.NewClanRepository(db)
 	assetRepo := repository.NewAssetRepository(db)
 	bannerRepo := repository.NewBannerRepository(db)
 	Cooldown = NewCooldownService(5 * time.Second)
@@ -48,10 +52,37 @@ func Init(db *sql.DB) {
 	ModHistory = NewModHistoryService(modHistRepo, userRepo)
 	Avatar = NewAvatarService(avatarRepo, userRepo)
 	Shop = NewShopService(shopRepo)
+	Clan = NewClanService(clanRepo, userRepo, Cooldown)
 	Asset = NewAssetService(assetRepo)
 	Banner = NewBannerService(bannerRepo, Cooldown)
 	StudioAuth = NewStudioAuthService(userRepo)
 	GSM = initGSMService()
+	initFilterService(db)
+}
+
+func initFilterService(db *sql.DB) {
+	cfg := config.Global
+	if cfg == nil || !cfg.FilterEnabled || cfg.TypeSafeAPIKey == "" {
+		log.Printf("Filter API disabled (set FILTER_ENABLED=true and TYPESAFE_API_KEY to enable)")
+		return
+	}
+	var cache filtersvc.Cache
+	if db != nil {
+		cache = repository.NewJevCacheRepository(db)
+	}
+	filterService, err := filtersvc.Start(filtersvc.Config{
+		APIKey:  cfg.TypeSafeAPIKey,
+		BaseURL: cfg.TypeSafeBaseURL,
+		Model:   cfg.TypeSafeModel,
+		Timeout: cfg.FilterTimeout,
+		Cache:   cache,
+	})
+	if err != nil {
+		log.Printf("Filter API disabled: %v", err)
+		return
+	}
+	Filter = filterService
+	log.Printf("Filter API (Jev model %s) started on loopback only", cfg.TypeSafeModel)
 }
 
 func initGSMService() *gsm.Manager {
@@ -84,11 +115,16 @@ func initGSMService() *gsm.Manager {
 		if err != nil || game == nil {
 			return gsm.GameInfo{}, errors.New("game not found")
 		}
+		owner := ""
+		if game.CreatorID.Valid {
+			owner = game.CreatorName
+		}
 		return gsm.GameInfo{
 			ID:         game.ID,
 			MaxPlayers: game.MaxPlayers,
 			Private:    game.Private,
 			Locked:     game.Locked,
+			Owner:      owner,
 		}, nil
 	})
 	log.Printf("GSM enabled: ports %d-%d public=%s", gsmCfg.PortMin, gsmCfg.PortMax, gsmCfg.PublicHost)

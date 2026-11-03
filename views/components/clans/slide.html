@@ -1,0 +1,18 @@
+<div class="carsld cln-slide"{{if not .HasIcon}} style="background-color: {{.Color}};"{{end}}>
+    {{if not .HasIcon}}<span class="cln-slidebg" aria-hidden="true">{{.Letter}}</span>{{end}}
+    {{if .HasIcon}}<img class="carimg cln-slideimg" src="{{.IconURL}}" alt="" loading="lazy" onerror="this.remove();">{{end}}
+    <div class="carovl"></div>
+    <a class="cln-slide-link" href="/clans/{{.SlugPath}}" hx-get="/clans/{{.SlugPath}}" hx-target="body" hx-push-url="true" aria-label="View {{.Name}}"></a>
+    <div class="carinf">
+        <div class="cln-slide-meta">
+            {{if .ApprovalOnly}}
+            <span class="cln-slide-chip"><i class="fa-solid fa-lock" aria-hidden="true"></i> Approval only</span>
+            {{else}}
+            <span class="cln-slide-chip"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i> Public</span>
+            {{end}}
+            <span class="cln-slide-chip"><i class="fa-solid fa-user" aria-hidden="true"></i> {{.Members}}</span>
+        </div>
+        <h3 class="carnm">{{.Name}}</h3>
+        <p class="cardsc">{{.DescriptionText}}</p>
+    </div>
+</div>

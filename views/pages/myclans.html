@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">My Clans</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search" id="myClansSearch" autocomplete="off">
+            </div>
+            <div class="barbtns">
+                <a href="/create?type=clan" hx-get="/create?type=clan" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">Create Clan</a>
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane" id="myClansPage" data-csrf="{{.CSRF}}">
+            <div class="shp-lay">
+                <div class="shp-hdr-block">
+                    <h1 class="shp-heading">My Clans</h1>
+                    <span class="shp-subheading">Manage the clans you own and keep up with the crews you belong to</span>
+                </div>
+
+                <div class="cln-grid" id="myClansGrid">
+                    {{range .Owned}}
+                    <div class="cln-card cln-mine-card" data-clan-name="{{.Name}}">
+                        <a class="cln-mine-crestlink" href="/clans/{{.SlugPath}}" hx-get="/clans/{{.SlugPath}}" hx-target="body" hx-push-url="true" aria-label="View {{.Name}}">
+                            <div class="cln-crest">
+                                <span class="cln-crtltr">{{.Letter}}</span>
+                                {{if .HasIcon}}<img class="cln-crtimg" src="{{.IconURL}}" alt="" loading="lazy" onerror="this.remove();">{{end}}
+                                {{if .ApprovalOnly}}<span class="cln-crtbadge" title="Approval only"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>{{end}}
+                            </div>
+                        </a>
+                        <span class="cln-nm">{{if .HasTag}}<span class="cln-tag" style="{{.TagStyle}}">{{.TagLabel}}</span>{{end}}{{.Name}}</span>
+                        <span class="cln-mb">
+                            <span class="cln-mbcount"><i class="fa-solid fa-user" aria-hidden="true"></i><span>{{.Members}}</span></span>
+                            <span class="cln-state is-owner">Owner</span>
+                        </span>
+                        <div class="cln-mine-actions">
+                            {{if .HasTag}}
+                            <button type="button" class="primary {{if eq $.WornClanID .ID}}hpyinf{{else}}hpyprim{{end}} hpyinl hpysm" onclick="window.toggleWornClanTag({{.ID}}, this)"><span>{{if eq $.WornClanID .ID}}Stop Wearing{{else}}Wear Tag{{end}}</span></button>
+                            {{end}}
+                            <a href="/create/clans/{{.ID}}/edit" hx-get="/create/clans/{{.ID}}/edit" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration: none;"><span>Manage</span></a>
+                        </div>
+                    </div>
+                    {{end}}
+                    {{range .Joined}}
+                    <div class="cln-card cln-mine-card" data-clan-name="{{.Name}}">
+                        <a class="cln-mine-crestlink" href="/clans/{{.SlugPath}}" hx-get="/clans/{{.SlugPath}}" hx-target="body" hx-push-url="true" aria-label="View {{.Name}}">
+                            <div class="cln-crest">
+                                <span class="cln-crtltr">{{.Letter}}</span>
+                                {{if .HasIcon}}<img class="cln-crtimg" src="{{.IconURL}}" alt="" loading="lazy" onerror="this.remove();">{{end}}
+                                {{if .ApprovalOnly}}<span class="cln-crtbadge" title="Approval only"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>{{end}}
+                            </div>
+                        </a>
+                        <span class="cln-nm">{{if .HasTag}}<span class="cln-tag" style="{{.TagStyle}}">{{.TagLabel}}</span>{{end}}{{.Name}}</span>
+                        <span class="cln-mb">
+                            <span class="cln-mbcount"><i class="fa-solid fa-user" aria-hidden="true"></i><span>{{.Members}}</span></span>
+                            {{if .Pending}}<span class="cln-state is-pending">Pending</span>{{end}}
+                        </span>
+                        <div class="cln-mine-actions">
+                            {{if and .HasTag (not .Pending)}}
+                            <button type="button" class="primary {{if eq $.WornClanID .ID}}hpyinf{{else}}hpyprim{{end}} hpyinl hpysm" onclick="window.toggleWornClanTag({{.ID}}, this)"><span>{{if eq $.WornClanID .ID}}Stop Wearing{{else}}Wear Tag{{end}}</span></button>
+                            {{end}}
+                            <a href="/clans/{{.SlugPath}}" hx-get="/clans/{{.SlugPath}}" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;"><span>View</span></a>
+                        </div>
+                    </div>
+                    {{end}}
+                    {{if and (not .Owned) (not .Joined)}}
+                    <div class="cln-empty">
+                        <div class="feedemt">You aren't part of a clan yet. Build a crew around the way you play.</div>
+                        <a href="/create?type=clan" hx-get="/create?type=clan" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration: none;"><span>Create a Clan</span></a>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div class="feedemt" id="myClansEmpty" hidden>No clans match that search.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/clans/clanapi.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/myclans.js?v={{.AssetV}}"></script>

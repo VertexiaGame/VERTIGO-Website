@@ -1,0 +1,12 @@
+<a class="cln-card{{if .Joined}} is-joined{{end}}{{if .Pending}} is-pending{{end}}" href="/clans/{{.SlugPath}}" hx-get="/clans/{{.SlugPath}}" hx-target="body" hx-push-url="true" data-clan-id="{{.ID}}" data-members="{{.Members}}" data-days="{{.Days}}" data-cats="{{.CatsAttr}}" title="{{.DescriptionText}}">
+    <div class="cln-crest">
+        <span class="cln-crtltr">{{.Letter}}</span>
+        {{if .HasIcon}}<img class="cln-crtimg" src="{{.IconURL}}" alt="" loading="lazy" onerror="this.remove();">{{end}}
+        {{if .ApprovalOnly}}<span class="cln-crtbadge" title="Approval only"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>{{end}}
+    </div>
+    <span class="cln-nm">{{.Name}}</span>
+    <span class="cln-mb">
+        <span class="cln-mbcount"><i class="fa-solid fa-user" aria-hidden="true"></i><span>{{.Members}}</span></span>
+        {{if .Pending}}<span class="cln-state is-pending">Pending</span>{{end}}
+    </span>
+</a>

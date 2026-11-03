@@ -32,16 +32,33 @@ window.applyBannerEffect = function() {
 window.headerDirty = false;
 window.headerSaved = null;
 window.headerLeaveProc = null;
+window.bannerPreviewHasBanner = false;
+window.bannerDraftDirty = false;
 
 window.markHeaderDirty = function() {
     window.headerDirty = true;
+    window.syncHeaderPreviewStatus();
+};
+
+window.markBannerDraftDirty = function() {
+    window.bannerDraftDirty = true;
+    window.markHeaderDirty();
+};
+
+window.syncHeaderPreviewStatus = function() {
+    const status = document.getElementById('bannerPreviewStatus');
+    if (!status) return;
+    const dirty = !!window.headerDirty;
+    status.classList.toggle('dirty', dirty);
+    const label = status.querySelector('.bnrstatustxt');
+    if (label) label.textContent = dirty ? 'Unsaved changes' : 'Preview';
 };
 
 window.selectBannerType = function(value) {
     const typeInput = document.getElementById('bannerTypeInput');
     if (!typeInput) return;
     typeInput.value = String(value || 'color');
-    window.markHeaderDirty();
+    window.markBannerDraftDirty();
     typeInput.dispatchEvent(new Event('change', { bubbles: true }));
 };
 
@@ -60,7 +77,7 @@ window.setBannerAngle = function(deg) {
     if (isNaN(angle)) angle = 135;
     angle = Math.min(360, Math.max(0, angle));
     angleEl.value = angle;
-    window.markHeaderDirty();
+    window.markBannerDraftDirty();
     window.updateBannerPreview();
 };
 
@@ -191,7 +208,10 @@ window.updateBannerPreview = function() {
     const layer = window.bannerFxLayer();
     if (!preview || !typeInput || !layer) return;
     const type = typeInput.value;
-    if (type === 'gradient') {
+    const showBanner = window.bannerPreviewHasBanner || window.bannerDraftDirty;
+    if (!showBanner) {
+        layer.style.background = 'transparent';
+    } else if (type === 'gradient') {
         const a = bannerHex(document.getElementById('bannerColorA')?.value, '#7423CB');
         const b = bannerHex(document.getElementById('bannerColorB')?.value, '#912ADF');
         let angle = parseInt(document.getElementById('bannerAngle')?.value, 10);
@@ -200,8 +220,11 @@ window.updateBannerPreview = function() {
         layer.style.background = `linear-gradient(${angle}deg, ${a}, ${b})`;
     } else if (type === 'image') {
         const url = window.bannerCacheImageURL();
+        const savedBg = window.headerSaved && window.headerSaved.layerBg ? window.headerSaved.layerBg : '';
         if (url) {
             layer.style.background = `url('${url}') center/cover no-repeat`;
+        } else if (!/url\(/.test(layer.style.background)) {
+            layer.style.background = /url\(/.test(savedBg) ? savedBg : 'transparent';
         }
     } else {
         const a = bannerHex(document.getElementById('bannerColorA')?.value, '#7423CB');
@@ -275,6 +298,8 @@ window.refreshBannerPreviewAfterSubmit = function(data) {
     const preview = document.getElementById('settingsBannerPreview');
     const typeInput = document.getElementById('bannerTypeInput');
     if (preview && data) {
+        window.bannerPreviewHasBanner = true;
+        window.bannerDraftDirty = false;
         if (typeInput && typeInput.value === 'image' && data.banner_id) {
             window.bannerRevokeImageURL();
             const layer = window.bannerFxLayer();
@@ -333,7 +358,7 @@ window.removeProfileBanner = function() {
         }
         const layer = window.bannerFxLayer();
         if (layer) {
-            layer.style.background = '#D4D4D4';
+            layer.style.background = 'transparent';
             layer.style.filter = '';
             layer.style.transform = '';
             layer.style.animation = '';
@@ -342,6 +367,8 @@ window.removeProfileBanner = function() {
         if (note) note.remove();
         const removeBtn = document.getElementById('bannerRemoveBtn');
         if (removeBtn) removeBtn.remove();
+        window.bannerPreviewHasBanner = false;
+        window.bannerDraftDirty = false;
         window.bannerRevokeImageURL();
         window.bannerDrafts = { color: null, gradient: null, image: null };
         const fileInput = document.getElementById('bannerImageFile');
@@ -501,6 +528,7 @@ window.updateBannerTextBgOpts = function() {
     const box = document.getElementById('bannerTextBg');
     const opts = document.getElementById('bannerTextBgOpts');
     if (opts) opts.style.display = box && box.checked ? '' : 'none';
+    window.syncBannerTextBgPreview();
     if (typeof window.updateViewportHeight === 'function') window.updateViewportHeight();
 };
 
@@ -515,18 +543,28 @@ window.bannerHexToRgb = function(hex) {
 };
 
 window.syncBannerTextBgPreview = function() {
-    const box = document.getElementById('bannerTextBgPreview');
-    if (!box) return;
     const rgb = window.bannerHexToRgb(document.getElementById('bannerTextBgColor')?.value) || { r: 240, g: 240, b: 240 };
     const border = bannerHex(document.getElementById('bannerTextBgBorder')?.value, '#A9A9A9');
     const text = bannerHex(document.getElementById('bannerTextBgText')?.value, '#1A202C');
     let opacity = parseInt(document.getElementById('bannerTextBgOpacity')?.value, 10);
     if (isNaN(opacity)) opacity = 78;
     opacity = Math.min(100, Math.max(0, opacity));
-    box.style.background = `rgba(${rgb.r},${rgb.g},${rgb.b},${(opacity / 100).toFixed(2)})`;
-    box.style.borderColor = border;
-    const sample = box.querySelector('span');
-    if (sample) sample.style.color = text;
+    const background = `rgba(${rgb.r},${rgb.g},${rgb.b},${(opacity / 100).toFixed(2)})`;
+    const box = document.getElementById('bannerTextBgPreview');
+    if (box) {
+        box.style.background = background;
+        box.style.borderColor = border;
+        const sample = box.querySelector('span');
+        if (sample) sample.style.color = text;
+    }
+    const header = document.getElementById('settingsBannerTextBg');
+    if (header) {
+        const enabled = !!(document.getElementById('bannerTextBg')?.checked);
+        header.classList.toggle('prftxtbg', enabled);
+        header.style.backgroundColor = enabled ? background : '';
+        header.style.borderColor = enabled ? border : '';
+        header.style.color = enabled ? text : '';
+    }
 };
 
 window.setBannerTextBgOpacity = function(value) {
@@ -629,14 +667,19 @@ window.captureHeaderSaved = function() {
         textBgBorder: document.getElementById('bannerTextBgBorder')?.value || '',
         textBgText: document.getElementById('bannerTextBgText')?.value || '',
         textBgOpacity: document.getElementById('bannerTextBgOpacity')?.value || '',
-        layerBg: layer ? layer.style.background : ''
+        layerBg: layer ? layer.style.background : '',
+        hasBanner: !!window.bannerPreviewHasBanner
     };
+    window.bannerDraftDirty = false;
     window.headerDirty = false;
+    window.syncHeaderPreviewStatus();
 };
 
 window.revertHeaderChanges = function() {
     const s = window.headerSaved;
     if (!s) return;
+    window.bannerPreviewHasBanner = !!s.hasBanner;
+    window.bannerDraftDirty = false;
     window.bannerDrafts = { color: null, gradient: null, image: null };
     window.bannerPrevType = null;
     const setVal = function(id, value) {
@@ -676,6 +719,7 @@ window.revertHeaderChanges = function() {
     window.syncBannerTextBgOpacityPresets();
     window.syncBannerTextBgPreview();
     window.headerDirty = false;
+    window.syncHeaderPreviewStatus();
 };
 
 window.confirmLeaveHeader = function(proceed) {
@@ -785,6 +829,7 @@ window.doSwitchBannerTab = function(tab, clicked) {
         window.syncBannerTextBgPreview();
         window.updateBannerPreview();
     }
+    window.syncHeaderPreviewStatus();
     if (typeof window.updateViewportHeight === 'function') window.updateViewportHeight();
 };
 
@@ -819,7 +864,7 @@ window.initBannerColorPickers = function() {
             initialColor: bannerHex(input.value, def.fallback),
             onChange: function(hex) {
                 input.value = String(hex).toUpperCase();
-                window.markHeaderDirty();
+                window.markBannerDraftDirty();
                 window.updateBannerPreview();
             }
         });
@@ -832,6 +877,9 @@ window.initProfileBanner = function() {
     const typeInput = document.getElementById('bannerTypeInput');
     if (!typeInput || typeInput.dataset.bannerBound) return;
     typeInput.dataset.bannerBound = '1';
+    const fxLayer = window.bannerFxLayer();
+    window.bannerPreviewHasBanner = !!(fxLayer && fxLayer.style.background && fxLayer.style.background !== 'transparent');
+    window.bannerDraftDirty = false;
     typeInput.addEventListener('change', window.updateBannerTypeRows);
     const textBgBox = document.getElementById('bannerTextBg');
     if (textBgBox) textBgBox.addEventListener('change', () => {
@@ -853,7 +901,7 @@ window.initProfileBanner = function() {
     window.syncBannerTextBgPreview();
     const angleEl = document.getElementById('bannerAngle');
     if (angleEl) angleEl.addEventListener('input', () => {
-        window.markHeaderDirty();
+        window.markBannerDraftDirty();
         window.updateBannerPreview();
     });
     const fileInput = document.getElementById('bannerImageFile');
@@ -865,7 +913,7 @@ window.initProfileBanner = function() {
             const msgEl = document.getElementById('bannerImageMsg');
             if (nameEl) nameEl.textContent = file ? file.name : '';
             if (msgEl) msgEl.textContent = file ? 'Choose a different file' : 'Choose a PNG or JPEG';
-            window.markHeaderDirty();
+            window.markBannerDraftDirty();
             window.updateBannerPreview();
         });
     }

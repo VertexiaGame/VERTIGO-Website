@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
@@ -153,7 +154,7 @@ func (s *AuthService) AuthenticateUser(identifier, password string) (*models.Use
 	return user, nil
 }
 
-func (s *AuthService) RegisterUser(username, displayname, email, password, passwordConfirm string) (*models.User, error) {
+func (s *AuthService) RegisterUser(username, displayname, email, password, passwordConfirm, ip string) (*models.User, error) {
 	if username == "" || email == "" || password == "" {
 		return nil, errors.New("All required fields must be filled!")
 	}
@@ -239,11 +240,24 @@ func (s *AuthService) RegisterUser(username, displayname, email, password, passw
 	}
 	legIdx := int(idxBytes[0]) % 4
 
-	if err := s.userRepo.CreateUser(user, torsoColors[torsoIdx], legColors[legIdx]); err != nil {
+	if err := s.userRepo.CreateUser(user, torsoColors[torsoIdx], legColors[legIdx], hashRegistrationIP(ip, config.Global.RegistrationIPSalt)); err != nil {
+		if errors.Is(err, repository.ErrRegistrationIPLimit) {
+			return nil, errors.New("Too many accounts have already been created from this IP address")
+		}
 		return nil, err
 	}
 
 	return user, nil
+}
+
+func hashRegistrationIP(ip, salt string) string {
+	if addr, err := netip.ParseAddr(strings.TrimSpace(ip)); err == nil {
+		ip = addr.Unmap().String()
+	}
+
+	mac := hmac.New(sha256.New, []byte(salt))
+	mac.Write([]byte(ip))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func (s *AuthService) CreateRememberToken(userID int, duration time.Duration) (string, error) {

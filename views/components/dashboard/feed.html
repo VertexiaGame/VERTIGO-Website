@@ -19,7 +19,7 @@
                     <img src="/api/v1/avatar/headshot/{{$post.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{$post.Username}}">
                 </div>
                 <div class="psthdr">
-                    <a href="/user/{{$post.UserID}}" hx-get="/user/{{$post.UserID}}" hx-target="body" hx-push-url="true" class="pstaut">{{$post.Username}}</a>
+                    <span class="pstaut-wrap">{{template "components/clan/tag" $post.Tag}}<a href="/user/{{$post.UserID}}" hx-get="/user/{{$post.UserID}}" hx-target="body" hx-push-url="true" class="pstaut">{{$post.Username}}</a></span>
                     <div class="ttpcnt">
                         <span class="psttme">{{$post.TimeAgo}}</span>
                         <span class="ttptxt">{{$post.FullDate}}</span>

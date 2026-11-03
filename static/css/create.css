@@ -28,7 +28,7 @@
 }
 
 .crttypebtn:hover {
-    color: #3D3D3D;
+    color: var(--ink);
     transform: scale(1.03);
 }
 
@@ -38,7 +38,7 @@
 }
 
 .crttypebtn.active {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    background: var(--grad-accent);
     border: none;
     color: #FFFFFF;
 }
@@ -58,6 +58,10 @@
 
 .crttypebtn.active img {
     filter: brightness(0) invert(1);
+}
+
+.frmmain {
+    min-width: 0;
 }
 
 .crtvwp {
@@ -83,7 +87,7 @@
     font-family: 'Ubuntu', sans-serif;
     font-size: 11px;
     font-weight: 400;
-    color: #718096;
+    color: var(--muted);
     white-space: nowrap;
 }
 
@@ -114,8 +118,8 @@
     aspect-ratio: 16 / 10;
     object-fit: cover;
     border-radius: 8px;
-    border: 1px solid #D4D4D4;
-    background: #D4D4D4;
+    border: 1px solid var(--surface);
+    background: var(--surface);
     display: block;
 }
 
@@ -168,8 +172,8 @@
     height: 20px;
     border-radius: 50%;
     border: 1px solid var(--border);
-    background: #F0F0F0;
-    color: #3D3D3D;
+    background: var(--surface-raised);
+    color: var(--ink);
     font-size: 11px;
     line-height: 1;
     display: flex;
@@ -181,7 +185,7 @@
 
 .crtthumbs-x:focus-visible,
 .crtthumbs-mv:focus-visible {
-    outline: 2px solid #912ADF;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
@@ -207,8 +211,8 @@
 }
 
 .crtthumbs-mv:hover:enabled {
-    border-color: #912ADF;
-    color: #912ADF;
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 .crtthumbs-mv:disabled {
@@ -232,7 +236,7 @@
 }
 
 .crtthumbs-pick:first-child .crtthumbs-ord {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    background: var(--grad-accent);
     border: none;
     color: #FFFFFF;
 }
@@ -290,7 +294,7 @@
     font-family: 'Ubuntu', sans-serif;
     font-size: 13px;
     font-weight: 500;
-    color: #3D3D3D;
+    color: var(--ink);
 }
 
 .crtpriceico {
@@ -326,8 +330,8 @@
     gap: 6px;
     width: 100%;
     min-height: 96px;
-    background: #F0F0F0;
-    border: 2px dashed #A9A9A9;
+    background: var(--surface-raised);
+    border: 2px dashed var(--line);
     border-radius: 8px;
     cursor: pointer;
     font-family: 'Ubuntu', sans-serif;
@@ -339,8 +343,8 @@
 }
 
 .crtupload:hover {
-    border-color: #912ADF;
-    color: #912ADF;
+    border-color: var(--accent);
+    color: var(--accent);
     background: #FFFFFF;
 }
 
@@ -355,7 +359,7 @@
 
 .crtupname {
     font-size: 12px;
-    color: #912ADF;
+    color: var(--accent);
     word-break: break-all;
 }
 
@@ -380,15 +384,15 @@
 
 .crt3dbody {
     padding: 16px !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
 }
 
 .crt3dview {
     position: relative;
     width: 100%;
     height: 420px;
-    background: #F0F0F0;
-    border: 2px solid #A9A9A9;
+    background: var(--surface-raised);
+    border: 2px solid var(--line);
     border-radius: 12px;
     overflow: hidden;
     box-sizing: border-box;
@@ -409,7 +413,7 @@
     margin-top: 8px;
     font-family: 'Ubuntu', sans-serif;
     font-size: 11px;
-    color: #718096;
+    color: var(--muted);
 }
 
 .crt3dhint i {
@@ -421,8 +425,8 @@
     flex-direction: column;
     gap: 10px;
     margin-top: 10px;
-    background: #F0F0F0;
-    border: 2px solid #A9A9A9;
+    background: var(--surface-raised);
+    border: 2px solid var(--line);
     border-radius: 12px;
     padding: 12px;
     box-sizing: border-box;
@@ -440,7 +444,7 @@
     font-family: 'Ubuntu', sans-serif;
     font-size: 11px;
     font-weight: 500;
-    color: #3D3D3D;
+    color: var(--ink);
 }
 
 .crt3dtfrw {
@@ -454,7 +458,7 @@
     font-family: 'Ubuntu', sans-serif;
     font-size: 10px;
     font-weight: 500;
-    color: #718096;
+    color: var(--muted);
 }
 
 .crt3daxbox {
@@ -486,7 +490,7 @@
     font-family: 'Ubuntu', sans-serif;
     font-size: 12px;
     font-weight: 500;
-    color: #3D3D3D;
+    color: var(--ink);
     cursor: pointer;
     outline: none;
     box-sizing: border-box;
@@ -519,7 +523,7 @@
 
 .crtassetrow strong {
     font-weight: 500;
-    color: #3D3D3D;
+    color: var(--ink);
 }
 
 .crtprog {
@@ -536,7 +540,7 @@
 .crtprogtrack {
     width: 100%;
     height: 8px;
-    background: #EDEDED;
+    background: var(--surface-raised);
     border-radius: 8px;
     overflow: hidden;
     box-sizing: border-box;
@@ -545,7 +549,7 @@
 .crtprogbar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    background: var(--grad-accent);
     border-radius: 8px;
     transition: width 0.15s ease;
 }
@@ -561,6 +565,7 @@
     .crtform {
         flex-direction: column;
     }
+    .crtforml,
     .crtformr {
         width: 100%;
     }

@@ -227,7 +227,7 @@ func gameUploadFiles(c fiber.Ctx, field string, max int, kind string) ([]*multip
 
 func normalizeCreateType(value string) string {
 	switch value {
-	case "game", "shop", "asset":
+	case "game", "shop", "asset", "clan":
 		return value
 	default:
 		return "shop"
@@ -284,6 +284,7 @@ func CreateGet(c fiber.Ctx) error {
 		"CanCreateGame":        true,
 		"CanCreatePublicGame":  canCreatePublicGame,
 		"AccountAgeDays":       int(accountAge.Hours() / 24),
+		"ClanCreateCost":       service.ClanCreateCost,
 	}, "layouts/main")
 }
 

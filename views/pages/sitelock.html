@@ -22,7 +22,7 @@
             <div class="frmlay">
                 <div class="frmmain">
                     <h2 class="frmttl">Enter Password</h2>
-                    <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 0 0 20px 0;">beta2-171026</p>
+                    <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #444444; line-height: 1.4; margin: 0 0 20px 0;">beta2-261026</p>
                     <form action="/sitelock" method="POST" hx-boost="false">
                         <div class="frmgrp">
                             <div class="frmincnt">
@@ -44,7 +44,6 @@
 {{if .Error}}
 <script>
     (function() {
-        //lmao
         var err = "{{.Error}}";
         if (!err) return;
         var input = document.querySelector('input[name="password"]');

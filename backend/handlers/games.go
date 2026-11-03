@@ -129,7 +129,8 @@ func GameDetailGet(c fiber.Ctx) error {
 	if err != nil || game == nil {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
-	if game.Private || game.Locked {
+	viewerID := activeUserID(c)
+	if !game.VisibleTo(viewerID) {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
 	related, err := service.Game.GetRelatedGames(game, 6)
@@ -154,10 +155,8 @@ func GameDetailGet(c fiber.Ctx) error {
 		}
 	}
 	viewerRating := ""
-	if username := GetActiveUser(c); username != "" && service.User != nil {
-		if u, _ := service.User.GetUserByUsername(username); u != nil {
-			viewerRating, _ = service.Game.GetUserRating(u.ID, gameID)
-		}
+	if viewerID > 0 {
+		viewerRating, _ = service.Game.GetUserRating(viewerID, gameID)
 	}
 	return Render(c, "pages/game", fiber.Map{
 		"Title":        game.Name + " - VERTEXIA",
@@ -211,7 +210,7 @@ func GameRatePost(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid rating: use like, dislike or clear"})
 	}
 	game, err := service.Game.GetGameByID(gameID)
-	if err != nil || game == nil || game.Private || game.Locked {
+	if err != nil || game == nil || !game.VisibleTo(user.ID) {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Game not found"})
 	}
 	userRating, err := service.Game.RateGame(user.ID, gameID, action)

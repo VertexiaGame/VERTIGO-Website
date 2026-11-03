@@ -1,0 +1,184 @@
+<div id="crt-clan" class="settabcntnt{{if eq .ActiveType "clan"}} active{{end}}">
+    <div class="crtform">
+        <div class="crtforml">
+            <div class="setcrd">
+                <h3 class="setttl">Create Clan</h3>
+                <span class="setinf">Start a crew, add an icon and rally your friends around it</span>
+                <form class="crtformel" id="crtClanForm" hx-boost="false" action="javascript:void(0);" onsubmit="return window.submitClanCreate(event)">
+                    <input type="hidden" name="csrf" value="{{.CSRF}}">
+                    <input type="hidden" id="crtClanCatInput" name="category" value="social">
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtClanName">Name</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setinbox">
+                                        <input type="text" id="crtClanName" name="name" class="setin" placeholder="Name your clan" required minlength="3" maxlength="40" autocomplete="off" oninput="window.updateClanCreatePreview()">
+                                    </div>
+                                    <span class="ttptxt">3 to 40 characters</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtClanTag">Tag</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setinbox">
+                                        <input type="text" id="crtClanTag" name="tag" class="setin cln-tag-input" placeholder="ABC12" required minlength="2" maxlength="5" pattern="[A-Za-z0-9]{2,5}" autocomplete="off" spellcheck="false" oninput="window.normalizeClanTagInput(this)">
+                                    </div>
+                                    <span class="ttptxt">2 to 5 letters or numbers. Shown as [TAG] before your username.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <span class="crtlbl">Tag Colour</span>
+                        <input type="hidden" name="tag_color" id="crtClanTagColor" value="#912ADF">
+                        <div class="bnrstops">
+                            <button type="button" class="bnrstop" aria-label="Choose tag colour" title="Choose tag colour" onclick="window.toggleClanTagPicker('crtClan')">
+                                <span class="bnrswatch" id="crtClanTagSwatch" style="background: #912ADF;"></span>
+                            </button>
+                        </div>
+                        <div class="bnrpop" id="crtClanTagColorPop">
+                            <div class="bnrpophdr">
+                                <span class="bnrpoptitle">Tag colour</span>
+                                <button type="button" class="bnrpopclose" onclick="window.closeClanTagPicker('crtClan')" aria-label="Close colour picker"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                            </div>
+                            <div class="bnrclrpick" id="crtClanTagColorPicker"></div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtClanDesc">Description</label>
+                        <div class="instk">
+                            <div class="instkrw">
+                                <div class="ttpcnt">
+                                    <div class="setareabox">
+                                        <textarea id="crtClanDesc" name="description" class="setarea" placeholder="What is your clan about?" maxlength="500" oninput="window.updateClanCreatePreview()"></textarea>
+                                    </div>
+                                    <span class="ttptxt">Maximum of 500 characters</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <span class="crtlbl">Category</span>
+                        <div class="gam-genres" id="crtClanCatBar">
+                            <button type="button" class="gam-pill" data-cat="building" onclick="window.switchClanCreateCategory('building', event)">
+                                <i class="fa-solid fa-cubes"></i>
+                                <span>Building</span>
+                            </button>
+                            <button type="button" class="gam-pill active" data-cat="social" onclick="window.switchClanCreateCategory('social', event)">
+                                <i class="fa-solid fa-comments"></i>
+                                <span>Social</span>
+                            </button>
+                            <button type="button" class="gam-pill" data-cat="grinding" onclick="window.switchClanCreateCategory('grinding', event)">
+                                <i class="fa-solid fa-bolt"></i>
+                                <span>Grinding</span>
+                            </button>
+                            <button type="button" class="gam-pill" data-cat="roleplay" onclick="window.switchClanCreateCategory('roleplay', event)">
+                                <i class="fa-solid fa-masks-theater"></i>
+                                <span>Roleplay</span>
+                            </button>
+                            <button type="button" class="gam-pill" data-cat="games" onclick="window.switchClanCreateCategory('games', event)">
+                                <i class="fa-solid fa-gamepad"></i>
+                                <span>Games</span>
+                            </button>
+                            <button type="button" class="gam-pill" data-cat="trading" onclick="window.switchClanCreateCategory('trading', event)">
+                                <i class="fa-solid fa-handshake"></i>
+                                <span>Trading</span>
+                            </button>
+                            <button type="button" class="gam-pill" data-cat="creative" onclick="window.switchClanCreateCategory('creative', event)">
+                                <i class="fa-solid fa-palette"></i>
+                                <span>Creative</span>
+                            </button>
+                            <button type="button" class="gam-pill" data-cat="music" onclick="window.switchClanCreateCategory('music', event)">
+                                <i class="fa-solid fa-music"></i>
+                                <span>Music</span>
+                            </button>
+                            <button type="button" class="gam-pill" data-cat="ugc" onclick="window.switchClanCreateCategory('ugc', event)">
+                                <i class="fa-solid fa-shirt"></i>
+                                <span>UGC</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <span class="crtlbl">Privacy</span>
+                        <div class="glb-dropdown" id="crtClanPrivacyDropdown">
+                            <button type="button" class="glb-dropdown-trigger" onclick="window.toggleGlobalDropdown('crtClanPrivacyDropdown')">
+                                <span class="glb-dropdown-label" id="crtClanPrivacyLabel">Public</span>
+                                <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4">
+                                    <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                </svg>
+                            </button>
+                            <div class="glb-dropdown-menu">
+                                <div class="glb-dropdown-item active" data-value="public" onclick="window.selectGlobalDropdownOption('crtClanPrivacyDropdown', 'public', 'Public')"><i class="fa-solid fa-earth-americas"></i> Public</div>
+                                <div class="glb-dropdown-item" data-value="approval" onclick="window.selectGlobalDropdownOption('crtClanPrivacyDropdown', 'approval', 'Approval only')"><i class="fa-solid fa-lock"></i> Approval only</div>
+                            </div>
+                            <input type="hidden" id="crtClanPrivacyInput" name="privacy" value="public">
+                        </div>
+                        <span class="cln-privacy-note" id="crtClanPrivacyNote"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Approval-only clans are hidden from browse. Admins approve every join request.</span>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtClanIcon">Clan Icon</label>
+                        <div class="ttpcnt">
+                            <label class="crtupload" for="crtClanIcon">
+                                <input type="file" id="crtClanIcon" name="icon" accept="image/png,image/jpeg" onchange="window.handleClanIcon(event)" hidden>
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span class="crtupmsg" id="crtClanIconMsg">Choose a PNG or JPG</span>
+                                <span class="crtupname" id="crtClanIconName"></span>
+                            </label>
+                            <span class="ttptxt">A square image works best, up to 8 MB. Shown once an admin approves it</span>
+                        </div>
+                    </div>
+                    <div class="crtfld">
+                        <label class="crtlbl" for="crtClanBanner">Clan Banner</label>
+                        <div class="ttpcnt">
+                            <label class="crtupload" for="crtClanBanner">
+                                <input type="file" id="crtClanBanner" name="banner" accept="image/png,image/jpeg" onchange="window.handleClanBanner(event)" hidden>
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span class="crtupmsg" id="crtClanBannerMsg">Choose a PNG or JPG</span>
+                                <span class="crtupname" id="crtClanBannerName"></span>
+                            </label>
+                            <span class="ttptxt">A wide image works best, up to 8 MB. Shown once an admin approves it</span>
+                        </div>
+                    </div>
+                    <div class="cln-note">
+                        <img src="/static/useful/icons/verticec.png" alt="">
+                        <span>Creating a clan costs {{.ClanCreateCost}} Vertices</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                        <button type="submit" class="primary hpyprim hpyinl hpysm" id="crtClanSubmitBtn">
+                            <span>Create Clan</span>
+                        </button>
+                        <a href="/create/clans" hx-get="/create/clans" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                            <span>My Clans</span>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="crtformr">
+            <div class="setcrd crtprevcrd">
+                <h3 class="setttl">Preview</h3>
+                <span class="setinf">How your clan will appear</span>
+                <div class="cln-crt-banner" id="crtClanPreviewBanner" hidden>
+                    <img id="crtClanPreviewBannerImg" alt="">
+                </div>
+                <div class="cln-card cln-crt-prev" id="crtClanPreview">
+                    <div class="cln-crest" id="crtClanPreviewCrest">
+                        <img class="cln-crtimg" id="crtClanPreviewIcon" alt="" hidden>
+                        <span class="cln-crtbadge" id="crtClanPreviewLock" title="Approval only" hidden><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
+                    </div>
+                    <span class="cln-nm" id="crtClanPreviewName">Untitled Clan</span>
+                    <span class="cln-mb"><span class="cln-mbcount"><i class="fa-solid fa-user"></i><span>1</span></span></span>
+                </div>
+                <div class="cln-prev-meta">
+                    <span class="cln-prev-item" id="crtClanPreviewPrivacy"><i class="fa-solid fa-earth-americas" id="crtClanPreviewPrivacyIcon" aria-hidden="true"></i> <span id="crtClanPreviewPrivacyText">Public</span></span>
+                    <span class="cln-prev-item" id="crtClanPreviewCategory"><i class="fa-solid fa-layer-group" id="crtClanPreviewCatIcon" aria-hidden="true"></i> <span id="crtClanPreviewCat">Social</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

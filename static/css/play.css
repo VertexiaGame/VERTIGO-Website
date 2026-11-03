@@ -31,7 +31,7 @@
 }
 
 .gam-pill:hover {
-    color: #3D3D3D;
+    color: var(--ink);
     transform: scale(1.03);
 }
 
@@ -41,7 +41,7 @@
 }
 
 .gam-pill.active {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    background: var(--grad-accent);
     border: none;
     padding: 0 16px;
     color: #FFFFFF;
@@ -157,6 +157,12 @@
 
 .gam-stats .gam-norating {
     color: var(--muted);
+}
+
+.gam-lock {
+    font-size: 0.8em;
+    margin-right: 0.35em;
+    opacity: 0.75;
 }
 
 @media (max-width: 860px) {
@@ -340,7 +346,7 @@
 }
 
 .gam-ratebtn:hover {
-    color: #3D3D3D;
+    color: var(--ink);
     transform: scale(1.06);
 }
 
@@ -363,14 +369,14 @@
 }
 
 .gam-ratebtn.active-like {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), var(--success);
+    background: var(--grad-success);
     border: none;
     padding: 0 16px;
     color: #FFFFFF;
 }
 
 .gam-ratebtn.active-dislike {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), var(--danger);
+    background: var(--grad-danger);
     border: none;
     padding: 0 16px;
     color: #FFFFFF;

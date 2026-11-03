@@ -1,4 +1,4 @@
-<div class="shp-card" data-id="{{.ID}}">
+<div class="shp-card" data-id="{{.ID}}" data-type="{{.Type}}">
     <div class="avtitmimg{{if or (eq .OnSale "false") (eq .OffSale "true")}} shp-offimg{{end}}">
         {{if ne .ApprovalState "approved"}}
         <img src="/static/useful/icons/missing.png" alt="[Content Pending]" loading="lazy" class="avtldimg" onload="this.classList.add('ld');">

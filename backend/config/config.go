@@ -10,8 +10,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-//handle and provide configurations
-
 type Config struct {
 	DBUser                 string
 	DBPass                 string
@@ -33,6 +31,10 @@ type Config struct {
 	SessionIdleTimeout     time.Duration
 	SessionAbsoluteTimeout time.Duration
 	AltchaHMACKey          string
+	RegistrationIPSalt     string
+	TrustProxy             bool
+	TrustedProxies         []string
+	ProxyHeader            string
 	GameserverAPIKey       string
 	LiveTimerEnabled       bool
 	LiveTimerDuration      time.Duration
@@ -56,6 +58,11 @@ type Config struct {
 	GSMReapInterval        time.Duration
 	GSMShutdownGrace       time.Duration
 	GSMServerLogsDir       string
+	FilterEnabled          bool
+	TypeSafeAPIKey         string
+	TypeSafeBaseURL        string
+	TypeSafeModel          string
+	FilterTimeout          time.Duration
 }
 
 var Global *Config
@@ -82,6 +89,20 @@ func parseLiveTimerDuration(val string) time.Duration {
 		}
 	}
 	return 0
+}
+
+func splitCommaSeparated(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
 }
 
 func (c *Config) IsSiteLockActive() bool {
@@ -164,6 +185,16 @@ func Load() (*Config, error) {
 	sessionIdleTimeout, _ := time.ParseDuration(os.Getenv("SESSION_IDLE_TIMEOUT"))
 	sessionAbsoluteTimeout, _ := time.ParseDuration(os.Getenv("SESSION_ABSOLUTE_TIMEOUT"))
 	altchaHMACKey := os.Getenv("ALTCHA_HMAC_KEY")
+	registrationIPSalt := strings.TrimSpace(os.Getenv("REGISTRATION_IP_SALT"))
+	if registrationIPSalt == "" {
+		registrationIPSalt = altchaHMACKey
+	}
+	trustProxy, _ := strconv.ParseBool(os.Getenv("TRUST_PROXY"))
+	proxyHeader := strings.TrimSpace(os.Getenv("PROXY_HEADER"))
+	if trustProxy && proxyHeader == "" {
+		proxyHeader = "X-Forwarded-For"
+	}
+	trustedProxies := splitCommaSeparated(os.Getenv("TRUSTED_PROXIES"))
 	redisAddr := strings.TrimSpace(os.Getenv("REDIS_ADDR"))
 	if redisAddr == "" {
 		redisAddr = "127.0.0.1:6379"
@@ -235,6 +266,28 @@ func Load() (*Config, error) {
 		gsmLogsDir = "./logs/gsm"
 	}
 
+	filterEnabled := true
+	if raw := strings.TrimSpace(os.Getenv("FILTER_ENABLED")); raw != "" {
+		if parsed, err := strconv.ParseBool(raw); err == nil {
+			filterEnabled = parsed
+		}
+	}
+	typeSafeBaseURL := strings.TrimSpace(os.Getenv("TYPESAFE_BASE_URL"))
+	if typeSafeBaseURL == "" {
+		typeSafeBaseURL = strings.TrimSpace(os.Getenv("TYPESAFE_ENDPOINT"))
+	}
+	if typeSafeBaseURL == "" {
+		typeSafeBaseURL = "https://api.typesafe.ai"
+	}
+	typeSafeModel := strings.TrimSpace(os.Getenv("TYPESAFE_MODEL"))
+	if typeSafeModel == "" {
+		typeSafeModel = "jev-latest"
+	}
+	filterTimeout, _ := time.ParseDuration(os.Getenv("FILTER_TIMEOUT"))
+	if filterTimeout <= 0 {
+		filterTimeout = 20 * time.Second
+	}
+
 	liveTimerEnabled, _ := strconv.ParseBool(os.Getenv("LIVETIMER_ENABLED"))
 	liveTimerDuration := parseLiveTimerDuration(os.Getenv("LIVETIMER_DURATION"))
 	if liveTimerDuration > time.Hour {
@@ -251,7 +304,7 @@ func Load() (*Config, error) {
 		DBHost:                 os.Getenv("DB_HOST"),
 		DBPort:                 os.Getenv("DB_PORT"),
 		DBName:                 os.Getenv("DB_NAME"),
-		RunWithDatabase:        runWithDB, //testing purposes
+		RunWithDatabase:        runWithDB,
 		DBMaxOpenConns:         dbMaxOpenConns,
 		DBMaxIdleConns:         dbMaxIdleConns,
 		DBConnMaxLifetime:      dbConnMaxLifetime,
@@ -266,6 +319,10 @@ func Load() (*Config, error) {
 		SessionIdleTimeout:     sessionIdleTimeout,
 		SessionAbsoluteTimeout: sessionAbsoluteTimeout,
 		AltchaHMACKey:          altchaHMACKey,
+		RegistrationIPSalt:     registrationIPSalt,
+		TrustProxy:             trustProxy,
+		TrustedProxies:         trustedProxies,
+		ProxyHeader:            proxyHeader,
 		GameserverAPIKey:       os.Getenv("GAMESERVER_API_KEY"),
 		LiveTimerEnabled:       liveTimerEnabled,
 		LiveTimerDuration:      liveTimerDuration,
@@ -289,10 +346,14 @@ func Load() (*Config, error) {
 		GSMReapInterval:        gsmReapInterval,
 		GSMShutdownGrace:       gsmShutdownGrace,
 		GSMServerLogsDir:       gsmLogsDir,
+		FilterEnabled:          filterEnabled,
+		TypeSafeAPIKey:         strings.TrimSpace(os.Getenv("TYPESAFE_API_KEY")),
+		TypeSafeBaseURL:        typeSafeBaseURL,
+		TypeSafeModel:          typeSafeModel,
+		FilterTimeout:          filterTimeout,
 	}
 
 	Global = cfg
 
-	//return to database.go the config
 	return cfg, nil
 }

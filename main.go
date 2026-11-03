@@ -59,6 +59,14 @@ func main() {
 		IdleTimeout:  cfg.ServerIdleTimeout,
 		ServerHeader: "",
 		ErrorHandler: handlers.ErrorHandler,
+		ProxyHeader:  cfg.ProxyHeader,
+		TrustProxy:   cfg.TrustProxy,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Proxies:  cfg.TrustedProxies,
+			Loopback: cfg.TrustProxy,
+			Private:  cfg.TrustProxy,
+		},
+		EnableIPValidation: true,
 	})
 
 	app.Use(recoverer.New())
@@ -81,8 +89,8 @@ func main() {
 		limiterExpiration = time.Minute
 	}
 	app.Use(limiter.New(limiter.Config{
-		Max:        limiterMax,
-		Expiration: limiterExpiration,
+		Max:          limiterMax,
+		Expiration:   limiterExpiration,
 		LimitReached: handlers.RateLimitReached,
 		Next: func(c fiber.Ctx) bool {
 			return strings.HasPrefix(c.Path(), "/ws/")

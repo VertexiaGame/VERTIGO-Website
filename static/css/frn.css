@@ -8,8 +8,8 @@
 }
 
 .frncrd {
-    background: #F0F0F0;
-    border: 1px solid #D4D4D4;
+    background: var(--surface-raised);
+    border: 1px solid var(--surface);
     border-radius: 12px;
     padding: 14px;
     display: flex;
@@ -30,7 +30,7 @@
     height: 48px;
     border-radius: 50%;
     overflow: hidden;
-    background: #D4D4D4;
+    background: var(--surface);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -56,7 +56,7 @@
     font-family: 'Ubuntu', sans-serif;
     font-size: 15px;
     font-weight: 500;
-    color: #1A202C;
+    color: var(--ink-strong);
     text-decoration: none;
     white-space: nowrap;
     overflow: hidden;
@@ -64,13 +64,13 @@
 }
 
 .frndn:hover {
-    color: var(--accent, #912ADF);
+    color: var(--accent, var(--accent));
 }
 
 .frnun {
     font-family: 'Ubuntu', sans-serif;
     font-size: 13px;
-    color: #718096;
+    color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -97,7 +97,7 @@
 .frnemt {
     font-family: 'Ubuntu', sans-serif;
     font-size: 14px;
-    color: #718096;
+    color: var(--muted);
     padding: 20px 0;
     text-align: center;
 }

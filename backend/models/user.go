@@ -19,34 +19,39 @@ const (
 )
 
 type User struct {
-	ID                int
-	Username          string
-	DisplayName       string
-	Mail              string
-	Password          string
-	Description       string
-	Unikey            string
-	Power             int
-	PrimaryClan       int
-	NameColor         string
-	CustomCSS         sql.NullString
-	Vermail           string
-	Vermc             string
-	Casom             string
-	Bits              int
-	Bucks             int
-	LastOnline        time.Time
-	CreationDate      time.Time
-	Views             int
-	FeedCaptchas      int
-	EmailVerifyToken  sql.NullString
-	EmailVerifyExpiry sql.NullInt64
-	Pronouns          string
-	Socials           string
-	MusicID           sql.NullInt64
-	DisableAutoplay   bool
-	ReducedMotion     bool
-	BannerEffect      string
+	ID                  int
+	Username            string
+	DisplayName         string
+	Mail                string
+	Password            string
+	Description         string
+	Unikey              string
+	Power               int
+	PrimaryClan         int
+	NameColor           string
+	CustomCSS           sql.NullString
+	Vermail             string
+	Vermc               string
+	Casom               string
+	Bits                int
+	Bucks               int
+	LastOnline          time.Time
+	CreationDate        time.Time
+	Views               int
+	FeedCaptchas        int
+	EmailVerifyToken    sql.NullString
+	EmailVerifyExpiry   sql.NullInt64
+	Pronouns            string
+	Socials             string
+	MusicID             sql.NullInt64
+	CertifiedCreator    bool
+	ContributorBadge    bool
+	DisableAutoplay     bool
+	ReducedMotion       bool
+	DisableBgdim        bool
+	HideInventory       bool
+	EnableOneko         bool
+	BannerEffect        string
 	BannerTextBg        bool
 	BannerTextBgColor   string
 	BannerTextBgBorder  string

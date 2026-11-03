@@ -23,6 +23,7 @@ type FeedPost struct {
 	FullDate   string
 	Reactions  int
 	HasReacted bool
+	Tag        *models.ClanTag `json:"tag,omitempty"`
 }
 
 type wsMessage struct {
@@ -35,6 +36,7 @@ type wsMessage struct {
 	FullDate  string `json:"full_date"`
 	Reactions int    `json:"reactions"`
 	FeedType  string `json:"feed_type"`
+	Tag       *models.ClanTag `json:"tag,omitempty"`
 }
 
 type WSClient struct {
@@ -62,6 +64,29 @@ func getFeedClientsSnapshot() []clientInfo {
 	return clients
 }
 
+func wornClanTag(userID int) *models.ClanTag {
+	if service.Clan == nil || userID <= 0 {
+		return nil
+	}
+	clan, err := service.Clan.WornClan(userID)
+	if err != nil || clan == nil {
+		return nil
+	}
+	return clan.TagInfo()
+}
+
+func enrichCommentTags(comments []*models.FeedComment) {
+	for _, c := range comments {
+		if c == nil {
+			continue
+		}
+		c.Tag = wornClanTag(c.UserID)
+		if len(c.Replies) > 0 {
+			enrichCommentTags(c.Replies)
+		}
+	}
+}
+
 func toFeedPosts(dbPosts []*models.FeedPost) []FeedPost {
 	posts := make([]FeedPost, 0, len(dbPosts))
 	for _, dbP := range dbPosts {
@@ -74,6 +99,7 @@ func toFeedPosts(dbPosts []*models.FeedPost) []FeedPost {
 			FullDate:   dbP.CreationDate.Format("January 02, 2006 at 03:04 PM"),
 			Reactions:  dbP.Reactions,
 			HasReacted: dbP.HasReacted,
+			Tag:        wornClanTag(dbP.UserID),
 		})
 	}
 	return posts
@@ -246,6 +272,7 @@ func GetFeedSingle(c fiber.Ctx) error {
 		"full_date":   single[0].FullDate,
 		"reactions":   single[0].Reactions,
 		"has_reacted": single[0].HasReacted,
+		"tag":         single[0].Tag,
 		"feed_type":   feedType,
 	})
 }
@@ -366,6 +393,8 @@ func GetFeedCommentsHandler(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	enrichCommentTags(comments)
+
 	return c.JSON(comments)
 }
 
@@ -482,6 +511,7 @@ func FeedWS(c *websocket.Conn) {
 							sendFeedError(client, err)
 							continue
 						}
+						comment.Tag = wornClanTag(comment.UserID)
 						BroadcastCommentPost(comment)
 					}
 
@@ -525,6 +555,7 @@ func BroadcastFeedPost(id int, username string, userID int, content string, feed
 		FullDate:  time.Now().Format("January 02, 2006 at 03:04 PM"),
 		Reactions: 0,
 		FeedType:  feedType,
+		Tag:       wornClanTag(userID),
 	}
 	data, err := json.Marshal(msg)
 	if err != nil {

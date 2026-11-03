@@ -28,6 +28,7 @@ type GameInfo struct {
 	MaxPlayers int
 	Private    bool
 	Locked     bool
+	Owner      string
 }
 
 type GameResolver func(gameID int) (GameInfo, error)

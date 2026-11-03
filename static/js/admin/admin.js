@@ -5,6 +5,7 @@ let currentAdminLogsPage = 1;
 let currentAdminAssetPage = 1;
 let currentAdminShopItemPage = 1;
 let currentAdminBannerPage = 1;
+let currentAdminClanMediaPage = 1;
 const activeAdmin3DViewers = new Map();
 
 const adminAssetTypeNames = {
@@ -1195,6 +1196,153 @@ window.reviewAdminBanner = function(id, action) {
         .catch(() => {});
 };
 
+window.fetchAdminClanMedia = function(page = 1) {
+    currentAdminClanMediaPage = page;
+
+    const grid = document.getElementById('admClanMediaGrid');
+    if (!grid) return;
+
+    fetch(`/api/v1/admin/clanmedia?page=${page}&limit=12`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.error) return;
+            window.renderAdminClanMedia(data);
+        })
+        .catch(() => {});
+};
+
+window.renderAdminClanMedia = function(data) {
+    const grid = document.getElementById('admClanMediaGrid');
+    const pgnTxt = document.getElementById('admClanMediaPgnTxt');
+    const prevBtn = document.getElementById('admClanMediaPrevBtn');
+    const nextBtn = document.getElementById('admClanMediaNextBtn');
+
+    if (!grid) return;
+
+    const page = data.page || 1;
+    const totalPages = Math.max(1, data.total_pages || 1);
+
+    if (!data.clans || data.clans.length === 0) {
+        grid.innerHTML = '<div class="frnemt adm-emt">No clan art awaiting review</div>';
+        if (pgnTxt) pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = (page <= 1);
+        if (nextBtn) nextBtn.disabled = (page >= totalPages);
+        window.updateAdminViewportHeight();
+        return;
+    }
+
+    let html = '';
+    data.clans.forEach(clan => {
+        const safeName = window.escapeHTML(clan.name || '');
+        const safeOwner = window.escapeHTML(clan.owner_name || '');
+
+        let previews = '';
+        if (clan.banner_pending) {
+            previews += `<div class="adm-clnmedia-banner"><img src="${clan.banner_pending}" alt="Pending banner" loading="lazy"></div>`;
+        }
+        if (clan.icon_pending) {
+            previews += `<div class="adm-clnmedia-icon"><img src="${clan.icon_pending}" alt="Pending icon" loading="lazy"></div>`;
+        }
+
+        let actions = '';
+        if (clan.icon_pending) {
+            actions += `
+                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminClanMedia(${clan.id}, 'icon', 'approve')">
+                        <span>Approve icon</span>
+                    </button>
+                    <button type="button" class="primary hpydng hpyinl hpysm" data-name="${safeName}" onclick="window.promptRejectClanMedia(${clan.id}, 'icon', this.dataset.name)">
+                        <span>Reject icon</span>
+                    </button>`;
+        }
+        if (clan.banner_pending) {
+            actions += `
+                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminClanMedia(${clan.id}, 'banner', 'approve')">
+                        <span>Approve banner</span>
+                    </button>
+                    <button type="button" class="primary hpydng hpyinl hpysm" data-name="${safeName}" onclick="window.promptRejectClanMedia(${clan.id}, 'banner', this.dataset.name)">
+                        <span>Reject banner</span>
+                    </button>`;
+        }
+        actions += `
+                    <a href="/clans/${clan.slug}" target="_blank" rel="noopener" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                        <span>View</span>
+                    </a>`;
+
+        html += `
+            <div class="adm-card" data-id="${clan.id}">
+                <div class="adm-cardhdr">
+                    <h3 class="adm-cardttl"><i class="fa-solid fa-users"></i><span>${safeName}</span></h3>
+                </div>
+                ${previews}
+                <div class="adm-rowlst">
+                    <div class="adm-row"><span class="adm-lbl">Owner</span><span class="adm-val"><a href="/user/${clan.owner_id}" hx-get="/user/${clan.owner_id}" hx-target="body" hx-push-url="true" class="adm-owner-link">@${safeOwner}</a></span></div>
+                </div>
+                <div class="adm-modbtns">${actions}
+                </div>
+            </div>
+        `;
+    });
+
+    grid.innerHTML = html;
+
+    if (pgnTxt) pgnTxt.textContent = `Page ${page} of ${totalPages}`;
+    if (prevBtn) prevBtn.disabled = (page <= 1);
+    if (nextBtn) nextBtn.disabled = (page >= totalPages);
+
+    window.updateAdminViewportHeight();
+};
+
+window.promptRejectClanMedia = function(id, kind, name) {
+    if (window.showModal) {
+        const safeName = window.escapeHTML(name || 'this clan');
+        const label = kind === 'banner' ? 'banner' : 'icon';
+        window.showModal({
+            title: kind === 'banner' ? 'Reject Clan Banner' : 'Reject Clan Icon',
+            subtitle: safeName,
+            body: `
+                <p style="font-family: 'Ubuntu', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">Are you sure you want to reject this ${label}? The clan keeps whatever it has now.</p>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                    <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.closeModal()">
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.confirmRejectClanMedia(${id}, '${kind}', event)">
+                        <span>Reject</span>
+                    </button>
+                </div>
+            `
+        });
+    } else {
+        window.reviewAdminClanMedia(id, kind, 'reject');
+    }
+};
+
+window.confirmRejectClanMedia = function(id, kind, event) {
+    if (event) event.preventDefault();
+    if (window.closeModal) window.closeModal();
+    window.reviewAdminClanMedia(id, kind, 'reject');
+};
+
+window.reviewAdminClanMedia = function(id, kind, action) {
+    const csrfInput = document.getElementById('admClanMediaCsrf');
+
+    const body = new URLSearchParams();
+    if (csrfInput) body.set('csrf', csrfInput.value);
+
+    fetch(`/admin/clanmedia/${id}/${kind}/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        },
+        body: body.toString()
+    })
+        .then(res => {
+            if (!res.ok) throw new Error('Review failed');
+            window.fetchAdminClanMedia(currentAdminClanMediaPage);
+        })
+        .catch(() => {});
+};
+
 window.reviewAdminAsset = function(id, action, customNote) {
     const csrfInput = document.getElementById('admAssetsCsrf');
     const note = customNote !== undefined ? customNote : '';
@@ -1357,10 +1505,132 @@ window.confirmKillGameserver = function(id) {
         .catch(() => {});
 };
 
+const adminFilterCategories = ['profanity', 'sexual', 'discrimination', 'harassment', 'politics'];
+
+const setAdminFilterStatus = (message, isError) => {
+    const statusEl = document.getElementById('filterStatus');
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.classList.toggle('err', Boolean(isError));
+};
+
+const formatAdminFilterValue = (category) => {
+    if (category.type === 'score') {
+        return category.value.toFixed(2) + ' / ' + category.threshold.toFixed(2);
+    }
+    return Math.round(category.value * 100) + '% / ' + Math.round(category.threshold * 100) + '%';
+};
+
+const renderAdminFilterResult = (data) => {
+    const result = document.getElementById('filterResult');
+    const verdict = document.getElementById('filterVerdict');
+    const reasons = document.getElementById('filterReasons');
+    const categories = document.getElementById('filterCategories');
+    const meta = document.getElementById('filterMeta');
+    if (!result || !verdict || !reasons || !categories || !meta) return;
+
+    verdict.className = 'adm-badge ' + (data.blocked ? 'adm-badge-rejected' : 'adm-badge-approved');
+    verdict.textContent = data.blocked ? 'Blocked' : 'Allowed';
+
+    reasons.replaceChildren();
+    (data.reasons || []).forEach((reason) => {
+        const item = document.createElement('li');
+        item.textContent = reason;
+        reasons.append(item);
+    });
+    reasons.hidden = !(data.reasons && data.reasons.length);
+
+    categories.replaceChildren();
+    adminFilterCategories.forEach((name) => {
+        const category = (data.categories || {})[name];
+        if (!category) return;
+
+        const row = document.createElement('div');
+        row.className = 'adm-filter-cat';
+
+        const label = document.createElement('span');
+        label.className = 'adm-lbl';
+        label.textContent = category.label;
+
+        const value = document.createElement('span');
+        value.className = 'adm-val';
+        value.textContent = formatAdminFilterValue(category);
+
+        const badge = document.createElement('span');
+        badge.className = 'adm-badge ' + (category.triggered ? 'adm-badge-rejected' : 'adm-badge-approved');
+        badge.textContent = category.triggered ? 'Blocked' : 'OK';
+
+        row.append(label, value, badge);
+        categories.append(row);
+    });
+
+    meta.replaceChildren();
+    ['Model: ' + data.model, 'Latency: ' + data.latency_ms + ' ms'].forEach((part) => {
+        const span = document.createElement('span');
+        span.textContent = part;
+        meta.append(span);
+    });
+
+    result.hidden = false;
+    window.updateAdminViewportHeight();
+};
+
+const runAdminFilter = async () => {
+    const textarea = document.getElementById('filterContent');
+    const button = document.getElementById('filterRun');
+    if (!textarea || !button) return;
+
+    const content = textarea.value.trim();
+    if (!content) {
+        setAdminFilterStatus('Enter content first.', true);
+        textarea.focus();
+        return;
+    }
+
+    button.disabled = true;
+    setAdminFilterStatus('Checking...', false);
+    try {
+        const response = await fetch('/api/v1/admin/filter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ content: content })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            setAdminFilterStatus(data.error || 'Filter request failed.', true);
+            return;
+        }
+        renderAdminFilterResult(data);
+        setAdminFilterStatus('', false);
+    } catch (error) {
+        setAdminFilterStatus('Could not reach the filter API.', true);
+    } finally {
+        button.disabled = false;
+    }
+};
+
+const initAdminFilter = () => {
+    const textarea = document.getElementById('filterContent');
+    const button = document.getElementById('filterRun');
+    if (!textarea || !button || button.dataset.filterBound === '1') return;
+    button.dataset.filterBound = '1';
+    button.addEventListener('click', runAdminFilter);
+    textarea.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            event.preventDefault();
+            runAdminFilter();
+        }
+    });
+};
+
 const initAdminPage = () => {
     window.destroyAllAdmin3DViewers();
     if (adminUptimeTimer) clearInterval(adminUptimeTimer);
     if (adminPollTimer) clearInterval(adminPollTimer);
+    initAdminFilter();
 
     setTimeout(() => {
         window.updateAdminTabIndicator();

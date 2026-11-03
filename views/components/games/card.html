@@ -1,6 +1,7 @@
 <div class="shp-card" data-id="{{.ID}}">
     <div class="avtitmimg">
         <img src="/static/uploads/games/{{.ID}}.png" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
+        {{if .Private}}<span class="avtitmbdg">Private</span>{{end}}
     </div>
     <div class="avtitmmeta">
         <span class="avtitmnm">{{.Name}}</span>

@@ -115,10 +115,45 @@
         </button>
         </div>
         <div id="bannerPaneBanner" style="margin-top: 16px; display: none;">
-            <h3 class="setttl">Profile Banner</h3>
+            <div class="persrow">
+                <h3 class="setttl">Profile Banner</h3>
+                <span class="bnrstatus" id="bannerPreviewStatus" aria-live="polite"><span class="bnrstatusdot" aria-hidden="true"></span><span class="bnrstatustxt">Preview</span></span>
+            </div>
             <div class="bnrprevwrap">
-                <div id="settingsBannerPreview" class="bnrprev" role="img" aria-label="Banner preview">
-                    <div id="settingsBannerFx" class="bnrprevfx" style="{{if .BannerPending}}{{.BannerPending.Style}}{{else if .BannerLive}}{{.BannerLive.Style}}{{end}}"></div>
+                <div id="settingsBannerPreview" class="prfhdr bnrprv" role="group" aria-label="Profile header preview">
+                    <div id="settingsBannerFx" class="prfbnr" style="{{if .BannerPending}}{{.BannerPending.Style}}{{else if .BannerLive}}{{.BannerLive.Style}}{{end}}{{.BannerFilter}}"></div>
+                    <div id="settingsBannerTextBg" class="prfinf{{if .BannerTextBg}} prftxtbg{{end}}"{{if .BannerTextBg}} style="{{.ProfileUser.TextBgStyle}}"{{end}}>
+                        <div class="prfavt">
+                            <img src="/api/v1/avatar/headshot/{{.ProfileUser.ID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.ProfileUser.Username}}">
+                        </div>
+                        <div class="prfmeta">
+                            <h1 class="prfdn">
+                                <span id="settingsProfileDisplayName">{{.ProfileUser.DisplayName}}</span>
+                                <span class="prfprn" id="settingsProfilePronouns"{{if not .ProfileUser.Pronouns}} hidden{{end}}>{{if .ProfileUser.Pronouns}}({{.ProfileUser.Pronouns}}){{end}}</span>
+                                {{if ge .ProfileUser.Power 3}}
+                                <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_admin.png" alt="Administrator"><span class="ttptxt">This user is an official VERTEXIA administrator!</span></span>
+                                {{end}}
+                                {{if eq .ProfileUser.Power 2}}
+                                <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_mod.png" alt="Moderator"><span class="ttptxt">This user is a VERTEXIA moderator!</span></span>
+                                {{end}}
+                                {{if ge .FriendsCount 20}}
+                                <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_friendly.png" alt="Friendly"><span class="ttptxt">This user has more than 20 friends!</span></span>
+                                {{end}}
+                                {{if .ProfileUser.CertifiedCreator}}
+                                <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_creator.png" alt="Certified Creator"><span class="ttptxt">This user is a certified item creator!</span></span>
+                                {{end}}
+                                {{if .ProfileUser.ContributorBadge}}
+                                <span class="ttpcnt prfbadge"><img src="/static/useful/icons/badge_contributor.png" alt="Contributor"><span class="ttptxt">This user contributed to the official VERTEXIA repository!</span></span>
+                                {{end}}
+                            </h1>
+                            <span class="prfun">@{{.ProfileUser.Username}}</span>
+                            <div class="prfsts">
+                                <span class="prfst"><strong>{{.FriendsCount}}</strong> Friends</span>
+                                <span class="prfst"><strong>{{.FollowersCount}}</strong> Followers</span>
+                                <span class="prfst"><strong>{{.FollowingCount}}</strong> Following</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="bnreffbar" role="group" aria-label="Banner effect">
                     <button type="button" class="bnreffbtn{{if or (eq .BannerEffect "none") (eq .BannerEffect "")}} active{{end}}" data-bnreff="none" title="None" aria-label="No effect" onclick="window.selectBannerEffect('none')"><i class="fa-solid fa-ban"></i></button>

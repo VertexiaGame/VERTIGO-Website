@@ -10,6 +10,10 @@ import (
 	"vertexia-frontend/backend/models"
 )
 
+var ErrRegistrationIPLimit = errors.New("registration IP limit reached")
+
+const maxRegistrationsPerIP = 3
+
 type UserRepository struct {
 	db *sql.DB
 }
@@ -18,7 +22,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-const userSelectFields = "id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, ''), music_id, disable_autoplay, reduced_motion, COALESCE(banner_effect, 'none'), banner_text_bg, COALESCE(banner_text_bg_color, 'F0F0F0'), COALESCE(banner_text_bg_border, 'A9A9A9'), COALESCE(banner_text_bg_text, '1A202C'), COALESCE(banner_text_bg_opacity, 78)"
+const userSelectFields = "id, username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, email_verify_token, email_verify_expiry, COALESCE(pronouns, ''), COALESCE(socials, ''), music_id, certified_creator, contributor_badge, disable_autoplay, reduced_motion, disable_bgdim, COALESCE(banner_effect, 'none'), banner_text_bg, COALESCE(banner_text_bg_color, 'F0F0F0'), COALESCE(banner_text_bg_border, 'A9A9A9'), COALESCE(banner_text_bg_text, '1A202C'), COALESCE(banner_text_bg_opacity, 78), hide_inventory, enable_oneko"
 
 type scannable interface {
 	Scan(dest ...any) error
@@ -32,8 +36,9 @@ func scanUser(s scannable) (*models.User, error) {
 		&u.CustomCSS, &u.Vermail, &u.Vermc, &u.Casom, &u.Bits,
 		&u.Bucks, &u.LastOnline, &u.CreationDate, &u.Views, &u.FeedCaptchas,
 		&u.EmailVerifyToken, &u.EmailVerifyExpiry, &u.Pronouns, &u.Socials, &u.MusicID,
-		&u.DisableAutoplay, &u.ReducedMotion, &u.BannerEffect, &u.BannerTextBg,
-		&u.BannerTextBgColor, &u.BannerTextBgBorder, &u.BannerTextBgText, &u.BannerTextBgOpacity,
+		&u.CertifiedCreator, &u.ContributorBadge, &u.DisableAutoplay, &u.ReducedMotion, &u.DisableBgdim, &u.BannerEffect, &u.BannerTextBg,
+		&u.BannerTextBgColor, &u.BannerTextBgBorder, &u.BannerTextBgText, &u.BannerTextBgOpacity, &u.HideInventory,
+		&u.EnableOneko,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -249,12 +254,36 @@ func (r *UserRepository) GetUsernameChangesLeft(userID int) (int, error) {
 	return left, nil
 }
 
-func (r *UserRepository) CreateUser(u *models.User, torsoColor, legColor string) error {
+func (r *UserRepository) CreateUser(u *models.User, torsoColor, legColor, ipHash string) error {
 	if r.db == nil {
 		return nil
 	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query("SELECT id FROM registration_ips WHERE ip_hash = ? FOR UPDATE", ipHash)
+	if err != nil {
+		return err
+	}
+	count := 0
+	for rows.Next() {
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+	if count >= maxRegistrationsPerIP {
+		return ErrRegistrationIPLimit
+	}
+
 	query := "INSERT INTO users (username, displayname, mail, password, description, unikey, power, primary_clan, namecolor, custom_css, vermail, vermc, casom, bits, bucks, last_online, creation_date, views, feed_captchas, pronouns, socials) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	res, err := r.db.Exec(query,
+	res, err := tx.Exec(query,
 		u.Username, u.DisplayName, u.Mail, u.Password, u.Description,
 		u.Unikey, u.Power, u.PrimaryClan, u.NameColor, u.CustomCSS,
 		u.Vermail, u.Vermc, u.Casom, u.Bits, u.Bucks,
@@ -270,11 +299,18 @@ func (r *UserRepository) CreateUser(u *models.User, torsoColor, legColor string)
 	u.ID = int(lastID)
 
 	avatarQuery := "INSERT INTO avatar (id, head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color, hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face, head, larm, rarm, torso, lleg, rleg, light_color, light_intensity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	_, err = r.db.Exec(avatarQuery,
+	if _, err := tx.Exec(avatarQuery,
 		u.ID, models.DefaultHeadColor, models.DefaultHeadColor, models.DefaultHeadColor, torsoColor, legColor, legColor,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "ffffff", 100,
-	)
-	return err
+	); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec("INSERT INTO registration_ips (ip_hash, user_id) VALUES (?, ?)", ipHash, u.ID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *UserRepository) UpdateLastOnline(userID int) error {
@@ -431,14 +467,23 @@ func (r *UserRepository) UpdateMusicID(userID int, trackID int64) error {
 	return err
 }
 
-func (r *UserRepository) UpdatePersonalization(userID int, disableAutoplay bool, reducedMotion bool, customCSS string) error {	if r.db == nil {
+func (r *UserRepository) UpdatePersonalization(userID int, disableAutoplay bool, reducedMotion bool, disableBgdim bool, enableOneko bool, customCSS string) error {
+	if r.db == nil {
 		return errors.New("database connection is offline")
 	}
 	var cssVal any
 	if customCSS != "" {
 		cssVal = customCSS
 	}
-	_, err := r.db.Exec("UPDATE users SET disable_autoplay = ?, reduced_motion = ?, custom_css = ? WHERE id = ?", disableAutoplay, reducedMotion, cssVal, userID)
+	_, err := r.db.Exec("UPDATE users SET disable_autoplay = ?, reduced_motion = ?, disable_bgdim = ?, enable_oneko = ?, custom_css = ? WHERE id = ?", disableAutoplay, reducedMotion, disableBgdim, enableOneko, cssVal, userID)
+	return err
+}
+
+func (r *UserRepository) UpdatePrivacy(userID int, hideInventory bool) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec("UPDATE users SET hide_inventory = ? WHERE id = ?", hideInventory, userID)
 	return err
 }
 
@@ -471,6 +516,22 @@ func (r *UserRepository) AdminSetDisplayName(userID int, displayName string) err
 		return errors.New("database connection is offline")
 	}
 	_, err := r.db.Exec("UPDATE users SET displayname = ? WHERE id = ?", displayName, userID)
+	return err
+}
+
+func (r *UserRepository) SetCertifiedCreator(userID int, certified bool) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec("UPDATE users SET certified_creator = ? WHERE id = ?", certified, userID)
+	return err
+}
+
+func (r *UserRepository) SetContributorBadge(userID int, granted bool) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	_, err := r.db.Exec("UPDATE users SET contributor_badge = ? WHERE id = ?", granted, userID)
 	return err
 }
 

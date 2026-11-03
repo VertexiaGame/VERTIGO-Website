@@ -118,6 +118,10 @@ window.applyReducedMotion = function(on) {
     document.documentElement.classList.toggle('reduced-motion', !!on);
 };
 
+window.applyBgdimDisable = function(on) {
+    document.documentElement.classList.toggle('no-bgdim', !!on);
+};
+
 window.applyCustomCSS = function(cssText) {
     const css = (cssText || '').trim();
     let styleEl = document.getElementById('userCustomCSS');
@@ -133,8 +137,8 @@ window.applyCustomCSS = function(cssText) {
     styleEl.textContent = css;
 };
 
-function showPersonalizationMessage(ok, message) {
-    const msg = document.getElementById('personalizationMsg');
+function showSettingsMessage(elementId, ok, message) {
+    const msg = document.getElementById(elementId);
     if (!msg) return;
     msg.classList.remove('visible', 'frminsuc', 'frminerr');
     msg.classList.add(ok ? 'frminsuc' : 'frminerr');
@@ -147,6 +151,16 @@ function initPersonalization() {
     const motionBox = document.querySelector('#personalizationForm input[name="reduced_motion"]');
     if (motionBox) {
         motionBox.onchange = () => window.applyReducedMotion(motionBox.checked);
+    }
+
+    const bgdimBox = document.querySelector('#personalizationForm input[name="disable_bgdim"]');
+    if (bgdimBox) {
+        bgdimBox.onchange = () => window.applyBgdimDisable(bgdimBox.checked);
+    }
+
+    const onekoBox = document.querySelector('#personalizationForm input[name="enable_oneko"]');
+    if (onekoBox) {
+        onekoBox.onchange = () => window.setOneko(onekoBox.checked);
     }
 
     const cssBox = document.getElementById('personalizationCSS');
@@ -324,10 +338,13 @@ const setupSettingsFormListeners = () => {
             return;
         }
 
-        if (form.action.includes('/settings/personalization')) {
+        if (form.action.includes('/settings/personalization') || form.action.includes('/settings/privacy')) {
             e.preventDefault();
 
-            if (window.persCSSeditor) {
+            const isPrivacy = form.action.includes('/settings/privacy');
+            const msgId = isPrivacy ? 'privacyMsg' : 'personalizationMsg';
+
+            if (!isPrivacy && window.persCSSeditor) {
                 window.persCSSeditor.save();
             }
             const formData = new FormData(form);
@@ -347,19 +364,25 @@ const setupSettingsFormListeners = () => {
                 if (submitBtn) submitBtn.disabled = false;
 
                 if (data.error) {
-                    showPersonalizationMessage(false, data.error);
+                    showSettingsMessage(msgId, false, data.error);
                 } else {
-                    const motionBox = form.querySelector('input[name="reduced_motion"]');
-                    window.applyReducedMotion(motionBox ? motionBox.checked : false);
-                    if (data.custom_css !== undefined) {
-                        window.applyCustomCSS(data.custom_css);
+                    if (!isPrivacy) {
+                        const motionBox = form.querySelector('input[name="reduced_motion"]');
+                        window.applyReducedMotion(motionBox ? motionBox.checked : false);
+                        const bgdimBox = form.querySelector('input[name="disable_bgdim"]');
+                        window.applyBgdimDisable(bgdimBox ? bgdimBox.checked : false);
+                        const onekoBox = form.querySelector('input[name="enable_oneko"]');
+                        window.setOneko(onekoBox ? onekoBox.checked : false);
+                        if (data.custom_css !== undefined) {
+                            window.applyCustomCSS(data.custom_css);
+                        }
                     }
-                    showPersonalizationMessage(true, data.success || 'Preferences saved successfully');
+                    showSettingsMessage(msgId, true, data.success || 'Preferences saved successfully');
                 }
             })
             .catch(() => {
                 if (submitBtn) submitBtn.disabled = false;
-                showPersonalizationMessage(false, 'An unexpected error occurred. Please try again.');
+                showSettingsMessage(msgId, false, 'An unexpected error occurred. Please try again.');
             });
             return;
         }
@@ -399,6 +422,18 @@ const setupSettingsFormListeners = () => {
                         const curDisplayNameEl = document.getElementById('curDisplayNameText');
                         if (curDisplayNameEl) {
                             curDisplayNameEl.textContent = data.displayname;
+                        }
+                        const previewDisplayNameEl = document.getElementById('settingsProfileDisplayName');
+                        if (previewDisplayNameEl) {
+                            previewDisplayNameEl.textContent = data.displayname;
+                        }
+                    }
+
+                    if (form.action.includes('/settings/pronouns') && data.pronouns !== undefined) {
+                        const previewPronounsEl = document.getElementById('settingsProfilePronouns');
+                        if (previewPronounsEl) {
+                            previewPronounsEl.textContent = data.pronouns ? '(' + data.pronouns + ')' : '';
+                            previewPronounsEl.hidden = !data.pronouns;
                         }
                     }
 

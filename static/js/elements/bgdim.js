@@ -51,7 +51,9 @@
     function applyDim() {
         timer = null;
         if (document.querySelector('.movl.active')) return;
-        if (document.body) document.body.classList.add(DIM);
+        if (!document.documentElement.classList.contains('no-bgdim')) {
+            if (document.body) document.body.classList.add(DIM);
+        }
         var tip = ensureTip();
         placeTip(lastX, lastY);
         tip.classList.add('visible');

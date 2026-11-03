@@ -116,7 +116,7 @@
         } else if (field === 'captcha') {
             var widget = document.querySelector('altcha-widget');
             if (widget) {
-                widget.style.border = "1px solid #ff3b30";
+                widget.style.border = "1px solid var(--danger)";
                 widget.style.borderRadius = "8px";
                 widget.style.padding = "4px";
                 showErrorUnder(widget, err);

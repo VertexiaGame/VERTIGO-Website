@@ -541,3 +541,33 @@ func TestKillClearsPresence(t *testing.T) {
 		t.Fatalf("kill must clear presence, got %v", got)
 	}
 }
+
+func TestPrivateGameOnlyOwnerJoins(t *testing.T) {
+	m, _ := testManager()
+	m.resolve = func(gameID int) (GameInfo, error) {
+		return GameInfo{ID: gameID, MaxPlayers: 100, Private: true, Owner: "alice"}, nil
+	}
+	gs, _, err := m.Join(49, "alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := m.Join(49, "bob"); !errors.Is(err, ErrGameClosed) {
+		t.Fatalf("expected ErrGameClosed for non-owner, got %v", err)
+	}
+	if _, _, err := m.ServerJoin(gs.ID, "alice"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := m.ServerJoin(gs.ID, "bob"); !errors.Is(err, ErrGameClosed) {
+		t.Fatalf("expected ErrGameClosed for non-owner on server join, got %v", err)
+	}
+}
+
+func TestLockedGameStaysClosedForOwner(t *testing.T) {
+	m, _ := testManager()
+	m.resolve = func(gameID int) (GameInfo, error) {
+		return GameInfo{ID: gameID, MaxPlayers: 100, Locked: true, Owner: "alice"}, nil
+	}
+	if _, _, err := m.Join(51, "alice"); !errors.Is(err, ErrGameClosed) {
+		t.Fatalf("expected ErrGameClosed for locked game, got %v", err)
+	}
+}

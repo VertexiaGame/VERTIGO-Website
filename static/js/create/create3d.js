@@ -455,6 +455,7 @@ class ModelPreview {
                     const mats = Array.isArray(child.material) ? child.material : [child.material];
                     mats.forEach(m => {
                         m.map = texture;
+                        m.transparent = true;
                         m.needsUpdate = true;
                     });
                 }

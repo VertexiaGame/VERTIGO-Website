@@ -21,21 +21,28 @@
         <span class="navtxt">{{.PendingFriendRequestsCount}}</span>
     </a>
 
-    <button class="pfpbtn sbtnpfp" onclick="toggleDropdown(event)">
+    <button class="pfpbtn sbtnpfp" onclick="toggleDropdown(event)" aria-expanded="false">
         <img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" class="pfpimg" alt="{{.Username}}">
     </button>
 
     <div id="userDropdown" class="udrop">
-        <span class="dropusr"><a href="/profile" hx-get="/profile" hx-target="body" hx-push-url="true" class="dropitm">{{.Username}}</a></span>
-        <div class="droplne"></div>
-        <a href="/avatar" hx-get="/avatar" hx-target="body" hx-push-url="true" class="dropitm">Avatar</a>
-        <a href="/create" hx-get="/create" hx-target="body" hx-push-url="true" class="dropitm">Create ...</a>
-        <a href="/redeem" hx-get="/redeem" hx-target="body" hx-push-url="true" class="dropitm">Redeem</a>
-        <a href="/settings" hx-get="/settings" hx-target="body" hx-push-url="true" class="dropitm">Settings</a>
-        {{if .IsAdmin}}
-        <a href="/admin" hx-get="/admin" hx-target="body" hx-push-url="true" class="dropitm">Admin</a>
+        <a href="/profile" hx-get="/profile" hx-target="body" hx-push-url="true" class="dropusr">
+            <img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" class="dropav" alt="">
+            <span class="dropusrtxt">{{.Username}}</span>
+        </a>
+        {{if .ViewerClan}}
+        <a href="/clans/{{.ViewerClan.SlugPath}}" hx-get="/clans/{{.ViewerClan.SlugPath}}" hx-target="body" hx-push-url="true" class="dropitm"><i class="fa-solid fa-tag droptico"></i><span>{{.ViewerClan.TagLabel}} {{.ViewerClan.Name}}</span></a>
         {{end}}
-        <a href="/logout" hx-get="/logout" hx-target="body" hx-push-url="true" class="dropitm droplgo">Log out</a>
+        <div class="droplne"></div>
+        <a href="/avatar" hx-get="/avatar" hx-target="body" hx-push-url="true" class="dropitm"><img src="/static/useful/icons/avatar.svg" alt="" class="droptico"><span>Avatar</span></a>
+        <a href="/create" hx-get="/create" hx-target="body" hx-push-url="true" class="dropitm"><img src="/static/useful/icons/hammer.svg" alt="" class="droptico"><span>Create</span></a>
+        <a href="/redeem" hx-get="/redeem" hx-target="body" hx-push-url="true" class="dropitm"><img src="/static/useful/icons/gift.svg" alt="" class="droptico"><span>Redeem</span></a>
+        <a href="/settings" hx-get="/settings" hx-target="body" hx-push-url="true" class="dropitm"><img src="/static/useful/icons/settings.svg" alt="" class="droptico"><span>Settings</span></a>
+        {{if .IsAdmin}}
+        <a href="/admin" hx-get="/admin" hx-target="body" hx-push-url="true" class="dropitm"><img src="/static/useful/icons/shield.svg" alt="" class="droptico"><span>Admin</span></a>
+        {{end}}
+        <div class="droplne"></div>
+        <a href="/logout" hx-get="/logout" hx-target="body" hx-push-url="true" class="dropitm droplgo"><img src="/static/useful/icons/off.png" alt="" class="droptico"><span>Log out</span></a>
     </div>
 </div>
 
@@ -43,15 +50,33 @@
     function toggleDropdown(event) {
         event.stopPropagation();
         const dropdown = document.getElementById('userDropdown');
-        dropdown.classList.toggle('active');
+        const pfpButton = document.querySelector('.pfpbtn');
+        const open = dropdown.classList.toggle('active');
+        pfpButton.classList.toggle('open', open);
+        pfpButton.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
+    function closeDropdown() {
+        const dropdown = document.getElementById('userDropdown');
+        const pfpButton = document.querySelector('.pfpbtn');
+        if (dropdown && dropdown.classList.contains('active')) {
+            dropdown.classList.remove('active');
+            pfpButton.classList.remove('open');
+            pfpButton.setAttribute('aria-expanded', 'false');
+        }
+    }
+    document.getElementById('userDropdown').addEventListener('click', closeDropdown);
     document.addEventListener('click', function(event) {
         const dropdown = document.getElementById('userDropdown');
         if (dropdown && dropdown.classList.contains('active')) {
             const pfpButton = document.querySelector('.pfpbtn');
             if (!dropdown.contains(event.target) && !pfpButton.contains(event.target)) {
-                dropdown.classList.remove('active');
+                closeDropdown();
             }
+        }
+    });
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDropdown();
         }
     });
 </script>

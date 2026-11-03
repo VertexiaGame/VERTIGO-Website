@@ -202,6 +202,12 @@ func ShopItemPage(c fiber.Ctx) error {
 	isOnSale := item.OnSale != "false" && item.OffSale != "true"
 	isFree := item.Bucks == 0 && item.Bits == 0
 	creatorID := item.CID
+	creatorCertified := false
+	if service.User != nil && item.CreatorType == "user" && creatorID > 0 {
+		if creator, err := service.User.GetUserByID(creatorID); err == nil && creator != nil {
+			creatorCertified = creator.CertifiedCreator
+		}
+	}
 	sales := 0
 	if service.Shop != nil {
 		sales = service.Shop.GetSalesCount(item.ID)
@@ -213,18 +219,19 @@ func ShopItemPage(c fiber.Ctx) error {
 		pageTitle = "[Content Pending] - VERTEXIA"
 	}
 	return Render(c, "pages/item", fiber.Map{
-		"Title":         pageTitle,
-		"Item":          item,
-		"Related":       related,
-		"CanViewFull":   canViewFull,
-		"IsLoggedIn":    isLoggedIn,
-		"CurrentUserID": currentUserID,
-		"IsOwned":       isOwned,
-		"IsEquipped":    isEquipped,
-		"IsOnSale":      isOnSale,
-		"IsFree":        isFree,
-		"CreatorID":     creatorID,
-		"Sales":         sales,
+		"Title":            pageTitle,
+		"Item":             item,
+		"Related":          related,
+		"CanViewFull":      canViewFull,
+		"IsLoggedIn":       isLoggedIn,
+		"CurrentUserID":    currentUserID,
+		"IsOwned":          isOwned,
+		"IsEquipped":       isEquipped,
+		"IsOnSale":         isOnSale,
+		"IsFree":           isFree,
+		"CreatorID":        creatorID,
+		"CreatorCertified": creatorCertified,
+		"Sales":            sales,
 	}, "layouts/main")
 }
 

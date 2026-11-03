@@ -100,7 +100,6 @@
             var priceVal = 0;
             try {
                 var vals = document.querySelectorAll('.shpitm-pricevals .shp-price-val span');
-                // simple confirm via modal if available
             } catch(e){}
             if (window.showModal) {
                 var isVerts = currency === 'vertices';
@@ -213,10 +212,6 @@
                 '/assets/uploads/shop/' + this.itemType + '/' + this.itemId + '.png',
                 '/assets/shop/' + this.itemType + '/' + this.itemId + '.png'
             ];
-        }
-
-        isClothing() {
-            return ['shirts', 'tshirts', 'pants'].includes(this.itemType);
         }
 
         async init() {
@@ -337,7 +332,7 @@
                 map: tex || null,
                 roughness: 0.6,
                 metalness: 0.0,
-                transparent: this.isClothing()
+                transparent: true
             });
             model.traverse(function(child) {
                 if (child.isMesh) {

@@ -55,16 +55,16 @@
     color: var(--ink);
     cursor: pointer;
     text-align: left;
-    transition: background 0.15s ease, color 0.15s ease, transform 0.15s var(--ease-pop);
+    transition: background 0.3s ease, color 0.15s ease;
 }
 
 .shp-cat-item:hover {
     background: var(--surface);
-    transform: translateX(4px);
+    transition-duration: 0.15s;
 }
 
 .shp-cat-item.active {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    background: var(--grad-accent);
     color: #FFFFFF;
 }
 
@@ -157,7 +157,7 @@
 
 .shp-main-search,
 .shp-fltrbox {
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 6px !important;
 }
@@ -557,7 +557,7 @@
     overflow: visible !important;
     border: none !important;
     border-radius: 12px !important;
-    box-shadow: 4px 0 1px 0 #A9A9A9, -4px 0 1px 0 #A9A9A9, 0 4px 1px 0 #A9A9A9, 0 -4px 1px 0 #A9A9A9 !important;
+    box-shadow: 4px 0 1px 0 var(--line), -4px 0 1px 0 var(--line), 0 4px 1px 0 var(--line), 0 -4px 1px 0 var(--line) !important;
 }
 
 .shpitm-rendcrd .adm-rendimg {
@@ -575,12 +575,12 @@
 }
 
 .shpitm-rendcrd .adm-3d-toggle-btn {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    background: var(--grad-accent) !important;
     border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .shpitm-rendcrd .adm-3d-toggle-btn:hover {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    background: var(--grad-accent) !important;
     transform: scale(1.05) !important;
 }
 
@@ -687,6 +687,21 @@
     border-radius: 999px;
     object-fit: cover;
     flex-shrink: 0;
+}
+
+.shpitm-creatorbadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+
+.shpitm-creatorbadge img {
+    width: 18px;
+    height: 18px;
+    display: block;
+    object-fit: contain;
 }
 
 .shpitm-priceblock {

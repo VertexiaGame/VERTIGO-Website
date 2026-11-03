@@ -1,0 +1,20 @@
+<div id="tab-privacy" class="settabcntnt{{if eq .ActiveTab "privacy"}} active{{end}}">
+    <div class="setcrd">
+        <form action="/settings/privacy" method="POST" hx-boost="false" id="privacyForm" style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="persrow">
+                <h3 class="setttl">Don't show my inventory</h3>
+                <label class="tgl">
+                    <input type="checkbox" name="hide_inventory" value="1" aria-label="Don't show my inventory"{{if .HideInventory}} checked{{end}}>
+                    <span class="tgltrack"><span class="tglknob"></span></span>
+                </label>
+            </div>
+            <span class="setinf perssub">This will render your inventory as private. <b>This will also disable trading.</b></span>
+
+            <button type="submit" class="primary hpyprim hpyinl hpysm" style="align-self: flex-start;">
+                <span>Save Preferences</span>
+            </button>
+
+            <span class="frminsuc" id="privacyMsg"></span>
+        </form>
+    </div>
+</div>

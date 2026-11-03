@@ -26,7 +26,7 @@
         <span>Add Friend</span>
     </button>
     {{end}}
-    <button type="button" class="primary hpywrn hpyinl hpysm">
+    <button type="button" class="primary hpywrn hpyinl hpysm"{{if .ProfileUser.HideInventory}} disabled title="Trading is disabled while this user's inventory is private."{{end}}>
         <img src="/static/useful/icons/trade.png" class="hpyico" alt="">
         <span>Trade</span>
     </button>

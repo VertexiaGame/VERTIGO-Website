@@ -43,7 +43,7 @@
                     <div class="gam-det-headrow">
                         <div class="gam-det-headmain">
                             <div class="shpitm-titlehdr">
-                                <h1 class="shpitm-title">{{.Game.Name}}</h1>
+                                <h1 class="shpitm-title">{{if .Game.Private}}<i class="fa-solid fa-lock gam-lock" title="Private game"></i>{{end}}{{.Game.Name}}</h1>
                                 <span class="shpitm-creator">By <a href="/user/{{.CreatorID}}" hx-get="/user/{{.CreatorID}}" hx-target="body" hx-push-url="true" class="adm-owner-link"><img src="/api/v1/avatar/headshot/{{.CreatorID}}.png" alt="" class="shpitm-creator-pfp" onerror="this.src='/static/useful/temp/pfp.png';">{{.Game.CreatorName}}</a></span>
                             </div>
                             <div class="shp-price-row gam-stats gam-det-stats" id="gamRateRow" data-game-id="{{.Game.ID}}" data-logged="{{.IsLoggedIn}}" data-rating="{{.ViewerRating}}">

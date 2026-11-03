@@ -22,6 +22,8 @@ func Setup(app *fiber.App) {
 				!strings.HasPrefix(path, "/api/v1/studio/") &&
 				!strings.HasPrefix(path, "/api/v1/gameserver/") &&
 				!strings.HasPrefix(path, "/api/v1/asset") &&
+				!strings.HasPrefix(path, "/avatar/headshot") &&
+				!strings.HasPrefix(path, "/api/v1/avatar/headshot") &&
 				path != "/api/v1/auth/validate" {
 				if c.Get("HX-Request") == "true" {
 					c.Set("HX-Redirect", "/sitelock")
@@ -100,6 +102,25 @@ func Setup(app *fiber.App) {
 	app.Post("/friends/cancel/:id", handlers.FriendCancelPost)
 	app.Post("/friends/remove/:id", handlers.FriendRemovePost)
 
+	app.Get("/clans", handlers.ClansGet)
+	app.Get("/clans/:name", handlers.ClanDetailGet)
+	app.Post("/clans/:id/join", handlers.ClanActionLimiter(), handlers.ClanJoinPost)
+	app.Post("/clans/:id/leave", handlers.ClanActionLimiter(), handlers.ClanLeavePost)
+	app.Post("/clans/:id/tag", handlers.ClanActionLimiter(), handlers.ClanTagTogglePost)
+	app.Post("/clans/:id/request/cancel", handlers.ClanActionLimiter(), handlers.ClanCancelRequestPost)
+	app.Post("/clans/:id/requests/:requestId/approve", handlers.ClanActionLimiter(), handlers.ClanRequestApprovePost)
+	app.Post("/clans/:id/requests/:requestId/deny", handlers.ClanActionLimiter(), handlers.ClanRequestDenyPost)
+	app.Post("/clans/:id/roles", handlers.ClanActionLimiter(), handlers.ClanRoleCreatePost)
+	app.Post("/clans/:id/roles/:roleId", handlers.ClanActionLimiter(), handlers.ClanRoleUpdatePost)
+	app.Post("/clans/:id/roles/:roleId/delete", handlers.ClanActionLimiter(), handlers.ClanRoleDeletePost)
+	app.Post("/clans/:id/members/:userId/role", handlers.ClanActionLimiter(), handlers.ClanMemberRolePost)
+	app.Post("/clans/:id/members/:userId/kick", handlers.ClanActionLimiter(), handlers.ClanMemberKickPost)
+	app.Post("/clans/:id/wall", handlers.ClanActionLimiter(), handlers.ClanWallPost)
+	app.Post("/clans/:id/wall/:postId/delete", handlers.ClanActionLimiter(), handlers.ClanWallDeletePost)
+	app.Post("/clans/:id/wall/:postId/react", handlers.ClanActionLimiter(), handlers.ClanWallReactPost)
+	app.Post("/clans/:id/announcements", handlers.ClanActionLimiter(), handlers.ClanAnnouncementCreatePost)
+	app.Post("/clans/:id/announcements/:announcementId/delete", handlers.ClanAnnouncementDeletePost)
+
 	app.Get("/settings", handlers.SettingsGet)
 	app.Post("/settings/displayname", handlers.SettingsDisplayNamePost)
 	app.Post("/settings/username", handlers.SettingsUsernamePost)
@@ -114,6 +135,7 @@ func Setup(app *fiber.App) {
 	app.Post("/settings/banner/effect", handlers.SettingsBannerEffectPost)
 	app.Post("/settings/banner/textbg", handlers.SettingsBannerTextBgPost)
 	app.Post("/settings/personalization", handlers.SettingsPersonalizationPost)
+	app.Post("/settings/privacy", handlers.SettingsPrivacyPost)
 
 	app.Get("/play", handlers.PlayGet)
 	app.Get("/games", handlers.PlayGet)
@@ -147,6 +169,10 @@ func Setup(app *fiber.App) {
 	app.Post("/create/assets", handlers.AssetUploadLimiter(), handlers.AssetUploadPost)
 	app.Get("/create/items", handlers.ItemsPage)
 	app.Post("/create/shop", handlers.ShopCreateLimiter(), handlers.ShopItemCreatePost)
+	app.Get("/create/clans", handlers.MyClansPage)
+	app.Get("/create/clans/:id/edit", handlers.ClanEditPage)
+	app.Post("/create/clan", handlers.ClanCreateLimiter(), handlers.ClanCreatePost)
+	app.Post("/create/clans/:id", handlers.ClanUpdateLimiter(), handlers.ClanUpdatePost)
 	app.Get("/create/games", handlers.MyGamesPage)
 	app.Get("/create/games/:id/edit", handlers.GameEditPage)
 	app.Post("/create/game", handlers.GameCreateLimiter(), handlers.GameCreatePost)
@@ -172,9 +198,11 @@ func Setup(app *fiber.App) {
 	app.Post("/admin/users/:id/modhist/:mid/retract", handlers.AdminModhistRetractPost)
 	app.Post("/admin/users/:id/resetavatar", handlers.AdminResetAvatarPost)
 	app.Post("/admin/users/:id/outfits/:oid/delete", handlers.AdminOutfitDeletePost)
+	app.Post("/admin/users/:id/badges/:badge", handlers.AdminBadgePost)
 	app.Post("/admin/assets/:id/:action", handlers.AdminAssetReviewPost)
 	app.Post("/admin/shop/:id/:action", handlers.AdminShopReviewPost)
 	app.Post("/admin/banners/:id/:action", handlers.AdminBannerReviewPost)
+	app.Post("/admin/clanmedia/:id/:kind/:action", handlers.AdminClanMediaReviewPost)
 
 	api := app.Group("/api/v1")
 
@@ -220,6 +248,7 @@ func Setup(app *fiber.App) {
 	api.Post("/settings/banner/effect", handlers.SettingsBannerEffectPost)
 	api.Post("/settings/banner/textbg", handlers.SettingsBannerTextBgPost)
 	api.Post("/settings/personalization", handlers.SettingsPersonalizationPost)
+	api.Post("/settings/privacy", handlers.SettingsPrivacyPost)
 
 	api.Get("/games", handlers.GamesAPI)
 	api.Post("/games", handlers.GameCreateLimiter(), handlers.GameCreatePost)
@@ -285,6 +314,7 @@ func Setup(app *fiber.App) {
 
 	api.Get("/livetimer", handlers.LiveTimerAPIGet)
 
+	api.Post("/admin/filter", handlers.FilterTestAPI)
 	api.Get("/admin/status", handlers.AdminStatusAPI)
 	api.Get("/admin/gs", handlers.AdminGSServersAPI)
 	api.Get("/admin/gs/health", handlers.AdminGSHealthAPI)
@@ -299,10 +329,13 @@ func Setup(app *fiber.App) {
 	api.Post("/admin/shop/:id/:action", handlers.AdminShopReviewPost)
 	api.Get("/admin/banners", handlers.AdminBannerQueueAPI)
 	api.Post("/admin/banners/:id/:action", handlers.AdminBannerReviewPost)
+	api.Get("/admin/clanmedia", handlers.AdminClanMediaQueueAPI)
+	api.Post("/admin/clanmedia/:id/:kind/:action", handlers.AdminClanMediaReviewPost)
 	api.Post("/admin/users/:id/scrub/:action", handlers.AdminScrubPost)
 	api.Post("/admin/users/:id/modhist/:mid/retract", handlers.AdminModhistRetractPost)
 	api.Post("/admin/users/:id/resetavatar", handlers.AdminResetAvatarPost)
 	api.Post("/admin/users/:id/outfits/:oid/delete", handlers.AdminOutfitDeletePost)
+	api.Post("/admin/users/:id/badges/:badge", handlers.AdminBadgePost)
 
 	app.Get("/static/renders/avatars/full/:id", handlers.AvatarGet)
 	app.Get("/static/renders/avatars/headshots/:id", handlers.AvatarHeadshotGet)

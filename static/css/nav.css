@@ -92,6 +92,10 @@
     opacity: 1;
 }
 
+.pfpbtn.open {
+    transform: scale(1.04);
+}
+
 .navlnk:active,
 .sbtn:active,
 .pfpbtn:active,
@@ -100,7 +104,6 @@
     transition: transform 0.08s ease;
 }
 
-/* terrible looking, im sorry */
 .navhome { width: 56px; animation-delay: 0.4s; }
 .navplay { width: 40px; animation-delay: 0.3s; }
 .navshop { width: 47px; animation-delay: 0.2s; }
@@ -230,21 +233,32 @@
     }
 }
 
+@keyframes dropitementry {
+    0% {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 .udrop {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: 15px;
-    gap: 10px;
+    padding: 6px;
+    gap: 4px;
     position: absolute;
     width: 199px;
     height: auto;
     right: 10px;
-    top: 72px;
+    top: 60px;
     background: rgba(61, 61, 61, 0.6);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-radius: 6px;
+    border-radius: 12px;
     box-sizing: border-box;
     z-index: 100;
     opacity: 0;
@@ -262,6 +276,30 @@
     pointer-events: auto;
 }
 
+.udrop.active > * {
+    animation: dropitementry 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+}
+
+.udrop.active > :nth-child(1) { animation-delay: 20ms; }
+.udrop.active > :nth-child(2) { animation-delay: 50ms; }
+.udrop.active > :nth-child(3) { animation-delay: 80ms; }
+.udrop.active > :nth-child(4) { animation-delay: 110ms; }
+.udrop.active > :nth-child(5) { animation-delay: 140ms; }
+.udrop.active > :nth-child(6) { animation-delay: 170ms; }
+.udrop.active > :nth-child(7) { animation-delay: 200ms; }
+.udrop.active > :nth-child(8) { animation-delay: 230ms; }
+.udrop.active > :nth-child(9) { animation-delay: 260ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    .udrop.active > * {
+        animation-delay: 0ms;
+    }
+}
+
+html.reduced-motion .udrop.active > * {
+    animation-delay: 0ms;
+}
+
 .dropusr {
     font-family: 'Ubuntu';
     font-style: normal;
@@ -270,12 +308,43 @@
     line-height: 20px;
     display: flex;
     align-items: center;
-    text-align: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    align-self: stretch;
     color: #FFFFFF;
     text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    text-decoration: none;
     flex: none;
     flex-grow: 0;
-    height: 20px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease;
+}
+
+.dropav {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background-color: rgba(0, 0, 0, 0.2);
+    flex: none;
+    flex-grow: 0;
+    object-fit: cover;
+}
+
+.dropusrtxt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.dropusr:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transition-duration: 0.15s;
+}
+
+.dropusr:active {
+    transform: scale(0.97);
 }
 
 .droplne {
@@ -285,6 +354,7 @@
     flex: none;
     align-self: stretch;
     flex-grow: 0;
+    margin: 3px 4px;
 }
 
 .dropitm {
@@ -295,14 +365,32 @@
     line-height: 18px;
     display: flex;
     align-items: center;
-    text-align: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    align-self: stretch;
     color: #FFFFFF;
     text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
     text-decoration: none;
     flex: none;
     flex-grow: 0;
     height: 18px;
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease;
+}
+
+.droptico {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    flex-grow: 0;
+    object-fit: contain;
+    filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.droplgo .droptico {
+    width: 14px;
+    height: 14px;
 }
 
 .copyleft {
@@ -323,8 +411,8 @@
 }
 
 .dropitm:hover {
-    transform: translateX(4px);
-    opacity: 0.85;
+    background: rgba(255, 255, 255, 0.2);
+    transition-duration: 0.15s;
 }
 
 .dropitm:active {
@@ -332,7 +420,11 @@
 }
 
 .droplgo {
-    color: #FA0000;
+    color: var(--danger);
+}
+
+.droplgo:hover {
+    background: rgba(220, 53, 69, 0.2);
 }
 
 .mobbot {
@@ -391,7 +483,6 @@
     border-radius: 999px;
 }
 
-/* Mobile - hide desktop nav links, keep sbar centered */
 @media (max-width: 768px), .mobmode {
     .navbrd,
     .navcnt > .navdiv,
@@ -434,7 +525,6 @@
     }
 }
 
-/* === Figma-accurate mobile (iPhone 17) - 402x874 === */
 @media (max-width: 768px) {
     .navcnt {
         height: calc(66px + env(safe-area-inset-top, 0px)) !important;
@@ -443,7 +533,6 @@
         justify-content: center !important;
         align-items: center !important;
         background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%) !important;
-        /* keep absolute as original - not fixed to avoid top shift */
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
@@ -656,7 +745,6 @@ html.mobmode .navdiv, html.mobmode .sbardiv, html.mobmode .mobdiv {
 html.mobmode .mobitm img { width: 46px !important; height: 46px !important; }
 html.mobmode .mobhead { width: 46px !important; height: 46px !important; }
 
-/* Hide avatar headshot from top bar (sbar/currency top) on mobile - keep bottom mobhead */
 @media (max-width: 768px) {
     .sbar .pfpbtn,
     .sbar .pfpimg,
@@ -668,7 +756,6 @@ html.mobmode .sbar .pfpimg,
 html.mobmode .sbar .sbtnpfp,
 html.mobmode .sbar .udrop { display: none !important; }
 
-/* True fixed bottom bar - prevent shift/jitter when scrolling / address bar shows */
 @media (max-width: 768px), html.mobmode {
     .mobbot {
         position: fixed !important;
@@ -682,10 +769,8 @@ html.mobmode .sbar .udrop { display: none !important; }
         backface-visibility: visible !important;
         -webkit-backface-visibility: visible !important;
         contain: none !important;
-        /* ensure viewport anchoring, not ancestor */
     }
     html, body {
-        /* ensure no ancestor creates containing block for fixed */
         transform: none !important;
         filter: none !important;
         perspective: none !important;

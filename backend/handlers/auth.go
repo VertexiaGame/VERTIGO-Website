@@ -213,7 +213,7 @@ func RegisterPost(c fiber.Ctx) error {
 	password := c.FormValue("password")
 	passwordConfirm := c.FormValue("password_confirm")
 
-	user, err := service.Auth.RegisterUser(username, displayname, email, password, passwordConfirm)
+	user, err := service.Auth.RegisterUser(username, displayname, email, password, passwordConfirm, c.IP())
 	if err != nil {
 		return Render(c, "pages/register", fiber.Map{
 			"Title":      "Register - VERTEXIA",

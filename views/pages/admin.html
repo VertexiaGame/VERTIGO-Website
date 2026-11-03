@@ -31,11 +31,13 @@
                             <button class="tabbtn{{if eq .ActiveTab "assets"}} active{{end}}" onclick="window.switchAdminTab('assets', event)">Assets</button>
                             <button class="tabbtn{{if eq .ActiveTab "shop"}} active{{end}}" onclick="window.switchAdminTab('shop', event)">Shop Items</button>
                             <button class="tabbtn{{if eq .ActiveTab "banners"}} active{{end}}" onclick="window.switchAdminTab('banners', event)">Banners</button>
+                            <button class="tabbtn{{if eq .ActiveTab "clanmedia"}} active{{end}}" onclick="window.switchAdminTab('clanmedia', event)">Clan Media</button>
                             <button class="tabbtn{{if eq .ActiveTab "logs"}} active{{end}}" onclick="window.switchAdminTab('logs', event)">Logs</button>
+                            <button class="tabbtn{{if eq .ActiveTab "filter"}} active{{end}}" onclick="window.switchAdminTab('filter', event)">Filter</button>
                         </div>
 
                         <div class="settabvwp">
-                            <div id="tab-status" class="settabcntnt active">
+                            <div id="tab-status" class="settabcntnt{{if eq .ActiveTab "status"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Server Status</h3>
 
@@ -169,7 +171,7 @@
                                 </div>
                             </div>
 
-                            <div id="tab-servers" class="settabcntnt">
+                            <div id="tab-servers" class="settabcntnt{{if eq .ActiveTab "servers"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Game Servers</h3>
 
@@ -196,7 +198,7 @@
                                 </div>
                             </div>
 
-                            <div id="tab-users" class="settabcntnt">
+                            <div id="tab-users" class="settabcntnt{{if eq .ActiveTab "users"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Users</h3>
 
@@ -267,13 +269,13 @@
                                 </div>
                             </div>
 
-                            <div id="tab-reports" class="settabcntnt">
+                            <div id="tab-reports" class="settabcntnt{{if eq .ActiveTab "reports"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Reports</h3>
                                 </div>
                             </div>
 
-                            <div id="tab-assets" class="settabcntnt">
+                            <div id="tab-assets" class="settabcntnt{{if eq .ActiveTab "assets"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Asset Approvals</h3>
 
@@ -357,7 +359,7 @@
                                 </div>
                             </div>
 
-                            <div id="tab-shop" class="settabcntnt">
+                            <div id="tab-shop" class="settabcntnt{{if eq .ActiveTab "shop"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Shop Item Approvals</h3>
 
@@ -432,7 +434,7 @@
                                 </div>
                             </div>
 
-                            <div id="tab-banners" class="settabcntnt">
+                            <div id="tab-banners" class="settabcntnt{{if eq .ActiveTab "banners"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Profile Banner Approvals</h3>
 
@@ -488,7 +490,80 @@
                                 </div>
                             </div>
 
-                            <div id="tab-logs" class="settabcntnt">
+                            <div id="tab-clanmedia" class="settabcntnt{{if eq .ActiveTab "clanmedia"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Clan Icon &amp; Banner Approvals</h3>
+
+                                    <div class="adm-fltrbar">
+                                        <input type="hidden" name="csrf" value="{{.CSRF}}" id="admClanMediaCsrf">
+                                    </div>
+
+                                    <div id="admClanMediaListContainer">
+                                        <div class="adm-grid" id="admClanMediaGrid">
+                                            {{range .ClanMedia}}
+                                            <div class="adm-card" data-id="{{.ID}}">
+                                                <div class="adm-cardhdr">
+                                                    <h3 class="adm-cardttl">
+                                                        <i class="fa-solid fa-users"></i>
+                                                        <span>{{.Name}}</span>
+                                                    </h3>
+                                                </div>
+                                                {{if .HasPendingBanner}}
+                                                <div class="adm-clnmedia-banner">
+                                                    <img src="{{.PendingBannerURL}}" alt="Pending banner" loading="lazy">
+                                                </div>
+                                                {{end}}
+                                                {{if .HasPendingIcon}}
+                                                <div class="adm-clnmedia-icon">
+                                                    <img src="{{.PendingIconURL}}" alt="Pending icon" loading="lazy">
+                                                </div>
+                                                {{end}}
+                                                <div class="adm-rowlst">
+                                                    <div class="adm-row"><span class="adm-lbl">Owner</span><span class="adm-val"><a href="/user/{{.OwnerID}}" hx-get="/user/{{.OwnerID}}" hx-target="body" hx-push-url="true" class="adm-owner-link">@{{.OwnerName}}</a></span></div>
+                                                </div>
+                                                <div class="adm-modbtns">
+                                                    {{if .HasPendingIcon}}
+                                                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminClanMedia({{.ID}}, 'icon', 'approve')">
+                                                        <span>Approve icon</span>
+                                                    </button>
+                                                    <button type="button" class="primary hpydng hpyinl hpysm" data-name="{{.Name}}" onclick="window.promptRejectClanMedia({{.ID}}, 'icon', this.dataset.name)">
+                                                        <span>Reject icon</span>
+                                                    </button>
+                                                    {{end}}
+                                                    {{if .HasPendingBanner}}
+                                                    <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.reviewAdminClanMedia({{.ID}}, 'banner', 'approve')">
+                                                        <span>Approve banner</span>
+                                                    </button>
+                                                    <button type="button" class="primary hpydng hpyinl hpysm" data-name="{{.Name}}" onclick="window.promptRejectClanMedia({{.ID}}, 'banner', this.dataset.name)">
+                                                        <span>Reject banner</span>
+                                                    </button>
+                                                    {{end}}
+                                                    <a href="/clans/{{.SlugPath}}" target="_blank" rel="noopener" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                                                        <span>View</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            {{else}}
+                                            <div class="frnemt adm-emt">No clan art awaiting review</div>
+                                            {{end}}
+                                        </div>
+                                    </div>
+
+                                    <div class="adm-pgncnt">
+                                        <span class="adm-pgntxt" id="admClanMediaPgnTxt">Page 1 of {{.TotalClanMediaPages}}</span>
+                                        <div class="adm-pgnbtns">
+                                            <button type="button" class="primary hpyprim hpyinl hpysm" id="admClanMediaPrevBtn" onclick="window.fetchAdminClanMedia(currentAdminClanMediaPage - 1)" disabled>
+                                                <span>Prev</span>
+                                            </button>
+                                            <button type="button" class="primary hpyprim hpyinl hpysm" id="admClanMediaNextBtn" onclick="window.fetchAdminClanMedia(currentAdminClanMediaPage + 1)">
+                                                <span>Next</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tab-logs" class="settabcntnt{{if eq .ActiveTab "logs"}} active{{end}}">
                                 <div class="setcrd">
                                     <h3 class="setttl">Logs</h3>
 
@@ -541,6 +616,40 @@
                                                 <span>Next</span>
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="tab-filter" class="settabcntnt{{if eq .ActiveTab "filter"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Content Filter</h3>
+
+                                    {{if not .FilterReady}}
+                                    <div class="adm-filter-alert">Filter API not configured.</div>
+                                    {{end}}
+
+                                    <div class="setareabox adm-filter-box">
+                                        <textarea id="filterContent" class="setarea" maxlength="{{.MaxContent}}" placeholder="Content to check" spellcheck="false"{{if not .FilterReady}} disabled{{end}}></textarea>
+                                    </div>
+
+                                    <div class="adm-fltrbar adm-filter-bar">
+                                        <button type="button" id="filterRun" class="primary hpyprim hpyinl hpysm"{{if not .FilterReady}} disabled{{end}}>
+                                            <span>Check</span>
+                                        </button>
+                                        <span id="filterStatus" class="adm-filter-status" role="status" aria-live="polite"></span>
+                                    </div>
+
+                                    <div id="filterResult" class="adm-card adm-filter-result" hidden>
+                                        <div class="adm-cardhdr">
+                                            <h3 class="adm-cardttl">
+                                                <i class="fa-solid fa-shield-halved"></i>
+                                                <span>Result</span>
+                                            </h3>
+                                            <span id="filterVerdict" class="adm-badge"></span>
+                                        </div>
+                                        <ul id="filterReasons" class="adm-filter-reasons" hidden></ul>
+                                        <div id="filterCategories" class="adm-rowlst"></div>
+                                        <div id="filterMeta" class="adm-filter-meta"></div>
                                     </div>
                                 </div>
                             </div>

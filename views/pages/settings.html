@@ -30,12 +30,14 @@
                             <button class="tabbtn{{if eq .ActiveTab "account"}} active{{end}}" onclick="switchSettingsTab('account', event)">Account</button>
                             <button class="tabbtn{{if eq .ActiveTab "profile"}} active{{end}}" onclick="switchSettingsTab('profile', event)">Profile</button>
                             <button class="tabbtn{{if eq .ActiveTab "personalization"}} active{{end}}" onclick="switchSettingsTab('personalization', event)">Personalization</button>
+                            <button class="tabbtn{{if eq .ActiveTab "privacy"}} active{{end}}" onclick="switchSettingsTab('privacy', event)">Privacy</button>
                         </div>
 
                         <div class="settabvwp">
                             {{template "components/settings/account" .}}
                             {{template "components/settings/profile" .}}
                             {{template "components/settings/personalization" .}}
+                            {{template "components/settings/privacy" .}}
                         </div>
                     </div>
                 </div>

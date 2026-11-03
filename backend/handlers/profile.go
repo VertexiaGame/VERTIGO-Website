@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"html"
+	"log"
 	"strconv"
 	"strings"
 
@@ -50,6 +51,58 @@ func ProfileGet(c fiber.Ctx) error {
 		}
 	}
 
+	var profileGames []*models.Game
+	if service.Game != nil {
+		createdGames, gerr := service.Game.GetUserGames(targetUser.ID)
+		if gerr != nil {
+			log.Printf("ProfileGet games error: %v", gerr)
+		} else {
+			viewerID := 0
+			if isOwnProfile {
+				viewerID = targetUser.ID
+			}
+			for _, game := range createdGames {
+				if game.VisibleTo(viewerID) {
+					profileGames = append(profileGames, game)
+				}
+			}
+		}
+	}
+	if profileGames == nil {
+		profileGames = []*models.Game{}
+	}
+
+	var profileShopItems []*models.ShopItem
+	if service.Shop != nil {
+		userItems, serr := service.Shop.GetUserItems(targetUser.ID)
+		if serr != nil {
+			log.Printf("ProfileGet shop items error: %v", serr)
+		}
+		for _, item := range userItems {
+			if item.ApprovalState == models.ShopApprovalApproved || (isOwnProfile && item.IsPending()) {
+				profileShopItems = append(profileShopItems, item)
+			}
+		}
+	}
+	if profileShopItems == nil {
+		profileShopItems = []*models.ShopItem{}
+	}
+
+	inventoryPrivate := targetUser.HideInventory && !isOwnProfile
+
+	var profileInventory []*models.InventoryItem
+	if !inventoryPrivate && service.Avatar != nil {
+		items, ierr := service.Avatar.GetInventory(targetUser.ID, "all", "")
+		if ierr != nil {
+			log.Printf("ProfileGet inventory error: %v", ierr)
+		} else {
+			profileInventory = items
+		}
+	}
+	if profileInventory == nil {
+		profileInventory = []*models.InventoryItem{}
+	}
+
 	var profileMusicID int64
 	if targetUser.MusicID.Valid && targetUser.MusicID.Int64 > 0 {
 		profileMusicID = targetUser.MusicID.Int64
@@ -58,6 +111,11 @@ func ProfileGet(c fiber.Ctx) error {
 	var profileBanner *models.Banner
 	if service.Banner != nil {
 		profileBanner, _ = service.Banner.GetApprovedBanner(targetUser.ID)
+	}
+
+	var wornClan *models.Clan
+	if service.Clan != nil && targetUser.PrimaryClan > 0 {
+		wornClan, _ = service.Clan.WornClan(targetUser.ID)
 	}
 
 	var wearing []*models.ShopItem
@@ -85,23 +143,28 @@ func ProfileGet(c fiber.Ctx) error {
 	}
 
 	return Render(c, "pages/profile", fiber.Map{
-		"Title":          html.EscapeString(targetUser.DisplayName) + " (@" + html.EscapeString(targetUser.Username) + ") - VERTEXIA",
-		"ProfileUser":    targetUser,
-		"IsOwnProfile":   isOwnProfile,
-		"FriendsCount":   friends,
-		"FollowersCount": followers,
-		"FollowingCount": following,
-		"FriendStatus":   friendStatus,
-		"ProfileMusicID": profileMusicID,
-		"Banner":         profileBanner,
-		"BannerFilter":   models.BannerEffectFilter(targetUser.BannerEffect),
-		"BannerTextBg":   targetUser.BannerTextBg,
-		"Wearing":        wearing,
-		"BodyHead":       cssHex(avatarBody.HeadColor),
-		"BodyTorso":      cssHex(avatarBody.TorsoColor),
-		"BodyLArm":       cssHex(avatarBody.LArmColor),
-		"BodyRArm":       cssHex(avatarBody.RArmColor),
-		"BodyLLeg":       cssHex(avatarBody.LLegColor),
-		"BodyRLeg":       cssHex(avatarBody.RLegColor),
+		"Title":            html.EscapeString(targetUser.DisplayName) + " (@" + html.EscapeString(targetUser.Username) + ") - VERTEXIA",
+		"ProfileUser":      targetUser,
+		"IsOwnProfile":     isOwnProfile,
+		"FriendsCount":     friends,
+		"FollowersCount":   followers,
+		"FollowingCount":   following,
+		"FriendStatus":     friendStatus,
+		"ProfileMusicID":   profileMusicID,
+		"Banner":           profileBanner,
+		"BannerFilter":     models.BannerEffectFilter(targetUser.BannerEffect),
+		"BannerTextBg":     targetUser.BannerTextBg,
+		"WornClan":         wornClan,
+		"Wearing":          wearing,
+		"ProfileGames":     profileGames,
+		"UserShopItems":    profileShopItems,
+		"ProfileInventory": profileInventory,
+		"InventoryPrivate": inventoryPrivate,
+		"BodyHead":         cssHex(avatarBody.HeadColor),
+		"BodyTorso":        cssHex(avatarBody.TorsoColor),
+		"BodyLArm":         cssHex(avatarBody.LArmColor),
+		"BodyRArm":         cssHex(avatarBody.RArmColor),
+		"BodyLLeg":         cssHex(avatarBody.LLegColor),
+		"BodyRLeg":         cssHex(avatarBody.RLegColor),
 	}, "layouts/main")
 }

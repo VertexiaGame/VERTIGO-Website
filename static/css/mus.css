@@ -12,7 +12,7 @@
     width: 100% !important;
     height: 52px !important;
     flex-shrink: 0 !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 12px !important;
     transition: border-color 0.2s ease !important;
@@ -44,7 +44,7 @@
     font-weight: 400 !important;
     font-size: 18px !important;
     line-height: 22px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     box-shadow: none !important;
 }
 
@@ -94,20 +94,20 @@
     align-items: center !important;
     gap: 12px !important;
     padding: 10px 12px !important;
-    background: #ECECEC !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface-raised) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 12px !important;
     transition: background 0.15s ease, border-color 0.15s ease !important;
 }
 
 .musitm:hover {
-    background: #E4E4E4 !important;
-    border-color: #B0B0B0 !important;
+    background: var(--surface-raised-hover) !important;
+    border-color: var(--line) !important;
 }
 
 .musitm.active {
-    background: #E8DCF8 !important;
-    border-color: #912ADF !important;
+    background: var(--accent-soft) !important;
+    border-color: var(--accent) !important;
 }
 
 .muscvr {
@@ -116,7 +116,7 @@
     border-radius: 8px !important;
     object-fit: cover !important;
     flex-shrink: 0 !important;
-    background: #A9A9A9 !important;
+    background: var(--line) !important;
 }
 
 .musinf {
@@ -131,7 +131,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 14px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -140,7 +140,7 @@
 .musart {
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 12px !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -148,7 +148,7 @@
 
 .msempty {
     text-align: center !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 13px !important;
     padding: 30px 0 !important;
@@ -159,7 +159,7 @@
     align-items: center !important;
     justify-content: center !important;
     padding-top: 10px !important;
-    border-top: 1px solid #A9A9A9 !important;
+    border-top: 1px solid var(--line) !important;
     flex-shrink: 0 !important;
 }
 
@@ -185,8 +185,8 @@
 }
 
 .musplayer {
-    background: #ECECEC !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface-raised) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 10px !important;
     padding: 6px 10px !important;
     display: flex !important;
@@ -203,7 +203,7 @@
     border-radius: 4px !important;
     object-fit: cover !important;
     flex-shrink: 0 !important;
-    background: #A9A9A9 !important;
+    background: var(--line) !important;
 }
 
 .musplayer-meta {
@@ -219,7 +219,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 12px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -229,7 +229,7 @@
 .musplayer-art {
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 10px !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -240,7 +240,7 @@
     background: transparent !important;
     border: none !important;
     font-size: 13px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     cursor: pointer !important;
     opacity: 0.8 !important;
     transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease !important;
@@ -255,7 +255,7 @@
 
 .musplayer-plybtn:hover {
     opacity: 1 !important;
-    color: #912ADF !important;
+    color: var(--accent) !important;
     transform: scale(1.1) !important;
 }
 
@@ -271,7 +271,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 10px !important;
     font-weight: 500 !important;
-    color: #718096 !important;
+    color: var(--muted) !important;
     user-select: none !important;
     min-width: 24px !important;
     text-align: center !important;
@@ -294,7 +294,7 @@
     display: block !important;
     height: 100% !important;
     width: 0%;
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    background: var(--grad-accent) !important;
     box-shadow: inset 0px 0px 4px rgba(255, 255, 255, 0.25) !important;
     border-radius: 3px !important;
     transition: width 0.1s linear !important;
@@ -304,7 +304,7 @@
     background: transparent !important;
     border: none !important;
     font-size: 13px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     cursor: pointer !important;
     opacity: 0.7 !important;
     transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease !important;
@@ -319,7 +319,7 @@
 
 .musplayer-volbtn:hover {
     opacity: 1 !important;
-    color: #912ADF !important;
+    color: var(--accent) !important;
     transform: scale(1.1) !important;
 }
 
@@ -327,7 +327,7 @@
     background: transparent !important;
     border: none !important;
     font-size: 13px !important;
-    color: #DC3545 !important;
+    color: var(--danger) !important;
     cursor: pointer !important;
     opacity: 0.75 !important;
     transition: opacity 0.15s ease, transform 0.15s ease !important;
@@ -354,7 +354,7 @@
     background: transparent !important;
     border: none !important;
     font-size: 14px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     cursor: pointer !important;
     opacity: 0.7 !important;
     transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease !important;
@@ -369,7 +369,7 @@
 
 .musplybtn-sm:hover {
     opacity: 1 !important;
-    color: #912ADF !important;
+    color: var(--accent) !important;
     transform: scale(1.15) !important;
 }
 

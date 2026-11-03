@@ -29,8 +29,8 @@
 }
 
 .setcrd {
-    background: #f0f0f0 !important;
-    border: 1px solid #d4d4d4 !important;
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--surface) !important;
     border-radius: 0 12px 12px 12px !important;
     padding: 28px !important;
     margin-bottom: 24px !important;
@@ -41,7 +41,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 20px !important;
     font-weight: 500 !important;
-    color: #912ADF !important;
+    color: var(--accent) !important;
     margin-top: 0 !important;
     margin-bottom: 6px !important;
 }
@@ -55,8 +55,18 @@
     display: block !important;
 }
 
+.setinf a {
+    color: var(--accent, var(--accent)) !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+}
+
+.setinf a:hover {
+    text-decoration: underline !important;
+}
+
 .vrthl {
-    color: #912ADF !important;
+    color: var(--accent) !important;
     font-weight: 700 !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -112,7 +122,7 @@
 .tgltrack {
     position: absolute !important;
     inset: 0 !important;
-    background: #A9A9A9 !important;
+    background: var(--line) !important;
     border-radius: 999px !important;
     transition: background 0.15s ease !important;
     pointer-events: none !important;
@@ -131,7 +141,7 @@
 }
 
 .tgl input:checked + .tgltrack {
-    background: var(--accent, #912ADF) !important;
+    background: var(--accent, var(--accent)) !important;
 }
 
 .tgl input:checked + .tgltrack .tglknob {
@@ -139,7 +149,7 @@
 }
 
 .tgl input:focus-visible + .tgltrack {
-    outline: 2px solid var(--accent, #912ADF) !important;
+    outline: 2px solid var(--accent, var(--accent)) !important;
     outline-offset: 2px !important;
 }
 
@@ -174,25 +184,81 @@
     border-right: 1px solid rgba(61, 61, 61, 0.15) !important;
 }
 
-.bnrprev {
-    width: 100% !important;
-    aspect-ratio: 16 / 5 !important;
+.prfhdr.bnrprv {
+    border: 2px solid var(--line) !important;
     border-radius: 12px !important;
-    border: 2px solid #A9A9A9 !important;
-    display: block !important;
-    position: relative !important;
-    background-color: #D4D4D4;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
+    background: var(--surface-pane) !important;
+    padding: 48px 24px 20px !important;
+    gap: 16px !important;
+    animation: bnrPopIn 0.3s var(--ease-pop) backwards !important;
 }
 
-.bnrprevfx {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    display: block !important;
+.prfhdr.bnrprv .prfinf {
+    gap: 16px !important;
+    transition: background-color 0.25s var(--ease-smooth), border-color 0.25s var(--ease-smooth), color 0.25s var(--ease-smooth) !important;
+}
+
+.prfhdr.bnrprv .prfavt {
+    width: 84px !important;
+    height: 84px !important;
+}
+
+.prfhdr.bnrprv .prfdn {
+    font-size: 26px !important;
+    gap: 6px !important;
+}
+
+.prfhdr.bnrprv .prfprn {
+    font-size: 14px !important;
+}
+
+.prfhdr.bnrprv .prfun {
+    font-size: 14px !important;
+    margin-bottom: 6px !important;
+}
+
+.prfhdr.bnrprv .prfsts {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    font-size: 13px !important;
+}
+
+.prfhdr.bnrprv .prfbadge img {
+    width: 22px !important;
+    height: 22px !important;
+}
+
+.prfhdr.bnrprv .prfbnr {
+    transition: filter 0.25s var(--ease-smooth), transform 0.25s var(--ease-smooth), opacity 0.25s var(--ease-smooth) !important;
+}
+
+.bnrstatus {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-family: 'Ubuntu', sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #666666 !important;
+    user-select: none !important;
+    transition: color 0.2s ease !important;
+}
+
+.bnrstatusdot {
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 50% !important;
+    background: var(--line) !important;
+    transition: background 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.bnrstatus.dirty {
+    color: var(--accent-dark, var(--accent)) !important;
+}
+
+.bnrstatus.dirty .bnrstatusdot {
+    background: var(--accent-dark, var(--accent)) !important;
+    box-shadow: 0 0 0 3px rgba(145, 42, 223, 0.14) !important;
 }
 
 .setttl.bnrsmttl {
@@ -223,7 +289,7 @@
     min-width: 0 !important;
     height: 6px !important;
     border-radius: 3px !important;
-    background: #D4D4D4;
+    background: var(--surface);
     border: 1px solid rgba(61, 61, 61, 0.25) !important;
     outline: none !important;
     cursor: pointer !important;
@@ -237,7 +303,7 @@
     height: 18px !important;
     border-radius: 50% !important;
     background: #FFFFFF !important;
-    border: 2px solid #912ADF !important;
+    border: 2px solid var(--accent) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     cursor: pointer !important;
 }
@@ -247,7 +313,7 @@
     height: 14px !important;
     border-radius: 50% !important;
     background: #FFFFFF !important;
-    border: 2px solid #912ADF !important;
+    border: 2px solid var(--accent) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     cursor: pointer !important;
 }
@@ -255,20 +321,20 @@
 .bnrrange::-moz-range-track {
     height: 6px !important;
     border-radius: 3px !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
 }
 
 .bnrrange::-moz-range-progress {
     height: 6px !important;
     border-radius: 3px !important;
-    background: #7423CB !important;
+    background: var(--accent) !important;
 }
 
 .bnropval {
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     min-width: 40px !important;
     text-align: right !important;
     font-variant-numeric: tabular-nums !important;
@@ -293,10 +359,12 @@
 
 .bnreffbar {
     position: absolute !important;
+    top: 8px !important;
     right: 8px !important;
-    bottom: 8px !important;
     display: flex !important;
     gap: 6px !important;
+    z-index: 2 !important;
+    animation: bnrPopIn 0.3s var(--ease-pop) 0.05s backwards !important;
 }
 
 .bnreffbtn {
@@ -323,7 +391,7 @@
 }
 
 .bnreffbtn.active {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    background: var(--grad-accent) !important;
     border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
@@ -335,8 +403,8 @@
 .bnrbar {
     height: 28px !important;
     border-radius: 6px !important;
-    border: 2px solid #A9A9A9 !important;
-    background: #D4D4D4;
+    border: 2px solid var(--line) !important;
+    background: var(--surface);
     box-sizing: border-box !important;
 }
 
@@ -360,7 +428,7 @@
 .bnrstem {
     width: 2px !important;
     height: 10px !important;
-    background: #A9A9A9 !important;
+    background: var(--line) !important;
     display: block !important;
 }
 
@@ -368,8 +436,8 @@
     width: 32px !important;
     height: 32px !important;
     border-radius: 6px !important;
-    border: 2px solid #A9A9A9 !important;
-    background: #D4D4D4;
+    border: 2px solid var(--line) !important;
+    background: var(--surface);
     box-sizing: border-box !important;
     display: block !important;
     transition: border-color 0.15s ease, transform 0.15s ease !important;
@@ -380,13 +448,13 @@
 }
 
 .bnrstop.active .bnrswatch {
-    border-color: #912ADF !important;
+    border-color: var(--accent) !important;
 }
 
 .bnrpop {
     display: none !important;
-    background: #F0F0F0 !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface-raised) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 12px !important;
     padding: 12px !important;
     box-sizing: border-box !important;
@@ -421,14 +489,14 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 14px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
 }
 
 .bnrpopclose {
     background: transparent !important;
     border: none !important;
     font-size: 14px !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     opacity: 0.5 !important;
     cursor: pointer !important;
     display: flex !important;
@@ -448,8 +516,8 @@
     border-radius: 6px !important;
     border-width: 2px !important;
     border-style: solid !important;
-    border-color: #A9A9A9;
-    background: #D4D4D4;
+    border-color: var(--line);
+    background: var(--surface);
     box-sizing: border-box !important;
     display: flex !important;
     align-items: center !important;
@@ -460,7 +528,7 @@
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 20px !important;
     font-weight: 700 !important;
-    color: #3D3D3D;
+    color: var(--ink);
     line-height: 1 !important;
 }
 

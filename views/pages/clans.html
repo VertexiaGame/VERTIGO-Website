@@ -1,0 +1,251 @@
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/admin.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Clans</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search clans" id="clanBarSearch" autocomplete="off" value="{{.Query}}">
+            </div>
+            <div class="barbtns">
+                <a href="/create?type=clan" hx-get="/create?type=clan" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">Create Clan</a>
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane" id="clnDirectory" data-csrf="{{.CSRF}}" data-active-cat="{{.ActiveCat}}" data-sort="{{.Sort}}">
+            <div class="shp-lay cln-lay">
+                <div class="shp-hdr-block">
+                    <h1 class="shp-heading">Clans</h1>
+                    <span class="shp-subheading">Join a crew, or rally your friends and start your own.</span>
+                </div>
+
+                <div class="gam-genres" id="clnCatBar">
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "all"}} active{{end}}" data-cat="all" onclick="window.switchClanCategory('all', event)">
+                        <i class="fa-solid fa-shapes"></i>
+                        <span>All Clans</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "building"}} active{{end}}" data-cat="building" onclick="window.switchClanCategory('building', event)">
+                        <i class="fa-solid fa-cubes"></i>
+                        <span>Building</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "social"}} active{{end}}" data-cat="social" onclick="window.switchClanCategory('social', event)">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>Social</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "grinding"}} active{{end}}" data-cat="grinding" onclick="window.switchClanCategory('grinding', event)">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Grinding</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "roleplay"}} active{{end}}" data-cat="roleplay" onclick="window.switchClanCategory('roleplay', event)">
+                        <i class="fa-solid fa-masks-theater"></i>
+                        <span>Roleplay</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "games"}} active{{end}}" data-cat="games" onclick="window.switchClanCategory('games', event)">
+                        <i class="fa-solid fa-gamepad"></i>
+                        <span>Games</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "trading"}} active{{end}}" data-cat="trading" onclick="window.switchClanCategory('trading', event)">
+                        <i class="fa-solid fa-handshake"></i>
+                        <span>Trading</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "creative"}} active{{end}}" data-cat="creative" onclick="window.switchClanCategory('creative', event)">
+                        <i class="fa-solid fa-palette"></i>
+                        <span>Creative</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "music"}} active{{end}}" data-cat="music" onclick="window.switchClanCategory('music', event)">
+                        <i class="fa-solid fa-music"></i>
+                        <span>Music</span>
+                    </button>
+                    <button type="button" class="gam-pill{{if eq .ActiveCat "ugc"}} active{{end}}" data-cat="ugc" onclick="window.switchClanCategory('ugc', event)">
+                        <i class="fa-solid fa-shirt"></i>
+                        <span>UGC</span>
+                    </button>
+                </div>
+
+                <div id="clnShelves">
+                    {{if or .Featured .JoinedClans .Biggest .Newest .CatShelves}}
+                    {{if .Featured}}
+                    <div class="carsec gam-featured">
+                        <h2 class="carttl">Featured</h2>
+                        <div class="carcnt" id="heroClanCarousel">
+                            <button class="cararr cararrl" onclick="moveClanCarousel(-1, event)">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button class="cararr cararrr" onclick="moveClanCarousel(1, event)">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                            <div class="cartrk">
+                                {{range .Featured}}{{template "components/clans/slide" .}}{{end}}
+                            </div>
+                        </div>
+                    </div>
+                    {{end}}
+
+                    <div class="carsec">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">Joined Clans</h2>
+                            {{if .IsLoggedIn}}<a href="/create/clans" hx-get="/create/clans" hx-target="body" hx-push-url="true" class="gam-seeall" style="text-decoration: none;">Manage ›</a>{{end}}
+                        </div>
+                        {{if .JoinedClans}}
+                        <div class="cln-grid">
+                            {{range .JoinedClans}}{{template "components/clans/card" .}}{{end}}
+                        </div>
+                        {{else if .IsLoggedIn}}
+                        <div class="feedemt">You haven't joined any clans yet. Find one below and say hello.</div>
+                        {{else}}
+                        <div class="feedemt">Log in to keep track of the clans you join.</div>
+                        {{end}}
+                    </div>
+
+                    {{if .Biggest}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">Biggest Right Now</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleClanShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row">
+                            {{range .Biggest}}{{template "components/clans/card" .}}{{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{if .Newest}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">New &amp; Growing</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleClanShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row" id="clanNewestRow">
+                            {{range .Newest}}{{template "components/clans/card" .}}{{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{range $shelf := .CatShelves}}
+                    <div class="carsec gam-shelf">
+                        <div class="gam-shelf-hdr">
+                            <h2 class="carttl">Top {{$shelf.Name}}</h2>
+                            <button type="button" class="gam-seeall" onclick="window.toggleClanShelf(this)">See All ›</button>
+                        </div>
+                        <div class="gam-row">
+                            {{range $clan := $shelf.Clans}}
+                            {{template "components/clans/card" $clan}}
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+                    {{else}}
+                    <div class="cln-empty">
+                        <div class="feedemt">{{if .Query}}No clans match that search. Try a different name, or clear the search to browse every public clan.{{else}}No public clans here yet — be the first to start one and gather your crew.{{end}}</div>
+                        <a href="/create?type=clan" hx-get="/create?type=clan" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration: none;"><span>Create a Clan</span></a>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div class="carsec" id="clnSearch" style="display: none;">
+                    <div class="gam-shelf-hdr">
+                        <div class="gam-search-ttl">
+                            <h2 class="carttl" id="clanSearchTitle">Search Results</h2>
+                            <span class="shp-subheading" id="clanResultCount">Showing {{len .Clans}} of {{len .Clans}} clans</span>
+                        </div>
+                        <div class="glb-dropdown gam-sort" id="clanSortDropdown">
+                            <button type="button" class="glb-dropdown-trigger" id="clanSortTrigger" onclick="window.toggleGlobalDropdown('clanSortDropdown')">
+                                <span id="clanSortLabel" class="glb-dropdown-label">{{if eq .Sort "members-asc"}}Fewest members{{else if eq .Sort "name-asc"}}Name (A-Z){{else if eq .Sort "newest"}}Newest{{else if eq .Sort "oldest"}}Oldest{{else}}Most members{{end}}</span>
+                                <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4">
+                                    <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                </svg>
+                            </button>
+                            <div class="glb-dropdown-menu" id="clanSortMenu">
+                                <div class="glb-dropdown-item{{if eq .Sort "members-desc"}} active{{end}}" data-value="members-desc" onclick="window.selectGlobalDropdownOption('clanSortDropdown', 'members-desc', 'Most members')">Most members</div>
+                                <div class="glb-dropdown-item{{if eq .Sort "members-asc"}} active{{end}}" data-value="members-asc" onclick="window.selectGlobalDropdownOption('clanSortDropdown', 'members-asc', 'Fewest members')">Fewest members</div>
+                                <div class="glb-dropdown-item{{if eq .Sort "name-asc"}} active{{end}}" data-value="name-asc" onclick="window.selectGlobalDropdownOption('clanSortDropdown', 'name-asc', 'Name (A-Z)')">Name (A-Z)</div>
+                                <div class="glb-dropdown-item{{if eq .Sort "newest"}} active{{end}}" data-value="newest" onclick="window.selectGlobalDropdownOption('clanSortDropdown', 'newest', 'Newest')">Newest</div>
+                                <div class="glb-dropdown-item{{if eq .Sort "oldest"}} active{{end}}" data-value="oldest" onclick="window.selectGlobalDropdownOption('clanSortDropdown', 'oldest', 'Oldest')">Oldest</div>
+                            </div>
+                            <input type="hidden" id="clanSortSelect" value="{{.Sort}}">
+                        </div>
+                    </div>
+
+                    <div class="cln-grid" id="clanGrid">
+                        {{range .Clans}}{{template "components/clans/card" .}}{{end}}
+                    </div>
+                    <div class="feedemt" id="clanEmpty" hidden>No clans match your filters.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        if (window.clanCarouselInterval) {
+            clearInterval(window.clanCarouselInterval);
+        }
+        let currentSlideIndex = 0;
+
+        function showSlide(index) {
+            const container = document.getElementById('heroClanCarousel');
+            if (!container) return;
+            const track = container.querySelector('.cartrk');
+            const slides = container.querySelectorAll('.carsld');
+            if (slides.length === 0) return;
+
+            if (index >= slides.length) {
+                currentSlideIndex = 0;
+            } else if (index < 0) {
+                currentSlideIndex = slides.length - 1;
+            } else {
+                currentSlideIndex = index;
+            }
+
+            const translation = -currentSlideIndex * 100;
+            track.style.transform = "translateX(" + translation + "%)";
+        }
+
+        function startInterval() {
+            if (window.clanCarouselInterval) {
+                clearInterval(window.clanCarouselInterval);
+            }
+            window.clanCarouselInterval = setInterval(() => {
+                showSlide(currentSlideIndex + 1);
+            }, 5000);
+        }
+
+        window.moveClanCarousel = function(direction, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            if (window.clanCarouselInterval) {
+                clearInterval(window.clanCarouselInterval);
+            }
+            window.clanCarouselInterval = setInterval(() => {
+                showSlide(currentSlideIndex + 1);
+            }, 5000);
+            showSlide(currentSlideIndex + direction);
+        };
+
+        showSlide(0);
+        startInterval();
+
+        const carouselContainer = document.getElementById('heroClanCarousel');
+        if (carouselContainer) {
+            carouselContainer.addEventListener('mouseenter', () => {
+                if (window.clanCarouselInterval) {
+                    clearInterval(window.clanCarouselInterval);
+                }
+            });
+            carouselContainer.addEventListener('mouseleave', () => {
+                startInterval();
+            });
+        }
+    })();
+</script>
+<script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/clanapi.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/clans.js?v={{.AssetV}}"></script>

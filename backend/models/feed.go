@@ -33,5 +33,6 @@ type FeedComment struct {
 	FullDate     string         `json:"full_date"`
 	Reactions    int            `json:"reactions"`
 	HasReacted   bool           `json:"has_reacted"`
+	Tag          *ClanTag       `json:"tag,omitempty"`
 	Replies      []*FeedComment `json:"replies,omitempty"`
 }

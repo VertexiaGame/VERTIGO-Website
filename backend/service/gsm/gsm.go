@@ -129,7 +129,7 @@ func (m *Manager) Join(gameID int, member string) (GameServer, bool, error) {
 	if err != nil {
 		return GameServer{}, false, ErrGameMissing
 	}
-	if info.Private || info.Locked {
+	if info.Locked || (info.Private && member != info.Owner) {
 		return GameServer{}, false, ErrGameClosed
 	}
 	max := m.effectiveMax(info.MaxPlayers)
@@ -368,7 +368,7 @@ func (m *Manager) ServerJoin(id string, member string) (GameServer, bool, error)
 	if err != nil {
 		return GameServer{}, false, ErrGameMissing
 	}
-	if info.Private || info.Locked {
+	if info.Locked || (info.Private && member != info.Owner) {
 		return GameServer{}, false, ErrGameClosed
 	}
 	max := m.effectiveMax(info.MaxPlayers)

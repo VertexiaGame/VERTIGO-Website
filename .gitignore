@@ -34,8 +34,12 @@ go.work.sum
 # .vscode/
 
 
-/static/renders/*
+# Runtime logs
+/logs/*
+*.log
 
+# Uploads and generated media
 /uploads/*
 /static/uploads/*
 /assets/uploads/*
+/static/renders/*

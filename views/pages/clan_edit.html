@@ -1,0 +1,552 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/frn.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/create.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Manage Clan</span>
+            <div class="barbtns">
+                <a href="/clans/{{.Clan.SlugPath}}" hx-get="/clans/{{.Clan.SlugPath}}" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">View</a>
+                <a href="/create/clans" hx-get="/create/clans" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">My Clans</a>
+            </div>
+        </div>
+        <div class="pane" id="clnEditPage" data-clan-id="{{.Clan.ID}}" data-csrf="{{.CSRF}}">
+            <div class="frmlay">
+                <div class="frmmain" style="padding-top: 24px !important;">
+                    {{if .Error}}
+                    <span class="frminerr visible" role="alert">{{.Error}}</span>
+                    {{end}}
+                    {{if .Notice}}
+                    <span class="frminsuc visible" role="status">{{.Notice}}</span>
+                    {{end}}
+
+                    <div class="tabcnt settabcnt">
+                        <div class="tablst">
+                            <div class="tabind"></div>
+                            <button type="button" class="tabbtn active" data-cln-edit-tab="profile" onclick="window.switchClanEditTab('profile', event)">Profile</button>
+                            {{if .CanManageRoles}}
+                            <button type="button" class="tabbtn" data-cln-edit-tab="roles" onclick="window.switchClanEditTab('roles', event)">Roles {{if .Clan.Roles}}({{len .Clan.Roles}}){{end}}</button>
+                            {{end}}
+                            {{if .CanManageMembers}}
+                            <button type="button" class="tabbtn" data-cln-edit-tab="requests" onclick="window.switchClanEditTab('requests', event)">Requests {{if .Clan.Requests}}({{len .Clan.Requests}}){{end}}</button>
+                            {{end}}
+                            {{if or .CanManageMembers .CanKickMembers}}
+                            <button type="button" class="tabbtn" data-cln-edit-tab="members" onclick="window.switchClanEditTab('members', event)">Members ({{.Clan.Members}})</button>
+                            {{end}}
+                            {{if .CanPostAnnouncement}}
+                            <button type="button" class="tabbtn" data-cln-edit-tab="announcements" onclick="window.switchClanEditTab('announcements', event)">Announcements {{if .Clan.Announcements}}({{len .Clan.Announcements}}){{end}}</button>
+                            {{end}}
+                        </div>
+
+                        <div class="settabvwp crtvwp">
+                            <div id="tab-profile" class="settabcntnt active">
+                                <div class="crtform">
+                                    <div class="crtforml">
+                                        <div class="setcrd">
+                                            <h3 class="setttl">Clan Profile</h3>
+                                            <span class="setinf">{{.Clan.PrivacyLabel}} · {{.Clan.Members}} members · {{len .Clan.Roles}} roles</span>
+                                            {{if .CanEditClan}}
+                                            <form class="crtformel" id="clnProfileForm" novalidate hx-boost="false" action="javascript:void(0);" onsubmit="return window.submitClanProfile(event, {{.Clan.ID}})">
+                                                <input type="hidden" name="csrf" value="{{.CSRF}}">
+                                                <div class="crtfld">
+                                                    <label class="crtlbl" for="clnEditName">Name</label>
+                                                    <div class="instk">
+                                                        <div class="instkrw">
+                                                            <div class="ttpcnt">
+                                                                <div class="setinbox">
+                                                                    <input type="text" class="setin" id="clnEditName" name="name" required minlength="3" maxlength="40" autocomplete="off" value="{{.Clan.Name}}" oninput="window.updateClanEditPreviewName(this.value)">
+                                                                </div>
+                                                                <span class="ttptxt">3 to 40 characters</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="crtfld">
+                                                    <label class="crtlbl" for="clnEditTag">Tag</label>
+                                                    <div class="instk">
+                                                        <div class="instkrw">
+                                                            <div class="ttpcnt">
+                                                                <div class="setinbox">
+                                                                    <input type="text" class="setin cln-tag-input" id="clnEditTag" name="tag" required minlength="2" maxlength="5" pattern="[A-Za-z0-9]{2,5}" autocomplete="off" spellcheck="false" value="{{.Clan.Tag}}" oninput="window.normalizeClanTagInput(this)">
+                                                                </div>
+                                                                <span class="ttptxt">2 to 5 letters or numbers. Shown as [TAG] before your username.</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="crtfld">
+                                                    <span class="crtlbl">Tag Colour</span>
+                                                    <input type="hidden" name="tag_color" id="clnEditTagColor" value="{{.Clan.TagColorValue}}">
+                                                    <div class="bnrstops">
+                                                        <button type="button" class="bnrstop" aria-label="Choose tag colour" title="Choose tag colour" onclick="window.toggleClanTagPicker('clnEdit')">
+                                                            <span class="bnrswatch" id="clnEditTagSwatch" style="background: {{.Clan.TagColorValue}};"></span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="bnrpop" id="clnEditTagColorPop">
+                                                        <div class="bnrpophdr">
+                                                            <span class="bnrpoptitle">Tag colour</span>
+                                                            <button type="button" class="bnrpopclose" onclick="window.closeClanTagPicker('clnEdit')" aria-label="Close colour picker"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                                                        </div>
+                                                        <div class="bnrclrpick" id="clnEditTagColorPicker"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="crtfld">
+                                                    <label class="crtlbl" for="clnEditDesc">Description</label>
+                                                    <div class="instk">
+                                                        <div class="instkrw">
+                                                            <div class="ttpcnt">
+                                                                <div class="setareabox">
+                                                                    <textarea class="setarea" id="clnEditDesc" name="description" maxlength="500" placeholder="What is your clan about?">{{.Clan.Description}}</textarea>
+                                                                </div>
+                                                                <span class="ttptxt">Maximum of 500 characters</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="crtfld">
+                                                    <span class="crtlbl">Category</span>
+                                                    <div class="gam-genres" id="clnEditCatBar">
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "building"}} active{{end}}" data-cat="building" onclick="window.switchClanEditCategory('building', event)">
+                                                            <i class="fa-solid fa-cubes"></i>
+                                                            <span>Building</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "social"}} active{{end}}" data-cat="social" onclick="window.switchClanEditCategory('social', event)">
+                                                            <i class="fa-solid fa-comments"></i>
+                                                            <span>Social</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "grinding"}} active{{end}}" data-cat="grinding" onclick="window.switchClanEditCategory('grinding', event)">
+                                                            <i class="fa-solid fa-bolt"></i>
+                                                            <span>Grinding</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "roleplay"}} active{{end}}" data-cat="roleplay" onclick="window.switchClanEditCategory('roleplay', event)">
+                                                            <i class="fa-solid fa-masks-theater"></i>
+                                                            <span>Roleplay</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "games"}} active{{end}}" data-cat="games" onclick="window.switchClanEditCategory('games', event)">
+                                                            <i class="fa-solid fa-gamepad"></i>
+                                                            <span>Games</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "trading"}} active{{end}}" data-cat="trading" onclick="window.switchClanEditCategory('trading', event)">
+                                                            <i class="fa-solid fa-handshake"></i>
+                                                            <span>Trading</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "creative"}} active{{end}}" data-cat="creative" onclick="window.switchClanEditCategory('creative', event)">
+                                                            <i class="fa-solid fa-palette"></i>
+                                                            <span>Creative</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "music"}} active{{end}}" data-cat="music" onclick="window.switchClanEditCategory('music', event)">
+                                                            <i class="fa-solid fa-music"></i>
+                                                            <span>Music</span>
+                                                        </button>
+                                                        <button type="button" class="gam-pill{{if eq .Clan.Category "ugc"}} active{{end}}" data-cat="ugc" onclick="window.switchClanEditCategory('ugc', event)">
+                                                            <i class="fa-solid fa-shirt"></i>
+                                                            <span>UGC</span>
+                                                        </button>
+                                                    </div>
+                                                    <input type="hidden" id="clnEditCat" name="category" value="{{.Clan.Category}}">
+                                                </div>
+                                                <div class="crtfld">
+                                                    <span class="crtlbl">Privacy</span>
+                                                    <div class="glb-dropdown" id="clnEditPrivacyDropdown">
+                                                        <button type="button" class="glb-dropdown-trigger" onclick="window.toggleGlobalDropdown('clnEditPrivacyDropdown')">
+                                                            <span class="glb-dropdown-label">{{.Clan.PrivacyLabel}}</span>
+                                                            <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4">
+                                                                <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                                            </svg>
+                                                        </button>
+                                                        <div class="glb-dropdown-menu">
+                                                            <div class="glb-dropdown-item{{if not .Clan.ApprovalOnly}} active{{end}}" data-value="public" onclick="window.selectGlobalDropdownOption('clnEditPrivacyDropdown', 'public', 'Public')"><i class="fa-solid fa-earth-americas"></i> Public</div>
+                                                            <div class="glb-dropdown-item{{if .Clan.ApprovalOnly}} active{{end}}" data-value="approval" onclick="window.selectGlobalDropdownOption('clnEditPrivacyDropdown', 'approval', 'Approval only')"><i class="fa-solid fa-lock"></i> Approval only</div>
+                                                        </div>
+                                                        <input type="hidden" id="clnEditPrivacy" name="privacy" value="{{if .Clan.ApprovalOnly}}approval{{else}}public{{end}}">
+                                                    </div>
+                                                    <span class="cln-privacy-note{{if .Clan.ApprovalOnly}} is-visible{{end}}" id="clnEditPrivacyNote"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Approval-only clans are hidden from browse. Admins approve every join request.</span>
+                                                </div>
+                                                <div class="crtfld">
+                                                    <label class="crtlbl" for="clnEditIcon">Icon</label>
+                                                    <div class="ttpcnt">
+                                                        <label class="crtupload" for="clnEditIcon">
+                                                            <input type="file" id="clnEditIcon" name="icon" accept="image/png,image/jpeg" onchange="window.handleClanEditIcon(event)" hidden>
+                                                            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                                            <span class="crtupmsg" id="clnEditIconMsg">{{if .Clan.HasIcon}}Choose a new icon{{else}}Choose a PNG or JPG{{end}}</span>
+                                                            <span class="crtupname" id="clnEditIconName"></span>
+                                                        </label>
+                                                        <span class="ttptxt">Square PNG or JPG, up to 8 MB. Shown once an admin approves it.</span>
+                                                    </div>
+                                                    {{if .Clan.HasPendingIcon}}
+                                                    <span class="cln-note"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> A new icon is awaiting admin approval.</span>
+                                                    {{end}}
+                                                    {{if .Clan.HasIcon}}
+                                                    <label class="frmchkgrp">
+                                                        <input type="checkbox" name="clear_icon" value="1" onchange="window.updateClanEditPreviewIconClear(this.checked)">
+                                                        <span>Remove the current icon</span>
+                                                    </label>
+                                                    {{end}}
+                                                </div>
+                                                <button type="submit" class="primary hpyprim hpyinl hpysm" id="clnProfileSubmit"><span>Save Changes</span></button>
+                                            </form>
+                                            {{else}}
+                                            <div class="shpitm-metastrip">
+                                                <div class="shpitm-metaitem">
+                                                    <span class="shpitm-metalbl">Name</span>
+                                                    <span class="shpitm-metaval">{{.Clan.Name}}</span>
+                                                </div>
+                                                <div class="shpitm-metaitem">
+                                                    <span class="shpitm-metalbl">Privacy</span>
+                                                    <span class="shpitm-metaval">{{.Clan.PrivacyLabel}}</span>
+                                                </div>
+                                                <div class="shpitm-metaitem">
+                                                    <span class="shpitm-metalbl">Category</span>
+                                                    <span class="shpitm-metaval">{{.Clan.CategoryLabel}}</span>
+                                                </div>
+                                                <div class="shpitm-metaitem">
+                                                    <span class="shpitm-metalbl">Created</span>
+                                                    <span class="shpitm-metaval">{{.Clan.CreatedLabel}}</span>
+                                                </div>
+                                            </div>
+                                            <span class="setinf">Your role can manage parts of this clan, but changing its profile needs the Edit Clan permission.</span>
+                                            {{end}}
+                                        </div>
+                                    </div>
+                                    <div class="crtformr">
+                                        <div class="setcrd">
+                                            <h3 class="setttl">Preview</h3>
+                                            <span class="setinf">How your clan appears in listings</span>
+                                            <div class="cln-card cln-crt-prev">
+                                                <div class="cln-crest" id="clnEditPreviewCrest">
+                                                    <span class="cln-crtltr" id="clnEditPreviewLetter">{{.Clan.Letter}}</span>
+                                                    <img class="cln-crtimg" id="clnEditPreviewIcon" src="{{if .Clan.HasIcon}}{{.Clan.IconURL}}{{end}}" alt=""{{if not .Clan.HasIcon}} hidden{{end}} onerror="this.remove();">
+                                                    {{if .Clan.ApprovalOnly}}<span class="cln-crtbadge" id="clnEditPreviewLock" title="Approval only"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>{{end}}
+                                                </div>
+                                                <span class="cln-nm"><span class="cln-tag" id="clnEditPreviewTag" style="{{.Clan.TagStyle}}"{{if not .Clan.HasTag}} hidden{{end}}>{{.Clan.TagLabel}}</span><span id="clnEditPreviewName">{{.Clan.Name}}</span></span>
+                                                <span class="cln-mb"><span class="cln-mbcount"><i class="fa-solid fa-user" aria-hidden="true"></i><span>{{.Clan.Members}}</span></span></span>
+                                            </div>
+                                            <div class="cln-prev-meta">
+                                                <span class="cln-prev-item" id="clnPrevPrivacy"><i class="fa-solid {{if .Clan.ApprovalOnly}}fa-lock{{else}}fa-earth-americas{{end}}" aria-hidden="true"></i> <span id="clnPrevPrivacyText">{{.Clan.PrivacyLabel}}</span></span>
+                                                <span class="cln-prev-item" id="clnPrevCategory"><i class="fa-solid {{if eq .Clan.Category "building"}}fa-cubes{{else if eq .Clan.Category "grinding"}}fa-bolt{{else if eq .Clan.Category "roleplay"}}fa-masks-theater{{else}}fa-comments{{end}}" aria-hidden="true"></i> <span id="clnPrevCategoryText">{{.Clan.CategoryLabel}}</span></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{if .CanManageRoles}}
+                            <div id="tab-roles" class="settabcntnt">
+                                <div class="setcrd cln-roles-board">
+                                    <div class="cln-roles-head">
+                                        <div class="cln-roles-headtxt">
+                                            <h3 class="setttl">Roles</h3>
+                                            <span class="setinf">Set what each role can do. Pick one to edit it.</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="cln-roles">
+                                        <div class="cln-roles-col" id="clnEditRoles">
+                                            {{range .Clan.Roles}}
+                                            <button type="button" class="cln-rolecard" style="--cln-role-color: {{.Color}};"
+                                                data-role-id="{{.ID}}"
+                                                data-role-name="{{.Name}}"
+                                                data-role-color="{{.Color}}"
+                                                data-role-rank="{{.Rank}}"
+                                                data-role-perms="{{.PermissionKeyString}}"
+                                                data-role-members="{{.MemberCount}}"
+                                                data-role-owner="{{if .IsOwner}}1{{else}}0{{end}}"
+                                                data-role-default="{{if .IsDefault}}1{{else}}0{{end}}"
+                                                onclick="window.selectClanRole(this)">
+                                                <span class="cln-rolecard-strip" aria-hidden="true"></span>
+                                                <span class="cln-rolecard-dot" aria-hidden="true"></span>
+                                                <span class="cln-rolecard-info">
+                                                    <span class="cln-rolecard-name">{{.Name}}{{if .IsOwner}} <i class="fa-solid fa-crown cln-crown" title="Clan owner" aria-hidden="true"></i>{{end}}</span>
+                                                    <span class="cln-rolecard-sub">Rank {{.Rank}}, {{.MemberCount}} member{{if ne .MemberCount 1}}s{{end}}</span>
+                                                </span>
+                                                {{if .IsDefault}}<span class="cln-state is-default">Default</span>{{end}}
+                                                <i class="fa-solid fa-chevron-right cln-rolecard-go" aria-hidden="true"></i>
+                                            </button>
+                                            {{end}}
+
+                                            <button type="button" class="cln-roleadd" onclick="window.newClanRole()">
+                                                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                                <span>New role</span>
+                                            </button>
+                                        </div>
+
+                                        <div class="cln-roles-panel">
+                                            <div class="frnemt cln-role-empty" id="clnRoleEmpty">Pick a role on the left to start editing.</div>
+
+                                            <div id="clnRoleEditor" hidden>
+                                                <div id="clnRoleOwner" hidden>
+                                                    <div class="cln-editor-head">
+                                                        <span class="cln-editor-avatar" id="clnOwnerAvatar" aria-hidden="true"><i class="fa-solid fa-crown"></i></span>
+                                                        <div class="cln-editor-headtxt">
+                                                            <h3 class="setttl" id="clnOwnerTitle">Owner</h3>
+                                                            <span class="setinf" id="clnOwnerMeta">Rank 99, 1 member</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="cln-note">
+                                                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                                                        <span>The owner always has every permission and can't be edited.</span>
+                                                    </div>
+                                                    <div class="cln-perm-grid">
+                                                        {{range .Permissions}}
+                                                        <div class="cln-perm is-on is-locked">
+                                                            <span class="cln-perm-ico"><i class="{{.Icon}}" aria-hidden="true"></i></span>
+                                                            <span class="cln-perm-txt"><strong>{{.Label}}</strong><span>{{.Description}}</span></span>
+                                                            <span class="cln-perm-sw" aria-hidden="true"><span class="cln-perm-swknob"></span></span>
+                                                        </div>
+                                                        {{end}}
+                                                    </div>
+                                                </div>
+
+                                                <form class="crtformel" id="clnRoleForm" novalidate hx-boost="false" action="javascript:void(0);" onsubmit="return window.submitClanRole(event, {{.Clan.ID}})" hidden>
+                                                    <input type="hidden" name="csrf" value="{{.CSRF}}">
+                                                    <input type="hidden" name="role_id" id="clnRoleId" value="">
+                                                    <input type="hidden" name="color" id="clnRoleColor" value="#912ADF">
+
+                                                    <div class="cln-editor-head">
+                                                        <span class="cln-editor-avatar" id="clnRoleAvatar" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
+                                                        <div class="cln-editor-headtxt">
+                                                            <h3 class="setttl" id="clnRoleFormTitle">New role</h3>
+                                                            <span class="setinf" id="clnRoleFormSub">Give the role a name, colour and permissions</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="cln-note cln-rolehint" id="clnRoleDefaultNote" hidden>
+                                                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                                                        <span>New members start with this role.</span>
+                                                    </div>
+
+                                                    <div class="crtfld">
+                                                        <label class="crtlbl" for="clnRoleName">Name</label>
+                                                        <div class="instk">
+                                                            <div class="instkrw">
+                                                                <div class="ttpcnt">
+                                                                    <div class="setinbox"><input type="text" class="setin" id="clnRoleName" name="name" maxlength="24" required autocomplete="off" placeholder="Name your role"></div>
+                                                                    <span class="ttptxt">Maximum of 24 characters</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="cln-role-fields">
+                                                        <div class="crtfld">
+                                                            <label class="crtlbl" for="clnRoleRank">Rank</label>
+                                                            <div class="instk">
+                                                                <div class="instkrw">
+                                                                    <div class="ttpcnt">
+                                                                        <div class="setinbox"><input type="number" class="setin" id="clnRoleRank" name="rank" min="1" max="99" inputmode="numeric" value="50"></div>
+                                                                        <span class="ttptxt">1 to 99, below your own rank</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="crtfld cln-role-colourfld">
+                                                            <span class="crtlbl">Colour</span>
+                                                            <div class="cln-role-swrow">
+                                                                <button type="button" class="cln-role-sw" id="clnRoleSwatch" style="background: #912ADF;" aria-label="Choose role colour" title="Choose role colour" onclick="window.toggleClanRolePicker()"></button>
+                                                                <span class="cln-role-swval" id="clnRoleColorVal">#912ADF</span>
+                                                            </div>
+                                                            <div class="bnrpop" id="clnRoleColorPop">
+                                                                <div class="bnrpophdr">
+                                                                    <span class="bnrpoptitle">Role colour</span>
+                                                                    <button type="button" class="bnrpopclose" onclick="window.closeClanRolePicker()" aria-label="Close colour picker"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                                                                </div>
+                                                                <div class="bnrclrpick" id="clnRoleColorPicker"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="crtfld">
+                                                        <div class="cln-roleperms-hdr">
+                                                            <span class="crtlbl">Permissions</span>
+                                                            <span class="cln-roleperms-count" id="clnRolePermCount">0 of {{len .Permissions}} active</span>
+                                                        </div>
+                                                        <div class="cln-perm-grid">
+                                                            {{range .Permissions}}
+                                                            <label class="cln-perm">
+                                                                <span class="cln-perm-ico"><i class="{{.Icon}}" aria-hidden="true"></i></span>
+                                                                <span class="cln-perm-txt"><strong>{{.Label}}</strong><span>{{.Description}}</span></span>
+                                                                <span class="cln-perm-sw" aria-hidden="true"><span class="cln-perm-swknob"></span></span>
+                                                                <input type="checkbox" name="permissions" value="{{.Key}}">
+                                                            </label>
+                                                            {{end}}
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="cln-formact">
+                                                        <button type="submit" class="primary hpyprim hpyinl hpysm" id="clnRoleSubmit"><span>Save role</span></button>
+                                                        <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.closeClanRoleEditor()"><span>Cancel</span></button>
+                                                        <button type="button" class="primary hpydng hpyinl hpysm cln-roleform-del" id="clnRoleDelete" onclick="window.deleteClanRole({{.Clan.ID}}, this)" hidden><span><i class="fa-solid fa-trash" aria-hidden="true"></i> Delete role</span></button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{end}}
+
+                            {{if .CanManageMembers}}
+                            <div id="tab-requests" class="settabcntnt">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Join Requests</h3>
+                                    <span class="setinf">Approve people who want to enter the clan, and choose the role they start with</span>
+                                    {{if .Clan.Requests}}
+                                    <div class="frngrd">
+                                        {{range .Clan.Requests}}
+                                        <div class="frncrd cln-req-row" data-request-id="{{.ID}}">
+                                            <div class="frntop">
+                                                <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frnavt">
+                                                    <img src="/api/v1/avatar/headshot/{{.UserID}}.png" alt="{{.Name}}" loading="lazy" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
+                                                </a>
+                                                <div class="frndtl">
+                                                    <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frndn">{{.Name}}</a>
+                                                    <span class="frnun">Requested {{.CreatedLabel}}</span>
+                                                </div>
+                                            </div>
+                                            <p class="cln-msg{{if not .Message}} is-muted{{end}}">{{if .Message}}{{.Message}}{{else}}No message attached.{{end}}</p>
+                                            <div class="frnact">
+                                                <select class="cln-select" data-request-role aria-label="Role for {{.Name}}">
+                                                    {{range $.Clan.Roles}}{{if not .IsOwner}}<option value="{{.ID}}"{{if .IsDefault}} selected{{end}}>{{.Name}}</option>{{end}}{{end}}
+                                                </select>
+                                                <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.approveClanRequest({{$.Clan.ID}}, {{.ID}}, this)"><span>Approve</span></button>
+                                                <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.denyClanRequest({{$.Clan.ID}}, {{.ID}}, this)"><span>Deny</span></button>
+                                            </div>
+                                        </div>
+                                        {{end}}
+                                    </div>
+                                    {{else}}
+                                    <div class="feedemt">No pending requests right now.</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            {{end}}
+
+                            {{if or .CanManageMembers .CanKickMembers}}
+                            <div id="tab-members" class="settabcntnt">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Members</h3>
+                                    <span class="setinf">Hand out roles and keep the roster tidy</span>
+                                    <div class="cln-fltrbar">
+                                        <div class="setinbox cln-searchbox">
+                                            <input type="search" class="setin" id="clnEditMemberSearch" placeholder="Search members" aria-label="Search members" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="frngrd" id="clnEditMembers">
+                                        {{range .Clan.Roster}}
+                                        {{$member := .}}
+                                        <div class="frncrd cln-mgmt-row" data-name="{{.Name}} {{.Username}}">
+                                            <div class="frntop">
+                                                <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frnavt">
+                                                    <img src="/api/v1/avatar/headshot/{{.UserID}}.png" alt="{{.Name}}" loading="lazy" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
+                                                </a>
+                                                <div class="frndtl">
+                                                    <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frndn">{{.Name}}{{if .IsOwnerRole}} <i class="fa-solid fa-crown cln-crown" title="Clan owner" aria-hidden="true"></i>{{end}}</a>
+                                                    <span class="frnun">@{{.Username}}{{if .JoinedLabel}} · Joined {{.JoinedLabel}}{{end}}</span>
+                                                </div>
+                                            </div>
+                                            <div class="cln-meta">
+                                                <span class="cln-rolebadge" style="{{.BadgeStyle}}">{{.RoleName}}</span>
+                                                <span class="cln-mstatus{{if .IsOnline}} is-online{{end}}">{{.Status}}</span>
+                                            </div>
+                                            <div class="frnact">
+                                                {{if .IsOwnerRole}}
+                                                <span class="cln-msg is-muted">Owner controls are locked</span>
+                                                {{else}}
+                                                {{if $.CanManageMembers}}
+                                                <select class="cln-select" data-member-role aria-label="Role for {{.Name}}">
+                                                    {{range $.Clan.Roles}}{{if not .IsOwner}}<option value="{{.ID}}"{{if eq .ID $member.RoleID}} selected{{end}}>{{.Name}}</option>{{end}}{{end}}
+                                                </select>
+                                                <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.saveClanMemberRole({{$.Clan.ID}}, {{.UserID}}, this)"><span>Save</span></button>
+                                                {{end}}
+                                                {{if $.CanKickMembers}}
+                                                <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.kickClanMember({{$.Clan.ID}}, {{.UserID}}, this)"><span>Kick</span></button>
+                                                {{end}}
+                                                {{end}}
+                                            </div>
+                                        </div>
+                                        {{end}}
+                                        <div class="frnemt cln-member-empty" id="clnEditMemberEmpty" hidden>No members match your search.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{end}}
+
+                            {{if .CanPostAnnouncement}}
+                            <div id="tab-announcements" class="settabcntnt">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Announcements</h3>
+                                    <span class="setinf">Post updates on the clan home page</span>
+                                    <form class="crtformel" id="clnEditAnnForm" novalidate hx-boost="false" action="javascript:void(0);" onsubmit="return window.submitClanAnnouncement(event, {{.Clan.ID}})">
+                                        <input type="hidden" name="csrf" value="{{.CSRF}}">
+                                        <div class="crtfld">
+                                            <label class="crtlbl" for="clnEditAnnTitle">Title</label>
+                                            <div class="instk">
+                                                <div class="instkrw">
+                                                    <div class="ttpcnt">
+                                                        <div class="setinbox"><input type="text" class="setin" id="clnEditAnnTitle" name="title" maxlength="120" placeholder="Optional title" autocomplete="off"></div>
+                                                        <span class="ttptxt">Maximum of 120 characters</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="crtfld">
+                                            <label class="crtlbl" for="clnEditAnnBody">Message</label>
+                                            <div class="instk">
+                                                <div class="instkrw">
+                                                    <div class="ttpcnt">
+                                                        <div class="setareabox"><textarea class="setarea" id="clnEditAnnBody" name="body" maxlength="1000" placeholder="What's new?" required></textarea></div>
+                                                        <span class="ttptxt">Maximum of 1000 characters</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="cln-formact">
+                                            <button type="submit" class="primary hpyprim hpyinl hpysm" id="clnEditAnnSubmit"><span>Post announcement</span></button>
+                                        </div>
+                                    </form>
+                                    <div class="cln-announce-list">
+                                        {{range .Clan.Announcements}}
+                                        <article class="cln-announce">
+                                            <div class="cln-announce-head">
+                                                <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="cln-announce-avt">
+                                                    <img src="/api/v1/avatar/headshot/{{.UserID}}.png" alt="{{.Author}}" loading="lazy" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
+                                                </a>
+                                                <div class="cln-announce-heading">
+                                                    <div class="cln-announce-meta">
+                                                        <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="cln-announce-author">{{.Author}}</a>
+                                                        {{if .AuthorRoleName}}<span class="cln-rolebadge" style="{{.BadgeStyle}}">{{.AuthorRoleName}}</span>{{end}}
+                                                        <span class="cln-announce-time" title="{{.FullDate}}">{{.TimeAgo}}</span>
+                                                    </div>
+                                                    {{if .Title}}<h3 class="cln-announce-ttl">{{.Title}}</h3>{{end}}
+                                                </div>
+                                                <button type="button" class="avtwrmv cln-del" title="Delete announcement" aria-label="Delete announcement" onclick="window.deleteClanAnnouncement({{$.Clan.ID}}, {{.ID}}, this)">
+                                                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                            <p class="cln-announce-txt">{{.Body}}</p>
+                                        </article>
+                                        {{else}}
+                                        <div class="feedemt">No announcements have been posted yet.</div>
+                                        {{end}}
+                                    </div>
+                                </div>
+                            </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/clanapi.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/clan_edit.js?v={{.AssetV}}"></script>

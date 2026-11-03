@@ -1,17 +1,44 @@
 :root {
     --accent: #912ADF;
     --accent-dark: #7423CB;
+    --accent-ink: #5B21A6;
     --accent-soft: rgba(145, 42, 223, 0.15);
+
+    --grad-sheen: linear-gradient(0deg, rgba(255, 255, 255, 0) 2%, rgba(255, 255, 255, 0.4) 92%);
+    --grad-accent: var(--grad-sheen), var(--accent);
+    --grad-success: var(--grad-sheen), var(--success);
+    --grad-warning: var(--grad-sheen), var(--warning);
+    --grad-danger: var(--grad-sheen), var(--danger);
+    --grad-info: var(--grad-sheen), var(--info);
+    --grad-muted: var(--grad-sheen), #888888;
+
     --ink: #3D3D3D;
     --ink-strong: #1A202C;
     --ink-soft: #333333;
     --muted: #718096;
+
     --surface: #D4D4D4;
     --surface-raised: #F0F0F0;
+    --surface-pane: #C8C8C8;
+    --surface-hover: #DCDCDC;
+    --surface-raised-hover: #E9E9E9;
     --line: #A9A9A9;
-    --border: #D4D4D4;
+    --border: #CBCBCB;
+
     --success: #28A745;
+    --success-ink: #1E6B34;
+    --success-soft: #EAF7EE;
+    --success-line: #B7E1C2;
     --danger: #DC3545;
+    --danger-ink: #8B0000;
+    --danger-soft: #FDECEC;
+    --danger-line: #F0C0C0;
+    --warning: #E67E22;
+    --warning-ink: #8A5A00;
+    --warning-soft: #FFF5E0;
+    --warning-line: #F0D69A;
+    --info: #17A2B8;
+
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
@@ -181,7 +208,7 @@ body {
     width: 96px;
     height: 37px;
     background: rgba(61, 61, 61, 0.25);
-    border-radius: 6px;
+    border-radius: var(--radius-lg, 12px);
     color: #FFFFFF;
     font-style: normal;
     font-weight: 400;
@@ -207,7 +234,7 @@ body {
     padding: 0 16px;
     height: 37px;
     background: rgba(61, 61, 61, 0.25);
-    border-radius: 6px;
+    border-radius: var(--radius-lg, 12px);
     color: #FFFFFF;
     font-style: normal;
     font-weight: 400;
@@ -227,9 +254,9 @@ body {
     height: 48px;
     left: 20px;
     top: 20px;
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), var(--accent, #7423CB);
+    background: var(--grad-accent);
     box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 4px rgba(255, 255, 255, 0.25);
-    border-radius: 4px;
+    border-radius: var(--radius-xl, 16px);
     border: none;
     outline: none;
     cursor: pointer;
@@ -277,24 +304,24 @@ body {
 }
 
 .primary.hpyprim {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB;
+    background: var(--grad-accent);
 }
 
 .primary.hpysuc {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #28A745;
+    background: var(--grad-success);
 }
 
 .primary.hpywrn {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #E67E22;
+    background: var(--grad-warning);
 }
 
 .primary.hpyerr,
 .primary.hpydng {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #DC3545;
+    background: var(--grad-danger);
 }
 
 .primary.hpyinf {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #17A2B8;
+    background: var(--grad-info);
 }
 
 .primary.hpyinl {
@@ -309,7 +336,7 @@ body {
     padding: 0 16px !important;
     min-width: 0 !important;
     box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 4px rgba(255, 255, 255, 0.25) !important;
-    border-radius: 4px !important;
+    border-radius: var(--radius-lg, 12px) !important;
 }
 
 .primary.hpysm span {
@@ -319,11 +346,20 @@ body {
     text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25) !important;
 }
 
+@supports (corner-shape: squircle) {
+    .barbtn,
+    .generic,
+    .primary,
+    .primary.hpysm {
+        corner-shape: squircle;
+    }
+}
+
 .pane {
     position: relative;
     width: 100%;
     flex-grow: 1;
-    background: #C8C8C8;
+    background: var(--surface-pane);
     border-radius: 0px;
     display: flex;
     flex-direction: column;
@@ -379,8 +415,8 @@ body {
 }
 
 .mcard {
-    background: #D4D4D4 !important;
-    border: 2px solid #A9A9A9 !important;
+    background: var(--surface) !important;
+    border: 2px solid var(--line) !important;
     border-radius: 16px !important;
     width: 90% !important;
     max-width: 460px !important;
@@ -403,8 +439,8 @@ body {
     flex-direction: column !important;
     padding: 20px 20px 14px 20px !important;
     position: relative !important;
-    border-bottom: 2px solid #A9A9A9 !important;
-    background: #D4D4D4 !important;
+    border-bottom: 2px solid var(--line) !important;
+    background: var(--surface) !important;
 }
 
 .mtitle {
@@ -455,12 +491,12 @@ body {
     display: flex !important;
     flex-direction: column !important;
     gap: 16px !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
 }
 
 select {
     height: 30px;
-    background-color: #D4D4D4;
+    background-color: var(--surface);
     border: 2px solid rgba(61, 61, 61, 0.25);
     border-radius: 6px;
     padding: 0 24px 0 8px;
@@ -486,7 +522,7 @@ select:focus {
 }
 
 select option {
-    background-color: #F0F0F0;
+    background-color: var(--surface-raised);
     color: #3D3D3D;
 }
 
@@ -504,7 +540,7 @@ select option {
     height: 30px !important;
     min-height: 30px !important;
     max-height: 30px !important;
-    background: #D4D4D4 !important;
+    background: var(--surface) !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
     border-radius: 6px !important;
     padding: 0 8px !important;
@@ -522,7 +558,7 @@ select option {
 }
 
 .glb-dropdown-trigger:hover {
-    background: #D8D8D8 !important;
+    background: var(--surface-hover) !important;
     transform: none !important;
 }
 
@@ -562,8 +598,8 @@ select option {
     left: 0 !important;
     width: 100% !important;
     min-width: 100% !important;
-    background: #F0F0F0 !important;
-    border: 1px solid #D4D4D4 !important;
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--border) !important;
     border-radius: 8px !important;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
     z-index: 500 !important;
@@ -605,7 +641,7 @@ select option {
 }
 
 .glb-dropdown-item.active {
-    background: linear-gradient(0deg, rgba(255, 255, 255, 0) 2.18%, rgba(255, 255, 255, 0.39) 91.46%), #7423CB !important;
+    background: var(--grad-accent) !important;
     color: #FFFFFF !important;
 }
 
@@ -657,7 +693,6 @@ select option {
     }
 }
 
-/* === Mobile layout - Figma iPhone 17 (402x874) fixes === */
 @media (max-width: 768px) {
     html {
         height: 100% !important;
@@ -743,7 +778,6 @@ select option {
         z-index: 2 !important;
         overflow: visible !important;
         transform: none !important;
-        /* avoid clipping at edges – scale to fit */
         -webkit-mask-repeat: round no-repeat !important;
         mask-repeat: round no-repeat !important;
     }
@@ -806,7 +840,7 @@ select option {
         min-width: 96px !important;
         height: 37px !important;
         background: rgba(61,61,61,0.25) !important;
-        border-radius: 6px !important;
+        border-radius: var(--radius-lg, 12px) !important;
         font-size: 20px !important;
         line-height: 23px !important;
         text-shadow: 0 0 4px rgba(0,0,0,0.25) !important;
@@ -822,7 +856,7 @@ select option {
     .barbtn {
         height: 37px !important;
         background: rgba(61,61,61,0.25) !important;
-        border-radius: 6px !important;
+        border-radius: var(--radius-lg, 12px) !important;
         font-size: 20px !important;
         line-height: 23px !important;
         text-shadow: 0 0 4px rgba(0,0,0,0.25) !important;
@@ -830,7 +864,7 @@ select option {
     }
     .pane {
         width: 100% !important;
-        background: #C8C8C8 !important;
+        background: var(--surface-pane) !important;
         border-radius: 0 !important;
         display: flex !important;
         flex-direction: column !important;
@@ -850,7 +884,6 @@ select option {
     }
 }
 
-/* html.mobmode mirror for UA-detected devices */
 html.mobmode {
     height: 100% !important;
     height: 100dvh !important;
@@ -958,7 +991,7 @@ html.mobmode .generic {
     width: 96px !important;
     height: 37px !important;
     background: rgba(61,61,61,0.25) !important;
-    border-radius: 6px !important;
+    border-radius: var(--radius-lg, 12px) !important;
     font-size: 20px !important;
     position: static !important;
 }
@@ -966,12 +999,12 @@ html.mobmode .barbtns { position: static !important; display: flex !important; g
 html.mobmode .barbtn {
     height: 37px !important;
     background: rgba(61,61,61,0.25) !important;
-    border-radius: 6px !important;
+    border-radius: var(--radius-lg, 12px) !important;
     font-size: 20px !important;
 }
 html.mobmode .pane {
     width: 100% !important;
-    background: #C8C8C8 !important;
+    background: var(--surface-pane) !important;
     border-radius: 0 !important;
     flex-grow: 1 !important;
     padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
@@ -1415,4 +1448,33 @@ body.g21-dim > *:not(#g21Tip) {
     visibility: visible;
     opacity: 1;
     transform: scale(1);
+}
+
+.cln-tag {
+    max-width: 100%;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: var(--cln-tag-color, #912ADF);
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+a.cln-tag {
+    cursor: pointer;
+}
+
+a.cln-tag:hover {
+    text-decoration: underline;
+}
+
+a.cln-tag:focus-visible {
+    outline: 2px solid var(--cln-tag-color, #912ADF);
+    outline-offset: 2px;
+}
+
+.cln-tag-input {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }

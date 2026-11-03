@@ -5,6 +5,8 @@
 <link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/admin.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/create.css?v={{.AssetV}}">
 <div class="wrap">
     <div class="cont">
@@ -35,11 +37,16 @@
                             <img src="/static/useful/icons/gma.png" alt="">
                             Asset
                         </button>
+                        <button type="button" class="crttypebtn{{if eq .ActiveType "clan"}} active{{end}}" data-type="clan" onclick="window.switchCreateType('clan', event)">
+                            <img src="/static/useful/icons/friends.png" alt="">
+                            Clan
+                        </button>
                     </div>
                     <div class="settabvwp crtvwp">
                         {{template "components/create/game" .}}
                         {{template "components/create/shop" .}}
                         {{template "components/create/asset" .}}
+                        {{template "components/create/clan" .}}
                     </div>
                 </div>
             </div>
@@ -114,5 +121,7 @@
 </div>
 
 <script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/clanapi.js?v={{.AssetV}}"></script>
 <script src="/static/js/create/create.js?v={{.AssetV}}"></script>
+<script src="/static/js/create/clan.js?v={{.AssetV}}"></script>
 <script type="module" src="/static/js/create/create3d.js?v={{.AssetV}}"></script>

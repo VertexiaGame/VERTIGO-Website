@@ -324,14 +324,6 @@ func RenderCreatePreview(category string, filePath string, texturePath string) (
 		LeftLegColor:  "B3B3B3",
 		RightLegColor: "B3B3B3",
 	}
-        /*
-        HeadColor:     "f3b700",
-		TorsoColor:    "0000ff",
-		LeftArmColor:  "f3b700",
-		RightArmColor: "f3b700",
-		LeftLegColor:  "a4bd47",
-		RightLegColor: "a4bd47",
-        */
 	switch category {
 	case "hat":
 		req.PreviewType = "hat"

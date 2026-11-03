@@ -581,7 +581,8 @@ export class AvatarViewer {
                         color: hatTex ? new THREE.Color(0xffffff) : new THREE.Color(0xd6d6d6),
                         map: hatTex || null,
                         roughness: 0.6,
-                        metalness: 0.0
+                        metalness: 0.0,
+                        transparent: true
                     });
                     hatObj.traverse(child => {
                         if (child.isMesh) {
@@ -620,7 +621,8 @@ export class AvatarViewer {
                             color: toolTex ? new THREE.Color(0xffffff) : new THREE.Color(0xd6d6d6),
                             map: toolTex || null,
                             roughness: 0.6,
-                            metalness: 0.0
+                            metalness: 0.0,
+                            transparent: true
                         });
                         toolObj.traverse(child => {
                             if (child.isMesh) {
@@ -817,7 +819,132 @@ window.updateWearingArrows = function() {
     }
 };
 
+const PROFILE_GRID_PAGE_SIZE = 20;
+
+const createProfileGrid = (options) => {
+    let cat = 'all';
+    let page = 1;
+
+    const replayEntry = grid => {
+        const cards = Array.from(grid.querySelectorAll('.shp-card'));
+        cards.forEach(card => { card.style.animation = 'none'; });
+        void grid.offsetWidth;
+        cards.forEach(card => { card.style.animation = ''; });
+    };
+
+    const apply = () => {
+        const grid = document.getElementById(options.gridId);
+        if (!grid) return;
+
+        const cards = Array.from(grid.querySelectorAll('.shp-card[data-type]'));
+        const matching = cat === 'all' ? cards : cards.filter(card => card.dataset.type === cat);
+        const totalPages = Math.max(1, Math.ceil(matching.length / PROFILE_GRID_PAGE_SIZE));
+
+        page = Math.min(Math.max(1, page), totalPages);
+
+        const start = (page - 1) * PROFILE_GRID_PAGE_SIZE;
+        const end = start + PROFILE_GRID_PAGE_SIZE;
+
+        cards.forEach(card => card.classList.add('prfshop-hide'));
+        matching.slice(start, end).forEach(card => card.classList.remove('prfshop-hide'));
+
+        const empty = document.getElementById(options.emptyId);
+        if (empty) empty.classList.toggle('prfshop-hide', matching.length !== 0);
+
+        const pag = document.getElementById(options.paginationId);
+        if (pag) pag.hidden = totalPages <= 1;
+
+        const label = document.getElementById(options.pageLabelId);
+        if (label) label.textContent = 'Page ' + page + ' of ' + totalPages;
+
+        const prev = document.getElementById(options.prevId);
+        if (prev) prev.disabled = page <= 1;
+
+        const next = document.getElementById(options.nextId);
+        if (next) next.disabled = page >= totalPages;
+
+        replayEntry(grid);
+    };
+
+    const filter = (newCat, event) => {
+        const clicked = event ? event.currentTarget : null;
+        if (!clicked || clicked.classList.contains('active')) return;
+
+        const cats = document.getElementById(options.catsId);
+        if (cats) {
+            cats.querySelectorAll('.shp-cat-item').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === newCat);
+            });
+        }
+
+        cat = newCat;
+        page = 1;
+        apply();
+    };
+
+    const changePage = dir => {
+        page += dir;
+        apply();
+
+        const grid = document.getElementById(options.gridId);
+        if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const init = () => {
+        cat = 'all';
+        page = 1;
+
+        const cats = document.getElementById(options.catsId);
+        const grid = document.getElementById(options.gridId);
+        if (!cats || !grid) return;
+
+        const counts = {};
+        grid.querySelectorAll('.shp-card[data-type]').forEach(card => {
+            counts[card.dataset.type] = (counts[card.dataset.type] || 0) + 1;
+        });
+        cats.querySelectorAll('.shp-cat-item').forEach(btn => {
+            const key = btn.dataset.cat;
+            if (key === 'all') return;
+            btn.classList.toggle('prfshop-hide', !counts[key]);
+        });
+
+        apply();
+    };
+
+    return { apply, filter, changePage, init };
+};
+
+const profileShopGrid = createProfileGrid({
+    catsId: 'prfShopCats',
+    gridId: 'prfShopGrid',
+    emptyId: 'prfShopEmpty',
+    paginationId: 'prfShopPagination',
+    pageLabelId: 'prfShopPageLbl',
+    prevId: 'prfShopPrev',
+    nextId: 'prfShopNext'
+});
+
+const profileInventoryGrid = createProfileGrid({
+    catsId: 'prfInvCats',
+    gridId: 'prfInvGrid',
+    emptyId: 'prfInvEmpty',
+    paginationId: 'prfInvPagination',
+    pageLabelId: 'prfInvPageLbl',
+    prevId: 'prfInvPrev',
+    nextId: 'prfInvNext'
+});
+
+window.applyProfileShopView = profileShopGrid.apply;
+window.filterProfileShop = profileShopGrid.filter;
+window.changeProfileShopPage = profileShopGrid.changePage;
+window.applyProfileInventoryView = profileInventoryGrid.apply;
+window.filterProfileInventory = profileInventoryGrid.filter;
+window.changeProfileInventoryPage = profileInventoryGrid.changePage;
+
 const initProfile = () => {
+    profileShopGrid.init();
+    profileInventoryGrid.init();
+
     if (typeof window.updateProfileTabIndicator === 'function') {
         setTimeout(window.updateProfileTabIndicator, 50);
         setTimeout(window.updateProfileTabIndicator, 150);
@@ -862,11 +989,18 @@ initProfile();
 if (!window.__prfCardNavBound) {
     window.__prfCardNavBound = true;
     document.addEventListener('click', function(event) {
-        const card = event.target.closest ? event.target.closest('#prfWearingRow .shp-card[data-id]') : null;
-        if (card && !event.target.closest('button') && !event.target.closest('a')) {
-            const id = card.getAttribute('data-id');
+        const itemCard = event.target.closest ? event.target.closest('#prfWearingRow .shp-card[data-id], #prfShopGrid .shp-card[data-id], #prfInvGrid .shp-card[data-id]') : null;
+        if (itemCard && !event.target.closest('button') && !event.target.closest('a')) {
+            const id = itemCard.getAttribute('data-id');
             if (id) {
                 window.navigateWithHistory('/shop/item/' + encodeURIComponent(id));
+            }
+        }
+        const gameCard = event.target.closest ? event.target.closest('#prfGamesGrid .shp-card[data-id]') : null;
+        if (gameCard && !event.target.closest('button') && !event.target.closest('a')) {
+            const id = gameCard.getAttribute('data-id');
+            if (id) {
+                window.navigateWithHistory('/play/' + encodeURIComponent(id));
             }
         }
     });

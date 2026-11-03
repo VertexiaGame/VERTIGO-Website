@@ -83,6 +83,13 @@ func SettingsGet(c fiber.Ctx) error {
 	}
 	bannerEffect := models.NormalizeBannerEffect(user.BannerEffect)
 
+	profileUser := user
+	friends, followers, following := 0, 0, 0
+	if data, _, f, fo, fi, err := service.User.GetProfileData(user.ID, user.Username); err == nil && data != nil {
+		profileUser = data
+		friends, followers, following = f, fo, fi
+	}
+
 	return Render(c, "pages/settings", fiber.Map{
 		"Title":               "Settings - VERTEXIA",
 		"Error":               c.Query("error"),
@@ -94,13 +101,21 @@ func SettingsGet(c fiber.Ctx) error {
 		"UserMusicID":         userMusicID,
 		"CurUsername":         user.Username,
 		"CurDisplayName":      user.DisplayName,
+		"ProfileUser":         profileUser,
+		"FriendsCount":        friends,
+		"FollowersCount":      followers,
+		"FollowingCount":      following,
 		"UsernameChangesLeft": changesLeft,
 		"DisableAutoplay":     user.DisableAutoplay,
 		"ReducedMotion":       user.ReducedMotion,
+		"DisableBgdim":        user.DisableBgdim,
+		"HideInventory":       user.HideInventory,
+		"EnableOneko":         user.EnableOneko,
 		"CustomCSS":           user.CustomCSS.String,
 		"BannerLive":          liveBanner,
 		"BannerPending":       pendingBanner,
 		"BannerEdit":          bannerEdit,
+		"BannerFilter":        models.BannerEffectFilter(bannerEffect),
 		"BannerEffect":        bannerEffect,
 		"BannerEffectName":    models.BannerEffectName(bannerEffect),
 		"BannerTextBg":        user.BannerTextBg,
@@ -263,12 +278,30 @@ func SettingsPersonalizationPost(c fiber.Ctx) error {
 
 	disableAutoplay := c.FormValue("disable_autoplay") != ""
 	reducedMotion := c.FormValue("reduced_motion") != ""
+	disableBgdim := c.FormValue("disable_bgdim") != ""
+	enableOneko := c.FormValue("enable_oneko") != ""
 	customCSS := c.FormValue("custom_css")
 
-	err = service.User.UpdatePersonalization(user.ID, disableAutoplay, reducedMotion, customCSS)
+	err = service.User.UpdatePersonalization(user.ID, disableAutoplay, reducedMotion, disableBgdim, enableOneko, customCSS)
 	return handleSettingsResponse(c, err, "Personalization saved successfully", fiber.Map{
 		"disable_autoplay": disableAutoplay,
 		"reduced_motion":   reducedMotion,
+		"disable_bgdim":    disableBgdim,
+		"enable_oneko":     enableOneko,
 		"custom_css":       service.SanitizeCustomCSS(customCSS),
+	})
+}
+
+func SettingsPrivacyPost(c fiber.Ctx) error {
+	user, err := getSettingsUser(c)
+	if err != nil {
+		return handleSettingsResponse(c, err, "", nil)
+	}
+
+	hideInventory := c.FormValue("hide_inventory") != ""
+
+	err = service.User.UpdatePrivacy(user.ID, hideInventory)
+	return handleSettingsResponse(c, err, "Privacy preferences saved successfully", fiber.Map{
+		"hide_inventory": hideInventory,
 	})
 }

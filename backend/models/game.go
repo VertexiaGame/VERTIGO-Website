@@ -94,6 +94,17 @@ func (g *Game) HasRating() bool {
 	return g.LikePct >= 0
 }
 
+func (g *Game) IsCreator(viewerID int) bool {
+	return viewerID > 0 && g.CreatorID.Valid && int(g.CreatorID.Int64) == viewerID
+}
+
+func (g *Game) VisibleTo(viewerID int) bool {
+	if g.Locked {
+		return false
+	}
+	return !g.Private || g.IsCreator(viewerID)
+}
+
 func (g *Game) LikeColor() template.CSS {
 	if g.LikePct < 0 {
 		return ""
