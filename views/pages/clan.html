@@ -55,19 +55,21 @@
                         <a href="/create/clans/{{.Clan.ID}}/edit" hx-get="/create/clans/{{.Clan.ID}}/edit" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration: none;">
                             <span><i class="fa-solid fa-sliders" aria-hidden="true"></i><span>Manage Clan</span></span>
                         </a>
-                        <span class="shpitm-price-note" data-cln-join-note>{{if .IsOwner}}You own this clan{{else if .ViewerMember}}{{.ViewerMember.RoleName}}{{else}}Clan manager{{end}}</span>
-                        {{else if .IsMember}}
+                        {{end}}
+                        {{if .IsMember}}
+                        {{if not .CanManageClan}}
                         <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.leaveClan({{.Clan.ID}}, this)">
                             <span><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Leave Clan</span></span>
                         </button>
-                        <span class="shpitm-price-note" data-cln-join-note>{{if .ViewerMember}}{{.ViewerMember.RoleName}}{{else}}Member{{end}}</span>
+                        {{end}}
+                        <span class="shpitm-price-note" data-cln-join-note>{{if .IsOwner}}You own this clan{{else if .ViewerMember}}{{.ViewerMember.RoleName}}{{else}}Member{{end}}</span>
                         {{else if .IsPending}}
                         <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.cancelClanRequest({{.Clan.ID}}, this)">
                             <span><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i><span>Cancel Request</span></span>
                         </button>
                         <span class="shpitm-price-note" data-cln-join-note>Request pending</span>
                         {{else if .CanRequest}}
-                        <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.focusClanJoinRequest()">
+                        <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.focusClanJoinRequest({{.Clan.ID}}, this)">
                             <span><i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i><span>Request to Join</span></span>
                         </button>
                         <span class="shpitm-price-note" data-cln-join-note>Approval required</span>

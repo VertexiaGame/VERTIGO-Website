@@ -634,10 +634,14 @@
         });
     };
 
-    window.focusClanJoinRequest = function() {
+    window.focusClanJoinRequest = function(clanID, btn) {
         const form = document.getElementById('clnJoinRequestForm');
         const area = document.getElementById('clnJoinMessage');
-        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (!form) {
+            if (clanID) window.joinClan(clanID, btn);
+            return;
+        }
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         if (area) setTimeout(function() { area.focus({ preventScroll: true }); }, 260);
     };
 
