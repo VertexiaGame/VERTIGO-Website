@@ -129,58 +129,66 @@ func (s *FeedService) PostToFeed(username, content, feedType string) (int, int, 
 	return postID, user.ID, content, nil
 }
 
-func (s *FeedService) ToggleReaction(username string, feedID int, feedType string) (int, error) {
+func (s *FeedService) ToggleReaction(username string, feedID int, feedType string) (int, bool, error) {
 	if username == "" || feedID <= 0 {
-		return 0, errors.New("invalid request")
+		return 0, false, errors.New("invalid request")
 	}
 
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil || user == nil {
-		return 0, errors.New("user not found")
+		return 0, false, errors.New("user not found")
 	}
 
 	if s.cooldown != nil {
 		key := fmt.Sprintf("reaction:%d:%d:%s", user.ID, feedID, feedType)
 		if allowed, remaining := s.cooldown.Allow(key, 2*time.Second); !allowed {
-			return 0, fmt.Errorf("Please wait %s before reacting again.", s.cooldown.FormatRemaining(remaining))
+			return 0, false, fmt.Errorf("Please wait %s before reacting again.", s.cooldown.FormatRemaining(remaining))
 		}
 	}
 
 	if feedType == "friends" {
 		hasReacted, err := s.feedRepo.HasUserReactedFriends(user.ID, feedID)
 		if err != nil {
-			return 0, err
+			return 0, false, err
 		}
 
 		if hasReacted {
 			if err := s.feedRepo.RemoveReactionFriends(user.ID, feedID); err != nil {
-				return 0, err
+				return 0, false, err
 			}
 		} else {
 			if err := s.feedRepo.AddReactionFriends(user.ID, feedID); err != nil {
-				return 0, err
+				return 0, false, err
 			}
 		}
 
-		return s.feedRepo.GetReactionCountFriends(feedID)
+		count, err := s.feedRepo.GetReactionCountFriends(feedID)
+		if err != nil {
+			return 0, false, err
+		}
+		return count, !hasReacted, nil
 	}
 
 	hasReacted, err := s.feedRepo.HasUserReacted(user.ID, feedID)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
 	if hasReacted {
 		if err := s.feedRepo.RemoveReaction(user.ID, feedID); err != nil {
-			return 0, err
+			return 0, false, err
 		}
 	} else {
 		if err := s.feedRepo.AddReaction(user.ID, feedID); err != nil {
-			return 0, err
+			return 0, false, err
 		}
 	}
 
-	return s.feedRepo.GetReactionCount(feedID)
+	count, err := s.feedRepo.GetReactionCount(feedID)
+	if err != nil {
+		return 0, false, err
+	}
+	return count, !hasReacted, nil
 }
 
 func (s *FeedService) HasUserReacted(username string, feedID int, feedType string) bool {
@@ -293,39 +301,43 @@ func (s *FeedService) GetFeedComments(feedID int, feedType, currentUsername stri
 	return rootComments, nil
 }
 
-func (s *FeedService) ToggleCommentReaction(username string, commentID int) (int, error) {
+func (s *FeedService) ToggleCommentReaction(username string, commentID int) (int, bool, error) {
 	if username == "" || commentID <= 0 {
-		return 0, errors.New("invalid request")
+		return 0, false, errors.New("invalid request")
 	}
 
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil || user == nil {
-		return 0, errors.New("user not found")
+		return 0, false, errors.New("user not found")
 	}
 
 	if s.cooldown != nil {
 		key := fmt.Sprintf("creaction:%d:%d", user.ID, commentID)
 		if allowed, remaining := s.cooldown.Allow(key, 2*time.Second); !allowed {
-			return 0, fmt.Errorf("Please wait %s before reacting again.", s.cooldown.FormatRemaining(remaining))
+			return 0, false, fmt.Errorf("Please wait %s before reacting again.", s.cooldown.FormatRemaining(remaining))
 		}
 	}
 
 	hasReacted, err := s.feedRepo.HasUserReactedComment(user.ID, commentID)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
 	if hasReacted {
 		if err := s.feedRepo.RemoveCommentReaction(user.ID, commentID); err != nil {
-			return 0, err
+			return 0, false, err
 		}
 	} else {
 		if err := s.feedRepo.AddCommentReaction(user.ID, commentID); err != nil {
-			return 0, err
+			return 0, false, err
 		}
 	}
 
-	return s.feedRepo.GetCommentReactionCount(commentID)
+	count, err := s.feedRepo.GetCommentReactionCount(commentID)
+	if err != nil {
+		return 0, false, err
+	}
+	return count, !hasReacted, nil
 }
 
 func (s *FeedService) HasUserReactedComment(username string, commentID int) bool {

@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/forum.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Forum</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search ..." id="forumBarSearch" autocomplete="off">
+            </div>
+            <div class="barbtns">
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane" id="forumIndex">
+            <div class="shp-lay fbd-lay">
+                <div class="shp-hdr-block">
+                    <h1 class="shp-heading">Forum</h1>
+                    <span class="shp-subheading">Pick a board and jump into the conversation.</span>
+                </div>
+
+                <div class="fbd-rules" id="fbdRules">
+                    <div class="fbd-toolbar">
+                        <button type="button" class="fbd-rules-btn" data-fbd-rules aria-expanded="false" aria-controls="fbdRulesBody">
+                            <i class="fa-solid fa-circle-exclamation fbd-rules-ico" aria-hidden="true"></i>
+                            <span>Forum Rules</span>
+                            <i class="fa-solid fa-chevron-down fbd-rules-caret" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="fbd-tool-btn">
+                            <i class="fa-solid fa-comments fbd-tool-ico" aria-hidden="true"></i>
+                            <span>My Threads</span>
+                        </button>
+                        <button type="button" class="fbd-tool-btn">
+                            <i class="fa-solid fa-bookmark fbd-tool-ico" aria-hidden="true"></i>
+                            <span>Bookmarks</span>
+                        </button>
+                        <div class="setinbox fbd-search">
+                            <input type="search" class="setin" id="fbdSearchInput" name="q" placeholder="Search the forum" autocomplete="off" maxlength="80" aria-label="Search the forum">
+                        </div>
+                    </div>
+                    <div class="fbd-rules-body" id="fbdRulesBody">
+                        <div class="fbd-rules-clip">
+                            <ol class="fbd-rules-list">
+                                <li>Be respectful. No harassment, hate speech, or personal attacks.</li>
+                                <li>Post in the board that fits. Keep threads on topic.</li>
+                                <li>No spam, duplicate threads, or advertising floods.</li>
+                                <li>Nothing NSFW, illegal, or dangerous.</li>
+                                <li>Never share personal information, yours or anyone else's.</li>
+                                <li>Follow moderator instructions.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fbd-body">
+                    <div class="fbd-main">
+                        {{if .Boards}}
+                        <div class="fbd-list" id="fbdList">
+                            {{range .Boards}}{{template "components/forum/board" .}}{{end}}
+                        </div>
+                        <div class="feedemt fbd-empty" id="fbdSearchEmpty" hidden>No boards match that search. Try a different keyword.</div>
+                        {{else}}
+                        <div class="feedemt fbd-empty">No boards here yet. Check back soon.</div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/js/forum/forum.js?v={{.AssetV}}"></script>

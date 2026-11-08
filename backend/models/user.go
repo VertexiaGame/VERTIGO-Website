@@ -101,6 +101,31 @@ func (u *User) HasPower(required int) bool {
 	return u.Power >= required
 }
 
+func (u *User) Name() string {
+	if strings.TrimSpace(u.DisplayName) != "" {
+		return u.DisplayName
+	}
+	return u.Username
+}
+
+func (u *User) IsOnline() bool {
+	return !u.LastOnline.IsZero() && time.Since(u.LastOnline) < 5*time.Minute
+}
+
+func (u *User) Status() string {
+	if u.IsOnline() {
+		return "Online"
+	}
+	return "Offline"
+}
+
+func (u *User) JoinedLabel() string {
+	if u.CreationDate.IsZero() {
+		return ""
+	}
+	return u.CreationDate.Format("Jan 2, 2006")
+}
+
 type SocialLink struct {
 	Platform string `json:"platform"`
 	Name     string `json:"name"`

@@ -273,7 +273,9 @@ func ClanDetailGet(c fiber.Ctx) error {
 	data["Title"] = clan.Name + " - VERTEXIA"
 	data["IsWearingTag"] = wearingTag
 	data["Error"] = strings.TrimSpace(c.Query("error"))
-	data["Notice"] = strings.TrimSpace(c.Query("notice"))
+	noticeCode, noticeText := takeClanNotice(c)
+	data["Notice"] = noticeText
+	data["NoticeCode"] = noticeCode
 	return Render(c, "pages/clan", data, "layouts/main")
 }
 
@@ -306,11 +308,13 @@ func MyClansPage(c fiber.Ctx) error {
 		}
 	}
 
+	_, noticeText := takeClanNotice(c)
 	return Render(c, "pages/myclans", fiber.Map{
 		"Title":      "My Clans - VERTEXIA",
 		"Owned":      owned,
 		"Joined":     crews,
 		"WornClanID": user.PrimaryClan,
+		"Notice":     noticeText,
 	}, "layouts/main")
 }
 
@@ -343,7 +347,8 @@ func ClanEditPage(c fiber.Ctx) error {
 	data["Title"] = "Edit " + clan.Name + " - VERTEXIA"
 	data["Permissions"] = models.ClanPermissions
 	data["Error"] = strings.TrimSpace(c.Query("error"))
-	data["Notice"] = strings.TrimSpace(c.Query("notice"))
+	_, noticeText := takeClanNotice(c)
+	data["Notice"] = noticeText
 	data["MaxMemberSlots"] = models.ClanMaxMembers
 	return Render(c, "pages/clan_edit", data, "layouts/main")
 }
@@ -449,6 +454,7 @@ func ClanCreatePost(c fiber.Ctx) error {
 	}
 
 	clanURL := "/clans/" + url.PathEscape(clan.SlugPath())
+	setClanNotice(c, clanNoticeCreated)
 	if jsonResponse {
 		return c.JSON(fiber.Map{
 			"success":       true,
@@ -528,10 +534,11 @@ func ClanUpdatePost(c fiber.Ctx) error {
 	}
 
 	clanURL := "/clans/" + url.PathEscape(updated.SlugPath())
+	setClanNotice(c, clanNoticeUpdated)
 	if jsonResponse {
 		return c.JSON(fiber.Map{"success": true, "id": updated.ID, "slug": updated.SlugPath(), "url": clanURL})
 	}
-	return c.Redirect().To(editURL + "?notice=" + url.QueryEscape("Clan updated"))
+	return c.Redirect().To(editURL)
 }
 
 func ClanJoinPost(c fiber.Ctx) error {
@@ -553,6 +560,11 @@ func ClanJoinPost(c fiber.Ctx) error {
 	status, members, err := service.Clan.JoinClan(clanID, user.ID, c.FormValue("message"))
 	if err != nil {
 		return clanActionError(c, err, "/clans/"+strconv.Itoa(clanID))
+	}
+	if status == "requested" {
+		setClanNotice(c, clanNoticeRequested)
+	} else {
+		setClanNotice(c, clanNoticeJoined)
 	}
 	return clanActionSucceed(c, "/clans/"+strconv.Itoa(clanID), fiber.Map{
 		"status":  status,
@@ -580,6 +592,7 @@ func ClanLeavePost(c fiber.Ctx) error {
 		return clanActionError(c, err, "/clans/"+strconv.Itoa(clanID))
 	}
 	members, _ := service.Clan.MemberCount(clanID)
+	setClanNotice(c, clanNoticeLeft)
 	return clanActionSucceed(c, "/clans/"+strconv.Itoa(clanID), fiber.Map{
 		"status":  "left",
 		"members": members,
@@ -607,6 +620,11 @@ func ClanTagTogglePost(c fiber.Ctx) error {
 	if err != nil {
 		return clanActionError(c, err, redirect)
 	}
+	if wearing {
+		setClanNotice(c, clanNoticeTagOn)
+	} else {
+		setClanNotice(c, clanNoticeTagOff)
+	}
 	return clanActionSucceed(c, redirect, fiber.Map{"wearing": wearing})
 }
 
@@ -629,6 +647,7 @@ func ClanCancelRequestPost(c fiber.Ctx) error {
 	if err := service.Clan.CancelJoinRequest(clanID, user.ID); err != nil {
 		return clanActionError(c, err, "/clans/"+strconv.Itoa(clanID))
 	}
+	setClanNotice(c, clanNoticeRequestCancelled)
 	return clanActionSucceed(c, "/clans/"+strconv.Itoa(clanID), fiber.Map{"status": "cancelled"})
 }
 
@@ -659,6 +678,7 @@ func ClanRequestApprovePost(c fiber.Ctx) error {
 		return clanActionError(c, err, clanEditRedirect(c))
 	}
 	members, _ := service.Clan.MemberCount(clanID)
+	setClanNotice(c, clanNoticeRequestApproved)
 	return clanActionSucceed(c, clanEditRedirect(c), fiber.Map{"user_id": userID, "members": members})
 }
 
@@ -682,6 +702,7 @@ func ClanRequestDenyPost(c fiber.Ctx) error {
 	if err := service.Clan.DenyJoinRequest(clanID, user.ID, user.HasAdminAccess(), requestID); err != nil {
 		return clanActionError(c, err, clanEditRedirect(c))
 	}
+	setClanNotice(c, clanNoticeRequestDenied)
 	return clanActionSucceed(c, clanEditRedirect(c), fiber.Map{"request_id": requestID})
 }
 
@@ -735,6 +756,7 @@ func ClanRoleCreatePost(c fiber.Ctx) error {
 	if err != nil {
 		return clanActionError(c, err, clanEditRedirect(c))
 	}
+	setClanNotice(c, clanNoticeRoleSaved)
 	return clanActionSucceed(c, clanEditRedirect(c), fiber.Map{"id": roleID})
 }
 
@@ -759,6 +781,7 @@ func ClanRoleUpdatePost(c fiber.Ctx) error {
 	if err := service.Clan.UpdateRole(clanID, user.ID, user.HasAdminAccess(), roleID, c.FormValue("name"), c.FormValue("color"), clanPermissionKeys(c), rank); err != nil {
 		return clanActionError(c, err, clanEditRedirect(c))
 	}
+	setClanNotice(c, clanNoticeRoleSaved)
 	return clanActionSucceed(c, clanEditRedirect(c), fiber.Map{"id": roleID})
 }
 
@@ -782,6 +805,7 @@ func ClanRoleDeletePost(c fiber.Ctx) error {
 	if err := service.Clan.DeleteRole(clanID, user.ID, user.HasAdminAccess(), roleID); err != nil {
 		return clanActionError(c, err, clanEditRedirect(c))
 	}
+	setClanNotice(c, clanNoticeRoleDeleted)
 	return clanActionSucceed(c, clanEditRedirect(c), fiber.Map{"id": roleID})
 }
 
@@ -806,6 +830,7 @@ func ClanMemberRolePost(c fiber.Ctx) error {
 	if err := service.Clan.SetMemberRole(clanID, user.ID, user.HasAdminAccess(), targetID, roleID); err != nil {
 		return clanActionError(c, err, clanEditRedirect(c))
 	}
+	setClanNotice(c, clanNoticeMemberUpdated)
 	return clanActionSucceed(c, clanEditRedirect(c), fiber.Map{"user_id": targetID, "role_id": roleID})
 }
 
@@ -830,6 +855,7 @@ func ClanMemberKickPost(c fiber.Ctx) error {
 		return clanActionError(c, err, clanEditRedirect(c))
 	}
 	members, _ := service.Clan.MemberCount(clanID)
+	setClanNotice(c, clanNoticeMemberRemoved)
 	return clanActionSucceed(c, clanEditRedirect(c), fiber.Map{"user_id": targetID, "members": members})
 }
 
@@ -923,6 +949,7 @@ func ClanAnnouncementCreatePost(c fiber.Ctx) error {
 	if err != nil {
 		return clanActionError(c, err, "/clans/"+strconv.Itoa(clanID))
 	}
+	setClanNotice(c, clanNoticeAnnouncementPosted)
 	return clanActionSucceed(c, "/clans/"+strconv.Itoa(clanID), fiber.Map{"id": announcementID})
 }
 
@@ -946,6 +973,7 @@ func ClanAnnouncementDeletePost(c fiber.Ctx) error {
 	if err := service.Clan.DeleteAnnouncement(clanID, user.ID, user.HasAdminAccess(), announcementID); err != nil {
 		return clanActionError(c, err, "/clans/"+strconv.Itoa(clanID))
 	}
+	setClanNotice(c, clanNoticeAnnouncementDeleted)
 	return clanActionSucceed(c, "/clans/"+strconv.Itoa(clanID), fiber.Map{"id": announcementID})
 }
 

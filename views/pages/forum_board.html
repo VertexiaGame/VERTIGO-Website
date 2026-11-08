@@ -1,0 +1,167 @@
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/create.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/forum.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Forum</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search ..." id="forumBarSearch" autocomplete="off">
+            </div>
+            <div class="barbtns">
+                <button hx-get="/forum" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane" id="forumBoardPane">
+            <div class="shp-lay fbd-lay">
+                <nav class="fbd-dir" aria-label="Forum directory">
+                    <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="fbd-dir-link">
+                        <i class="fa-solid fa-house fbd-dir-ico" aria-hidden="true"></i>
+                        <span>Home</span>
+                    </a>
+                    <span class="fbd-dir-sep" aria-hidden="true">/</span>
+                    <strong class="fbd-dir-cur">{{.Board.Name}}</strong>
+                </nav>
+
+                <div class="fbd-card fbd-sub-hero" style="{{.Board.ToneStyle}}">
+                    <div class="fbd-banner">
+                        <span class="fbd-grain" aria-hidden="true"></span>
+                        <span class="fbd-art" aria-hidden="true">{{.Board.Letter}}</span>
+                        <h1 class="fbd-name">{{.Board.Name}}</h1>
+                    </div>
+                    <div class="fbd-info">
+                        <span class="fbd-studs" aria-hidden="true"></span>
+                        <p class="fbd-desc">{{.Board.Description}}</p>
+                        <span class="fbd-sub-stat">
+                            <i class="fa-solid fa-comments" aria-hidden="true"></i>
+                            <span>{{.ThreadCount}} {{if eq .ThreadCount 1}}Thread{{else}}Threads{{end}}</span>
+                        </span>
+                    </div>
+                </div>
+
+                {{if .FlashSuccess}}
+                <span class="frminsuc visible fbd-flash" role="status">{{.FlashSuccess}}</span>
+                {{end}}
+                {{if .FlashError}}
+                <span class="frminerr visible fbd-flash" role="alert">{{.FlashError}}</span>
+                {{end}}
+
+                <div class="fbd-rules" id="fbdRules">
+                    <div class="fbd-toolbar fbd-sub-toolbar">
+                        <div class="fbd-sort-group" role="group" aria-label="Sort threads">
+                            <a href="{{.Board.Path}}?sort=newest" hx-get="{{.Board.Path}}?sort=newest" hx-target="body" hx-push-url="true" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "newest"}} is-active{{end}}">
+                                <i class="fa-solid fa-clock fbd-tool-ico" aria-hidden="true"></i>
+                                <span>Newest</span>
+                            </a>
+                            <a href="{{.Board.Path}}?sort=replies" hx-get="{{.Board.Path}}?sort=replies" hx-target="body" hx-push-url="true" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "replies"}} is-active{{end}}">
+                                <i class="fa-solid fa-fire fbd-tool-ico" aria-hidden="true"></i>
+                                <span>Most Replies</span>
+                            </a>
+                            <a href="{{.Board.Path}}?sort=oldest" hx-get="{{.Board.Path}}?sort=oldest" hx-target="body" hx-push-url="true" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "oldest"}} is-active{{end}}">
+                                <i class="fa-solid fa-hourglass-start fbd-tool-ico" aria-hidden="true"></i>
+                                <span>Oldest</span>
+                            </a>
+                        </div>
+
+                        <button type="button" class="fbd-rules-btn" data-fbd-rules aria-expanded="false" aria-controls="fbdRulesBody">
+                            <i class="fa-solid fa-circle-exclamation fbd-rules-ico" aria-hidden="true"></i>
+                            <span>Forum Rules</span>
+                            <i class="fa-solid fa-chevron-down fbd-rules-caret" aria-hidden="true"></i>
+                        </button>
+
+                        <div class="setinbox fbd-search">
+                            <input type="search" class="setin" id="fthSearchInput" name="q" placeholder="Search threads in {{.Board.Name}}" autocomplete="off" maxlength="80" aria-label="Search threads in {{.Board.Name}}">
+                        </div>
+                    </div>
+
+                    <div class="fbd-rules-body" id="fbdRulesBody">
+                        <div class="fbd-rules-clip">
+                            <ol class="fbd-rules-list">
+                                <li>Be respectful. No harassment, hate speech, or personal attacks.</li>
+                                <li>Post in the board that fits. Keep threads on topic.</li>
+                                <li>No spam, duplicate threads, or advertising floods.</li>
+                                <li>Nothing NSFW, illegal, or dangerous.</li>
+                                <li>Never share personal information, yours or anyone else's.</li>
+                                <li>Follow moderator instructions.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fbd-body">
+                    <div class="fbd-main fbd-sub-main">
+                        {{if .IsLoggedIn}}
+                        <details class="cln-compose fbd-compose">
+                            <summary class="cln-compose-sum">
+                                <i class="fa-solid fa-plus cln-compose-ico" aria-hidden="true"></i>
+                                <span class="cln-compose-txt">Create a thread</span>
+                                <i class="fa-solid fa-chevron-down cln-compose-arrow" aria-hidden="true"></i>
+                            </summary>
+                            <form class="cln-compose-form" id="fbdComposeForm" action="{{.Board.Path}}/threads" method="POST" hx-boost="false">
+                                <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+                                <div class="crtfld">
+                                    <label class="crtlbl" for="fthTitleInput">Title</label>
+                                    <div class="instk">
+                                        <div class="instkrw">
+                                            <div class="ttpcnt">
+                                                <div class="setinbox"><input type="text" class="setin" id="fthTitleInput" name="title" minlength="3" maxlength="100" placeholder="Thread title" required autocomplete="off"></div>
+                                                <span class="ttptxt">Maximum of 100 characters</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="crtfld">
+                                    <label class="crtlbl" for="fthBodyInput">Message</label>
+                                    <div class="instk">
+                                        <div class="instkrw">
+                                            <div class="ttpcnt">
+                                                <div class="setareabox"><textarea class="setarea" id="fthBodyInput" name="body" minlength="3" maxlength="4000" placeholder="What's on your mind?" required></textarea></div>
+                                                <span class="ttptxt">Maximum of 4000 characters</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="cln-compose-act">
+                                    <button type="submit" class="primary hpyprim hpyinl hpysm" id="fbdSubmitBtn"><span>Post thread</span></button>
+                                </div>
+                            </form>
+                        </details>
+                        {{else}}
+                        <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true" class="cln-compose fbd-compose fbd-compose-login">
+                            <span class="cln-compose-sum">
+                                <i class="fa-solid fa-plus cln-compose-ico" aria-hidden="true"></i>
+                                <span class="cln-compose-txt">Create a thread</span>
+                                <i class="fa-solid fa-chevron-right cln-compose-arrow" aria-hidden="true"></i>
+                            </span>
+                        </a>
+                        {{end}}
+
+                        {{if .Threads}}
+                        <div class="fth-table" id="fthTable">
+                            <div class="fth-head" aria-hidden="true">
+                                <span class="fth-col-main">Thread</span>
+                                <span class="fth-col-creator">Creator</span>
+                                <span class="fth-col-date">Date Posted</span>
+                                <span class="fth-col-replies">Replies</span>
+                            </div>
+                            <div class="fth-list" id="fthList">
+                                {{range .Threads}}{{template "components/forum/thread" .}}{{end}}
+                            </div>
+                        </div>
+                        <div class="feedemt fbd-empty" id="fthSearchEmpty" hidden>No threads match that search. Try a different keyword.</div>
+                        {{else}}
+                        <div class="feedemt fbd-empty">No threads in <strong>{{.Board.Name}}</strong> yet. Be the first to start a conversation!</div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/js/forum/forum.js?v={{.AssetV}}"></script>

@@ -1,0 +1,3 @@
+{{range .Users}}{{template "components/users/card" .}}{{end}}
+<span id="usrResultCount" class="shp-subheading usr-result-count" hx-swap-oob="outerHTML">{{.CountLabel}}</span>
+{{if .HasMore}}{{template "components/users/sentinel" .}}{{else if .Users}}<div class="usr-end">That's everyone.</div>{{end}}

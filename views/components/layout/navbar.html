@@ -10,8 +10,6 @@
     <div class="navdiv"></div>
     <a href="/clans" hx-get="/clans" hx-target="body" hx-push-url="true" class="navlnk navclans">Clans</a>
     <div class="navdiv"></div>
-    <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="navlnk navforum">Forum</a>
-    <div class="navdiv"></div>
     <a href="/upgrade" hx-get="/upgrade" hx-target="body" hx-push-url="true" class="navlnk navupg">Upgrade</a>
     
     {{if .IsLoggedIn}}
@@ -39,10 +37,6 @@
         {{else}}
         <img src="/static/useful/temp/pfp.png" alt="Guest" class="mobhead">
         {{end}}
-    </a>
-    <div class="mobdiv"></div>
-    <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="mobitm">
-        <img src="/static/useful/icons/m/forum.png" alt="Forum">
     </a>
     <div class="mobdiv"></div>
     <a href="/more" class="mobitm">

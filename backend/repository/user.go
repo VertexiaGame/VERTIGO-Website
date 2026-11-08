@@ -220,6 +220,87 @@ func (r *UserRepository) SearchUsers(query string, limit int) ([]*models.User, e
 	return users, nil
 }
 
+func (r *UserRepository) DiscoverUsers(query, sort string, onlineOnly bool, limit, offset int) ([]*models.User, int, error) {
+	if r.db == nil {
+		return nil, 0, errors.New("database connection is offline")
+	}
+
+	query = strings.TrimSpace(query)
+	if limit < 1 || limit > 48 {
+		limit = 24
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	var whereClauses []string
+	var args []any
+	if query != "" {
+		pattern := "%" + query + "%"
+		whereClauses = append(whereClauses, "(username LIKE ? OR displayname LIKE ?)")
+		args = append(args, pattern, pattern)
+	}
+	if onlineOnly {
+		whereClauses = append(whereClauses, "last_online >= ?")
+		args = append(args, time.Now().Add(-5*time.Minute))
+	}
+
+	whereSQL := ""
+	if len(whereClauses) > 0 {
+		whereSQL = "WHERE " + strings.Join(whereClauses, " AND ")
+	}
+
+	var total int
+	if err := r.db.QueryRow("SELECT COUNT(*) FROM users "+whereSQL, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	orderSQL := "last_online DESC, id DESC"
+	orderArgs := append([]any{}, args...)
+	switch sort {
+	case "name":
+		orderSQL = "LOWER(COALESCE(NULLIF(displayname, ''), username)) ASC, LOWER(username) ASC, id ASC"
+	case "newest":
+		orderSQL = "creation_date DESC, id DESC"
+	case "oldest":
+		orderSQL = "creation_date ASC, id ASC"
+	case "relevance":
+		if query != "" {
+			orderSQL = "CASE WHEN username = ? THEN 0 WHEN displayname = ? THEN 1 WHEN username LIKE ? THEN 2 WHEN displayname LIKE ? THEN 3 ELSE 4 END, last_online DESC, id ASC"
+			orderArgs = append(orderArgs, query, query, query+"%", query+"%")
+		}
+	}
+	orderArgs = append(orderArgs, limit, offset)
+
+	rows, err := r.db.Query("SELECT "+userSelectFields+" FROM users "+whereSQL+" ORDER BY "+orderSQL+" LIMIT ? OFFSET ?", orderArgs...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	users := make([]*models.User, 0)
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
+}
+
+func (r *UserRepository) GetOnlineUserCount() (int, error) {
+	if r.db == nil {
+		return 0, errors.New("database connection is offline")
+	}
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM users WHERE last_online >= ?", time.Now().Add(-5*time.Minute)).Scan(&count)
+	return count, err
+}
+
 func (r *UserRepository) IsOldUsername(username string) (bool, error) {
 	if r.db == nil {
 		return false, nil

@@ -232,10 +232,45 @@
         window.location.href = target;
     };
 
-    window.clanRefreshWithNotice = function(path, message) {
-        var url = path;
-        if (message) url += (url.indexOf('?') === -1 ? '?' : '&') + 'notice=' + encodeURIComponent(message);
-        window.clanRefresh(url);
+    window.clanAnimateMembership = function(mode, btn) {
+        var card = btn && btn.closest ? btn.closest('.cln-card') : null;
+        var path = window.location.pathname;
+        if (mode === 'left' && card) {
+            card.classList.add('is-leaving');
+            setTimeout(function() { window.clanRefresh(path); }, 300);
+            return;
+        }
+        window.clanRefresh(path);
+    };
+
+    window.joinClan = function(clanID, btn) {
+        (async function() {
+            try {
+                await window.clanPost('/clans/' + clanID + '/join', { button: btn });
+                window.clanAnimateMembership('join', btn);
+            } catch (err) {
+                window.clanHandleError(err, "Couldn't join this clan");
+            }
+        })();
+    };
+
+    window.leaveClan = function(clanID, btn) {
+        window.clanConfirm({
+            title: 'Leave this clan?',
+            message: "You'll lose your role and will need to join again to get back in.",
+            confirmLabel: 'Leave',
+            danger: true,
+            onConfirm: function() {
+                (async function() {
+                    try {
+                        await window.clanPost('/clans/' + clanID + '/leave', { button: btn });
+                        window.clanAnimateMembership('left', btn);
+                    } catch (err) {
+                        window.clanHandleError(err, "Couldn't leave this clan");
+                    }
+                })();
+            }
+        });
     };
 
     window.clanIsInsideHidden = function(el) {
@@ -321,8 +356,8 @@
     window.toggleWornClanTag = function(clanID, btn) {
         (async function() {
             try {
-                var payload = await window.clanPost('/clans/' + clanID + '/tag', { button: btn });
-                window.clanRefreshWithNotice(window.location.pathname, payload.wearing ? 'Clan tag equipped.' : 'Clan tag removed.');
+                await window.clanPost('/clans/' + clanID + '/tag', { button: btn });
+                window.clanRefresh(window.location.pathname);
             } catch (err) {
                 window.clanHandleError(err, "Couldn't update your clan tag");
             }
@@ -347,7 +382,7 @@
         (async function() {
             try {
                 await window.clanPost('/clans/' + clanID + '/announcements', { form: form, button: btn });
-                window.clanRefreshWithNotice(window.location.pathname, 'Announcement posted.');
+                window.clanRefresh(window.location.pathname);
             } catch (err) {
                 window.clanHandleError(err, "Couldn't post that announcement", form);
             }
@@ -365,7 +400,7 @@
                 (async function() {
                     try {
                         await window.clanPost('/clans/' + clanID + '/announcements/' + announcementID + '/delete', { button: btn });
-                        window.clanRefreshWithNotice(window.location.pathname, 'Announcement deleted.');
+                        window.clanRefresh(window.location.pathname);
                     } catch (err) {
                         window.clanHandleError(err, "Couldn't delete that announcement");
                     }

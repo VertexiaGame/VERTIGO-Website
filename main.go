@@ -80,6 +80,8 @@ func main() {
 		return c.Next()
 	})
 
+	app.Use(handlers.RequestBodyLimit())
+
 	limiterMax := cfg.LimiterMax
 	if limiterMax <= 0 {
 		limiterMax = 1000

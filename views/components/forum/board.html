@@ -1,0 +1,11 @@
+<a class="fbd-card" href="{{.Path}}" hx-get="{{.Path}}" hx-target="body" hx-push-url="true" style="{{.ToneStyle}}" data-board-id="{{.ID}}" data-board-name="{{.Name}}" data-board-desc="{{.Description}}">
+    <div class="fbd-banner">
+        <span class="fbd-grain" aria-hidden="true"></span>
+        <span class="fbd-art" aria-hidden="true">{{.Letter}}</span>
+        <h2 class="fbd-name">{{.Name}}</h2>
+    </div>
+    <div class="fbd-info">
+        <span class="fbd-studs" aria-hidden="true"></span>
+        <p class="fbd-desc">{{.Description}}</p>
+    </div>
+</a>

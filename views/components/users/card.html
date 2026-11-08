@@ -1,0 +1,13 @@
+<a class="shp-card" href="/user/{{.ID}}" hx-get="/user/{{.ID}}" hx-target="body" hx-push-url="true" data-id="{{.ID}}">
+    <div class="avtitmimg">
+        <img src="/avatar/{{.ID}}.png" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';this.classList.add('ld');" onload="this.classList.add('ld');">
+    </div>
+    <div class="avtitmmeta">
+        <span class="avtitmnm">{{.Name}}</span>
+        <span class="avtitmcr">@{{.Username}}</span>
+    </div>
+    <span class="usr-presence{{if .IsOnline}} is-online{{end}}">
+        <i class="fa-{{if .IsOnline}}solid{{else}}regular{{end}} fa-circle" aria-hidden="true"></i>
+        <span>{{.Status}}</span>
+    </span>
+</a>

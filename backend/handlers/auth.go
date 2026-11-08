@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -90,13 +91,17 @@ func LoginGet(c fiber.Ctx) error {
 }
 
 func isSafeNext(next string) bool {
-	if next == "" {
+	if next == "" || next[0] != '/' {
 		return false
 	}
-	if next[0] != '/' {
+	if strings.ContainsAny(next, "\\\r\n\t") {
 		return false
 	}
 	if len(next) >= 2 && next[1] == '/' {
+		return false
+	}
+	parsed, err := url.Parse(next)
+	if err != nil || parsed.Scheme != "" || parsed.Host != "" {
 		return false
 	}
 	if next == "/login" || next == "/register" || next == "/logout" {

@@ -167,7 +167,7 @@
         (async function() {
             try {
                 await window.clanPost('/create/clans/' + clanID, { form: form, button: btn });
-                window.clanRefreshWithNotice('/create/clans/' + clanID + '/edit', 'Clan updated.');
+                window.clanRefresh('/create/clans/' + clanID + '/edit');
             } catch (err) {
                 window.clanHandleError(err, "Couldn't save your changes", form);
             }
@@ -430,7 +430,7 @@
         (async function() {
             try {
                 await window.clanPost(url, { form: form, button: btn });
-                window.clanRefreshWithNotice('/create/clans/' + clanID + '/edit?tab=roles', roleID ? 'Role updated.' : 'Role created.');
+                window.clanRefresh('/create/clans/' + clanID + '/edit?tab=roles');
             } catch (err) {
                 window.clanHandleError(err, "Couldn't save that role", form);
             }
@@ -453,7 +453,7 @@
                 (async function() {
                     try {
                         await window.clanPost('/clans/' + clanID + '/roles/' + roleID + '/delete', { button: btn });
-                        window.clanRefreshWithNotice('/create/clans/' + clanID + '/edit?tab=roles', 'Role deleted.');
+                        window.clanRefresh('/create/clans/' + clanID + '/edit?tab=roles');
                     } catch (err) {
                         window.clanHandleError(err, "Couldn't delete that role");
                     }
@@ -473,7 +473,7 @@
                     data: { role_id: roleID },
                     button: btn
                 });
-                window.clanRefreshWithNotice('/create/clans/' + clanID + '/edit', 'Member approved.');
+                window.clanRefresh('/create/clans/' + clanID + '/edit');
             } catch (err) {
                 window.clanHandleError(err, "Couldn't approve that request");
             }
@@ -490,7 +490,7 @@
                 (async function() {
                     try {
                         await window.clanPost('/clans/' + clanID + '/requests/' + requestID + '/deny', { button: btn });
-                        window.clanRefreshWithNotice('/create/clans/' + clanID + '/edit', 'Request denied.');
+                        window.clanRefresh('/create/clans/' + clanID + '/edit');
                     } catch (err) {
                         window.clanHandleError(err, "Couldn't deny that request");
                     }
@@ -511,7 +511,7 @@
                     data: { role_id: roleID },
                     button: btn
                 });
-                window.clanRefreshWithNotice('/create/clans/' + clanID + '/edit', 'Role updated.');
+                window.clanRefresh('/create/clans/' + clanID + '/edit');
             } catch (err) {
                 window.clanHandleError(err, "Couldn't update that member");
             }
@@ -528,7 +528,7 @@
                 (async function() {
                     try {
                         await window.clanPost('/clans/' + clanID + '/members/' + userID + '/kick', { button: btn });
-                        window.clanRefreshWithNotice('/create/clans/' + clanID + '/edit', 'Member removed.');
+                        window.clanRefresh('/create/clans/' + clanID + '/edit');
                     } catch (err) {
                         window.clanHandleError(err, "Couldn't kick that member");
                     }

@@ -1,0 +1,102 @@
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/users.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Users</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="Search">
+                <input type="text" class="input" placeholder="search users" id="userBarSearch" value="{{.Query}}" autocomplete="off">
+            </div>
+            <div class="barbtns">
+                <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+            </div>
+        </div>
+        <div class="pane" id="usersPage">
+            <div class="shp-lay usr-lay">
+                <div class="shp-hdr-block">
+                    <h1 class="shp-heading">Users</h1>
+                    <span class="shp-subheading">Find old friends, meet new people, and see who's around.</span>
+                </div>
+
+                <div id="usersResults" class="usr-results">
+                    <div class="gam-genres" aria-label="User views">
+                        <a href="{{.AllURL}}" hx-get="{{.AllURL}}" hx-target="#usersResults" hx-select="#usersResults" hx-swap="outerHTML" hx-push-url="true" class="gam-pill{{if and (not .OnlineOnly) (ne .Sort "newest")}} active{{end}}">
+                            <i class="fa-solid fa-users" aria-hidden="true"></i>
+                            <span>All Users</span>
+                        </a>
+                        <a href="{{.OnlineURL}}" hx-get="{{.OnlineURL}}" hx-target="#usersResults" hx-select="#usersResults" hx-swap="outerHTML" hx-push-url="true" class="gam-pill{{if .OnlineOnly}} active{{end}}">
+                            <i class="fa-solid fa-circle" aria-hidden="true"></i>
+                            <span>Online Now</span>
+                            {{if ge .OnlineCount 0}}<span class="usr-pill-count">{{.OnlineCount}}</span>{{end}}
+                        </a>
+                        <a href="{{.NewestURL}}" hx-get="{{.NewestURL}}" hx-target="#usersResults" hx-select="#usersResults" hx-swap="outerHTML" hx-push-url="true" class="gam-pill{{if and (not .OnlineOnly) (eq .Sort "newest")}} active{{end}}">
+                            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                            <span>New Members</span>
+                        </a>
+                    </div>
+
+                    <section class="carsec usr-directory">
+                        <form class="gam-shelf-hdr usr-result-hdr" method="get" action="/users" hx-get="/users" hx-target="#usersResults" hx-select="#usersResults" hx-swap="outerHTML" hx-push-url="true">
+                            <div class="gam-search-ttl">
+                                <h2 class="carttl">{{.ResultTitle}}</h2>
+                                <span id="usrResultCount" class="shp-subheading usr-result-count">{{.CountLabel}}</span>
+                            </div>
+                            <div class="usr-tools">
+                                {{if .OnlineOnly}}<input type="hidden" name="online" value="1">{{end}}
+                                <div class="setinbox usr-searchbox">
+                                    <input type="search" class="setin" name="q" value="{{.Query}}" maxlength="80" placeholder="Search users" aria-label="Search by username or display name">
+                                </div>
+                                <div class="glb-dropdown gam-sort usr-sort" id="userSortDropdown">
+                                    <button type="button" class="glb-dropdown-trigger" onclick="window.toggleGlobalDropdown('userSortDropdown')" aria-label="Sort users">
+                                        <span class="glb-dropdown-label">
+                                            {{if eq .Sort "relevance"}}Best match
+                                            {{else if eq .Sort "newest"}}Newest
+                                            {{else if eq .Sort "oldest"}}Oldest
+                                            {{else if eq .Sort "name"}}Name (A-Z)
+                                            {{else}}Recently active{{end}}
+                                        </span>
+                                        <svg class="glb-dropdown-arrow" viewBox="0 0 292.4 292.4" aria-hidden="true">
+                                            <path fill="currentColor" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.2-5.5-12.8z"/>
+                                        </svg>
+                                    </button>
+                                    <div class="glb-dropdown-menu">
+                                        {{if .Query}}<div class="glb-dropdown-item{{if eq .Sort "relevance"}} active{{end}}" data-value="relevance" onclick="window.selectGlobalDropdownOption('userSortDropdown', 'relevance', 'Best match')">Best match</div>{{end}}
+                                        <div class="glb-dropdown-item{{if eq .Sort "active"}} active{{end}}" data-value="active" onclick="window.selectGlobalDropdownOption('userSortDropdown', 'active', 'Recently active')">Recently active</div>
+                                        <div class="glb-dropdown-item{{if eq .Sort "newest"}} active{{end}}" data-value="newest" onclick="window.selectGlobalDropdownOption('userSortDropdown', 'newest', 'Newest')">Newest</div>
+                                        <div class="glb-dropdown-item{{if eq .Sort "oldest"}} active{{end}}" data-value="oldest" onclick="window.selectGlobalDropdownOption('userSortDropdown', 'oldest', 'Oldest')">Oldest</div>
+                                        <div class="glb-dropdown-item{{if eq .Sort "name"}} active{{end}}" data-value="name" onclick="window.selectGlobalDropdownOption('userSortDropdown', 'name', 'Name (A-Z)')">Name (A-Z)</div>
+                                    </div>
+                                    <input type="hidden" name="sort" value="{{.Sort}}" onchange="this.form.requestSubmit()">
+                                </div>
+                            </div>
+                        </form>
+
+                        {{if .Error}}<span class="frminerr visible" role="alert">{{.Error}}</span>{{end}}
+
+                        <div class="shp-grid usr-grid">
+                            {{range .Users}}
+                            {{template "components/users/card" .}}
+                            {{else}}
+                            <div class="feedemt usr-empty">
+                                <span>{{if .Query}}No users match that search. Try another username or display name.{{else if .OnlineOnly}}No users are online right now. Check back soon or browse everyone.{{else}}No users found.{{end}}</span>
+                                {{if or .Query .OnlineOnly (ne .Sort "active")}}<a href="{{.ResetURL}}" hx-get="{{.ResetURL}}" hx-target="#usersResults" hx-select="#usersResults" hx-swap="outerHTML" hx-push-url="true" class="primary hpyinf hpyinl hpysm"><span>Browse Everyone</span></a>{{end}}
+                            </div>
+                            {{end}}
+                            {{if .HasMore}}
+                            {{template "components/users/sentinel" .}}
+                            {{else if .Users}}
+                            <div class="usr-end">That's everyone.</div>
+                            {{end}}
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

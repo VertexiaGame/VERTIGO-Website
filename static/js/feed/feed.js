@@ -7,6 +7,7 @@ let postObserver = null;
 let listenersInitialized = false;
 let currentTab = 'worldwide';
 let activeFocusedPostId = null;
+let feedActive = false;
 const reactionCooldowns = new Map();
 const REPLY_ICON = '<i class="fa-solid fa-reply"></i>';
 const FLAG_ICON = '<i class="fa-solid fa-flag"></i>';
@@ -138,6 +139,11 @@ const buildReactionBadge = (hasReacted, reactions, isComment) => {
     bdg.appendChild(ico);
     bdg.appendChild(cnt);
     return { bdg, cnt };
+};
+
+const feedCurrentUser = () => {
+    const tab = document.querySelector('.tabcnt');
+    return tab ? (tab.dataset.activeUser || '') : '';
 };
 
 const updateTabIndicator = () => {
@@ -528,6 +534,7 @@ const focusSinglePost = (postItem, opts) => {
 };
 
 const resetFeedView = opts => {
+    if (!feedActive) return;
     const push = !opts || opts.push !== false;
     if (push) {
         try {
@@ -739,6 +746,7 @@ const setupGlobalDelegation = () => {
     listenersInitialized = true;
 
     window.addEventListener('popstate', () => {
+        if (!feedActive) return;
         const postsList = document.querySelector('.pstlst');
         if (!postsList) return;
         const m = window.location.pathname.match(/^\/feed\/(\d+)/);
@@ -757,6 +765,7 @@ const setupGlobalDelegation = () => {
     });
 
     document.addEventListener('click', e => {
+        if (!feedActive) return;
         const tabBtn = e.target.closest('.tabbtn');
         if (tabBtn) {
             const tabName = tabBtn.dataset.tab;
@@ -799,6 +808,7 @@ const setupGlobalDelegation = () => {
     });
 
     document.addEventListener('submit', e => {
+        if (!feedActive) return;
         const feedForm = e.target.closest('.feedinbox');
         if (feedForm && !feedForm.classList.contains('cmtinbox')) {
             e.preventDefault();
@@ -816,12 +826,17 @@ const setupGlobalDelegation = () => {
         }
     });
 
-    window.addEventListener('resize', updateTabIndicator);
-    window.addEventListener('resize', () => requestAnimationFrame(updateAllSeeMore));
+    window.addEventListener('resize', () => {
+        if (feedActive) updateTabIndicator();
+    });
+    window.addEventListener('resize', () => {
+        if (feedActive) requestAnimationFrame(updateAllSeeMore);
+    });
     window.addEventListener('scroll', onWindowScroll);
 };
 
 const onWindowScroll = () => {
+    if (!feedActive) return;
     const postsList = document.querySelector('.pstlst');
     if (loadingFeed || noMorePosts || !postsList || activeFocusedPostId) return;
 
@@ -867,10 +882,12 @@ const initFeed = () => {
     const tabContainer = document.querySelector('.tabcnt');
     const postsList = document.querySelector('.pstlst');
 
-    if (!tabContainer || !postsList) {
+    if (!tabContainer || !postsList || !tabContainer.contains(postsList)) {
+        feedActive = false;
         closeFeedSocket();
         return;
     }
+    feedActive = true;
 
     resetFeedView({ push: false });
 
@@ -1060,10 +1077,13 @@ const connectFeedSocket = () => {
                 }
                 const badge = wrapper.querySelector('.pstitm > .rctbdg:not(.cmtrctbdg)');
                 if (badge) {
-                    if (data.has_reacted) {
-                        badge.classList.add('reacted');
-                    } else {
-                        badge.classList.remove('reacted');
+                    const me = feedCurrentUser();
+                    if (me && data.reacted_by === me) {
+                        if (data.has_reacted) {
+                            badge.classList.add('reacted');
+                        } else {
+                            badge.classList.remove('reacted');
+                        }
                     }
                     badge.classList.add('rctpop');
                     setTimeout(() => badge.classList.remove('rctpop'), 300);
@@ -1082,10 +1102,13 @@ const connectFeedSocket = () => {
                 }
                 const badge = wrapper.querySelector('.cmtrctbdg');
                 if (badge) {
-                    if (data.has_reacted) {
-                        badge.classList.add('reacted');
-                    } else {
-                        badge.classList.remove('reacted');
+                    const me = feedCurrentUser();
+                    if (me && data.reacted_by === me) {
+                        if (data.has_reacted) {
+                            badge.classList.add('reacted');
+                        } else {
+                            badge.classList.remove('reacted');
+                        }
                     }
                     badge.classList.add('rctpop');
                     setTimeout(() => badge.classList.remove('rctpop'), 300);

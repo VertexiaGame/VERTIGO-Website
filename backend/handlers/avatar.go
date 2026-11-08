@@ -103,7 +103,10 @@ func ShopRenderGet(c fiber.Ctx) error {
 	rawType := c.Params("type")
 	normType, _ := models.NormalizeShopCategory(rawType)
 	if normType == "all" {
-		normType = strings.ToLower(filepath.Clean(rawType))
+		normType = strings.ToLower(filepath.Base(strings.TrimSpace(rawType)))
+	}
+	if normType == "" || normType == "." || normType == ".." || strings.ContainsAny(normType, "/\\") {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid item type")
 	}
 
 	idParam := strings.TrimSuffix(c.Params("id"), ".png")

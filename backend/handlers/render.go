@@ -32,6 +32,9 @@ func GetActiveUser(c fiber.Ctx) string {
 			return usernameStr
 		}
 		if u != nil {
+			if time.Since(u.LastOnline) >= time.Minute {
+				_ = service.User.UpdateLastOnline(u.ID)
+			}
 			return usernameStr
 		}
 	}

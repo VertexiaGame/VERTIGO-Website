@@ -67,6 +67,27 @@ func (s *UserService) SearchUsers(query string, limit int) ([]*models.User, erro
 	return s.userRepo.SearchUsers(query, limit)
 }
 
+func (s *UserService) DiscoverUsers(query, sort string, onlineOnly bool, limit, offset int) ([]*models.User, int, error) {
+	if s.userRepo == nil {
+		return nil, 0, errors.New("user repository uninitialized")
+	}
+	return s.userRepo.DiscoverUsers(query, sort, onlineOnly, limit, offset)
+}
+
+func (s *UserService) GetOnlineUserCount() (int, error) {
+	if s.userRepo == nil {
+		return 0, errors.New("user repository uninitialized")
+	}
+	return s.userRepo.GetOnlineUserCount()
+}
+
+func (s *UserService) UpdateLastOnline(userID int) error {
+	if s.userRepo == nil {
+		return errors.New("user repository uninitialized")
+	}
+	return s.userRepo.UpdateLastOnline(userID)
+}
+
 func (s *UserService) GetUserCount() (int, error) {
 	return s.userRepo.GetUserCount()
 }

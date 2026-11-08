@@ -24,6 +24,8 @@
                     <span class="shp-subheading">Manage the clans you own and keep up with the crews you belong to</span>
                 </div>
 
+                {{if .Notice}}<span class="frminsuc visible" role="status">{{.Notice}}</span>{{end}}
+
                 <div class="cln-grid" id="myClansGrid">
                     {{range .Owned}}
                     <div class="cln-card cln-mine-card" data-clan-name="{{.Name}}">
@@ -66,6 +68,9 @@
                             <button type="button" class="primary {{if eq $.WornClanID .ID}}hpyinf{{else}}hpyprim{{end}} hpyinl hpysm" onclick="window.toggleWornClanTag({{.ID}}, this)"><span>{{if eq $.WornClanID .ID}}Stop Wearing{{else}}Wear Tag{{end}}</span></button>
                             {{end}}
                             <a href="/clans/{{.SlugPath}}" hx-get="/clans/{{.SlugPath}}" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;"><span>View</span></a>
+                            {{if not .Pending}}
+                            <button type="button" class="primary hpydng hpyinl hpysm" onclick="window.leaveClan({{.ID}}, this)"><span>Leave</span></button>
+                            {{end}}
                         </div>
                     </div>
                     {{end}}

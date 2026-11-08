@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -422,6 +423,21 @@ func PostFeed(c fiber.Ctx) error {
 	return c.Redirect().To("/")
 }
 
+const (
+	feedWSMaxMessageBytes = 32 << 10
+	feedWSPongWait        = 90 * time.Second
+	feedWSWriteWait       = 10 * time.Second
+	feedWSMaxPerSecond    = 8
+	feedWSMaxViolations   = 10
+)
+
+func feedTypeOrDefault(raw string) string {
+	if raw == "friends" {
+		return "friends"
+	}
+	return "worldwide"
+}
+
 func FeedWS(c *websocket.Conn) {
 	usernameVal := c.Locals("username")
 	username, ok := usernameVal.(string)
@@ -429,6 +445,12 @@ func FeedWS(c *websocket.Conn) {
 		_ = c.Close()
 		return
 	}
+
+	c.SetReadLimit(feedWSMaxMessageBytes)
+	_ = c.SetReadDeadline(time.Now().Add(feedWSPongWait))
+	c.SetPongHandler(func(string) error {
+		return c.SetReadDeadline(time.Now().Add(feedWSPongWait))
+	})
 
 	client := &WSClient{conn: c}
 
@@ -470,25 +492,40 @@ func FeedWS(c *websocket.Conn) {
 		FeedType string `json:"feed_type"`
 	}
 
+	windowStart := time.Now()
+	messagesInWindow := 0
+	violations := 0
+
 	for {
 		mt, msg, err := c.ReadMessage()
 		if err != nil {
 			break
 		}
 		if mt == websocket.TextMessage {
+			if time.Since(windowStart) >= time.Second {
+				windowStart = time.Now()
+				messagesInWindow = 0
+			}
+			messagesInWindow++
+			if messagesInWindow > feedWSMaxPerSecond {
+				violations++
+				sendFeedError(client, errors.New("You're sending messages too fast. Please slow down."))
+				if violations >= feedWSMaxViolations {
+					break
+				}
+				continue
+			}
+
 			var clientMsg WSClientMessage
 			if err := json.Unmarshal(msg, &clientMsg); err == nil {
-				feedType := clientMsg.FeedType
-				if feedType == "" {
-					feedType = "worldwide"
-				}
+				feedType := feedTypeOrDefault(clientMsg.FeedType)
 
 				switch clientMsg.Type {
 				case "react":
 					if clientMsg.FID > 0 && service.Feed != nil {
-						totalReactions, err := service.Feed.ToggleReaction(username, clientMsg.FID, feedType)
+						totalReactions, hasReacted, err := service.Feed.ToggleReaction(username, clientMsg.FID, feedType)
 						if err == nil {
-							BroadcastReactionUpdate(clientMsg.FID, totalReactions, feedType)
+							BroadcastReactionUpdate(clientMsg.FID, totalReactions, feedType, username, hasReacted)
 						} else {
 							sendFeedError(client, err)
 						}
@@ -496,9 +533,9 @@ func FeedWS(c *websocket.Conn) {
 
 				case "creact":
 					if clientMsg.CID > 0 && service.Feed != nil {
-						totalReactions, err := service.Feed.ToggleCommentReaction(username, clientMsg.CID)
+						totalReactions, hasReacted, err := service.Feed.ToggleCommentReaction(username, clientMsg.CID)
 						if err == nil {
-							BroadcastCommentReactionUpdate(clientMsg.CID, totalReactions, feedType)
+							BroadcastCommentReactionUpdate(clientMsg.CID, totalReactions, feedType, username, hasReacted)
 						} else {
 							sendFeedError(client, err)
 						}
@@ -541,6 +578,9 @@ func FeedWS(c *websocket.Conn) {
 func (ws *WSClient) Write(messageType int, data []byte) error {
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
+	if err := ws.conn.SetWriteDeadline(time.Now().Add(feedWSWriteWait)); err != nil {
+		return err
+	}
 	return ws.conn.WriteMessage(messageType, data)
 }
 
@@ -597,64 +637,52 @@ func BroadcastCommentPost(comment *models.FeedComment) {
 	broadcastToClients(data)
 }
 
-func BroadcastReactionUpdate(fid int, reactions int, feedType string) {
+func BroadcastReactionUpdate(fid int, reactions int, feedType, actor string, hasReacted bool) {
 	msg := struct {
 		Type       string `json:"type"`
 		FID        int    `json:"fid"`
 		Reactions  int    `json:"reactions"`
 		HasReacted bool   `json:"has_reacted"`
+		ReactedBy  string `json:"reacted_by"`
 		FeedType   string `json:"feed_type"`
 	}{
-		Type:      "reaction_update",
-		FID:       fid,
-		Reactions: reactions,
-		FeedType:  feedType,
+		Type:       "reaction_update",
+		FID:        fid,
+		Reactions:  reactions,
+		HasReacted: hasReacted,
+		ReactedBy:  actor,
+		FeedType:   feedType,
 	}
 
-	clients := getFeedClientsSnapshot()
-
-	for _, item := range clients {
-		hasReacted := false
-		if service.Feed != nil {
-			hasReacted = service.Feed.HasUserReacted(item.username, fid, feedType)
-		}
-		msg.HasReacted = hasReacted
-
-		data, err := json.Marshal(msg)
-		if err != nil {
-			continue
-		}
-		_ = item.client.Write(websocket.TextMessage, data)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
 	}
+
+	broadcastToClients(data)
 }
 
-func BroadcastCommentReactionUpdate(cid int, reactions int, feedType string) {
+func BroadcastCommentReactionUpdate(cid int, reactions int, feedType, actor string, hasReacted bool) {
 	msg := struct {
 		Type       string `json:"type"`
 		CID        int    `json:"cid"`
 		Reactions  int    `json:"reactions"`
 		HasReacted bool   `json:"has_reacted"`
+		ReactedBy  string `json:"reacted_by"`
 		FeedType   string `json:"feed_type"`
 	}{
-		Type:      "comment_reaction_update",
-		CID:       cid,
-		Reactions: reactions,
-		FeedType:  feedType,
+		Type:       "comment_reaction_update",
+		CID:        cid,
+		Reactions:  reactions,
+		HasReacted: hasReacted,
+		ReactedBy:  actor,
+		FeedType:   feedType,
 	}
 
-	clients := getFeedClientsSnapshot()
-
-	for _, item := range clients {
-		hasReacted := false
-		if service.Feed != nil {
-			hasReacted = service.Feed.HasUserReactedComment(item.username, cid)
-		}
-		msg.HasReacted = hasReacted
-
-		data, err := json.Marshal(msg)
-		if err != nil {
-			continue
-		}
-		_ = item.client.Write(websocket.TextMessage, data)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
 	}
+
+	broadcastToClients(data)
 }

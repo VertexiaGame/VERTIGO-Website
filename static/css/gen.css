@@ -537,33 +537,52 @@ select option {
     align-items: center !important;
     justify-content: space-between !important;
     width: 100% !important;
-    height: 30px !important;
-    min-height: 30px !important;
-    max-height: 30px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
     background: var(--surface) !important;
     border: 2px solid rgba(61, 61, 61, 0.25) !important;
-    border-radius: 6px !important;
-    padding: 0 8px !important;
+    border-radius: var(--radius-md) !important;
+    padding: 0 10px 0 12px !important;
     font-family: 'Ubuntu', sans-serif !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
+    color: var(--ink) !important;
     cursor: pointer !important;
     outline: none !important;
     box-shadow: none !important;
     box-sizing: border-box !important;
-    transform: none !important;
     text-align: left !important;
-    transition: background 0.15s ease !important;
+    transform: scale(1) !important;
+    transition: background 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s var(--ease-pop) !important;
 }
 
 .glb-dropdown-trigger:hover {
     background: var(--surface-hover) !important;
-    transform: none !important;
+    border-color: rgba(61, 61, 61, 0.4) !important;
 }
 
 .glb-dropdown-trigger:active {
+    transform: scale(0.98) !important;
+    transition: transform 0.08s ease !important;
+}
+
+.glb-dropdown-trigger:focus-visible {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+.glb-dropdown-trigger:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
     transform: none !important;
+}
+
+.glb-dropdown.open .glb-dropdown-trigger,
+.glb-dropdown.active .glb-dropdown-trigger {
+    background: var(--surface-raised) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
 }
 
 .glb-dropdown-label {
@@ -574,48 +593,55 @@ select option {
 }
 
 .glb-dropdown-arrow {
-    width: 8px !important;
-    height: 8px !important;
-    min-width: 8px !important;
-    min-height: 8px !important;
-    color: #718096 !important;
+    width: 9px !important;
+    height: 9px !important;
+    min-width: 9px !important;
+    min-height: 9px !important;
+    color: var(--muted) !important;
     fill: currentColor !important;
     flex-shrink: 0 !important;
-    margin-left: 6px !important;
+    margin-left: 8px !important;
     display: inline-block !important;
     vertical-align: middle !important;
-    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    transition: transform 0.3s var(--ease-pop), color 0.2s ease !important;
+}
+
+.glb-dropdown-trigger:hover .glb-dropdown-arrow {
+    color: var(--ink) !important;
 }
 
 .glb-dropdown.open .glb-dropdown-arrow,
 .glb-dropdown.active .glb-dropdown-arrow {
+    color: var(--accent) !important;
     transform: rotate(180deg) !important;
 }
 
 .glb-dropdown-menu {
     position: absolute !important;
-    top: calc(100% + 4px) !important;
+    top: calc(100% + 6px) !important;
     left: 0 !important;
     width: 100% !important;
     min-width: 100% !important;
     background: var(--surface-raised) !important;
     border: 1px solid var(--border) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
     z-index: 500 !important;
     display: flex !important;
     flex-direction: column !important;
+    gap: 1px !important;
     padding: 4px !important;
     box-sizing: border-box !important;
-    max-height: 200px !important;
+    max-height: 220px !important;
     overflow-y: auto !important;
+    overscroll-behavior: contain;
 
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
-    transform: translateY(-8px) scale(0.95) !important;
+    transform: translateY(-6px) scale(0.96) !important;
     transform-origin: top center !important;
-    transition: opacity 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s !important;
+    transition: opacity 0.18s ease, transform 0.22s var(--ease-pop), visibility 0s linear 0.22s !important;
 }
 
 .glb-dropdown.open .glb-dropdown-menu,
@@ -624,25 +650,108 @@ select option {
     visibility: visible !important;
     pointer-events: auto !important;
     transform: translateY(0) scale(1) !important;
+    transition-delay: 0s !important;
 }
 
 .glb-dropdown-item {
-    padding: 6px 10px !important;
+    position: relative !important;
+    flex: 0 0 auto !important;
+    padding: 5px 28px 5px 8px !important;
     font-family: 'Ubuntu', sans-serif !important;
     font-size: 12px !important;
     font-weight: 500 !important;
-    color: #3D3D3D !important;
-    border-radius: 6px !important;
+    line-height: 16px !important;
+    color: var(--ink) !important;
+    border-radius: var(--radius-sm) !important;
     cursor: pointer !important;
-    transition: background 0.15s ease, color 0.15s ease !important;
+    user-select: none;
+    transition: background 0.12s ease, color 0.12s ease !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
 }
 
+.glb-dropdown-item i {
+    width: 13px;
+    margin-right: 6px;
+    text-align: center;
+    color: var(--muted);
+    transition: color 0.15s ease;
+}
+
+.glb-dropdown-item:hover {
+    background: var(--accent-soft) !important;
+    color: var(--accent-ink) !important;
+}
+
+.glb-dropdown-item:hover i {
+    color: var(--accent);
+}
+
+.glb-dropdown-item.active:hover {
+    background: var(--grad-accent) !important;
+    color: #FFFFFF !important;
+}
+
 .glb-dropdown-item.active {
     background: var(--grad-accent) !important;
     color: #FFFFFF !important;
+    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+}
+
+.glb-dropdown-item.active i {
+    color: #FFFFFF;
+}
+
+.glb-dropdown-item.active::after {
+    content: "";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    width: 11px;
+    height: 11px;
+    background-color: #FFFFFF;
+    -webkit-mask: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M2%206.5l3%203%205-6%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M2%206.5l3%203%205-6%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat;
+    transform: translateY(-50%);
+}
+
+.glb-dropdown.open .glb-dropdown-item,
+.glb-dropdown.active .glb-dropdown-item {
+    animation: glbDropItemIn 0.24s var(--ease-pop) backwards;
+}
+
+.glb-dropdown.open .glb-dropdown-item:nth-child(1),
+.glb-dropdown.active .glb-dropdown-item:nth-child(1) { animation-delay: 0.02s; }
+.glb-dropdown.open .glb-dropdown-item:nth-child(2),
+.glb-dropdown.active .glb-dropdown-item:nth-child(2) { animation-delay: 0.04s; }
+.glb-dropdown.open .glb-dropdown-item:nth-child(3),
+.glb-dropdown.active .glb-dropdown-item:nth-child(3) { animation-delay: 0.06s; }
+.glb-dropdown.open .glb-dropdown-item:nth-child(4),
+.glb-dropdown.active .glb-dropdown-item:nth-child(4) { animation-delay: 0.08s; }
+.glb-dropdown.open .glb-dropdown-item:nth-child(5),
+.glb-dropdown.active .glb-dropdown-item:nth-child(5) { animation-delay: 0.10s; }
+.glb-dropdown.open .glb-dropdown-item:nth-child(6),
+.glb-dropdown.active .glb-dropdown-item:nth-child(6) { animation-delay: 0.12s; }
+.glb-dropdown.open .glb-dropdown-item:nth-child(n+7),
+.glb-dropdown.active .glb-dropdown-item:nth-child(n+7) { animation-delay: 0.14s; }
+
+@keyframes glbDropItemIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (pointer: coarse) {
+    .glb-dropdown-item {
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
 }
 
 @media (max-width: 996px) {

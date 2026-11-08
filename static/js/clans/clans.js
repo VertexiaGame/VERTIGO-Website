@@ -479,6 +479,39 @@
         return item;
     };
 
+    window.showWallError = function(message) {
+        const wall = document.getElementById('clnWall');
+        const form = document.getElementById('clnWallForm');
+        const posts = document.getElementById('clnWallPosts');
+        if (!wall || !posts) return;
+
+        let err = wall.querySelector('.feederr');
+        if (!err) {
+            err = document.createElement('span');
+            err.className = 'feederr';
+            wall.insertBefore(err, posts);
+        }
+        err.textContent = message;
+        wall.classList.add('haserr');
+        if (form) form.classList.add('inerr');
+
+        requestAnimationFrame(function() { err.classList.add('visible'); });
+
+        setTimeout(function() {
+            err.classList.remove('visible');
+            wall.classList.remove('haserr');
+            if (form) form.classList.remove('inerr');
+        }, 4000);
+    };
+
+    window.clanWallError = function(err, fallback) {
+        if (err && err.auth) {
+            window.location.href = '/login';
+            return;
+        }
+        window.showWallError(err && err.message ? err.message : fallback);
+    };
+
     window.submitClanWallPost = function(event, clanID) {
         if (event) event.preventDefault();
         const form = document.getElementById('clnWallForm');
@@ -487,9 +520,8 @@
 
         const text = input.value.trim();
         if (!text) {
-            form.classList.add('inerr');
+            window.showWallError('Write something first.');
             input.focus();
-            setTimeout(function() { form.classList.remove('inerr'); }, 1200);
             return false;
         }
 
@@ -512,7 +544,7 @@
                 input.value = '';
                 input.focus();
             } catch (err) {
-                window.clanHandleError(err, "Couldn't post that");
+                window.clanWallError(err, "Couldn't post that.");
             }
         })();
         return false;
@@ -543,7 +575,7 @@
                 badge.classList.add('rctpop');
                 setTimeout(function() { badge.classList.remove('rctpop'); }, 320);
             } catch (err) {
-                window.clanHandleError(err, "Couldn't react");
+                window.clanWallError(err, "Couldn't react.");
             } finally {
                 delete badge.dataset.busy;
             }
@@ -575,41 +607,7 @@
                             }, 180);
                         }
                     } catch (err) {
-                        window.clanHandleError(err, "Couldn't delete that post");
-                    }
-                })();
-            }
-        });
-    };
-
-    window.joinClan = function(clanID, btn) {
-        (async function() {
-            try {
-                const payload = await window.clanPost('/clans/' + clanID + '/join', { button: btn });
-                if (payload.status === 'requested') {
-                    window.clanRefreshWithNotice(window.location.pathname, 'Request sent. An admin will review it.');
-                } else {
-                    window.clanRefreshWithNotice(window.location.pathname, 'Welcome to the clan.');
-                }
-            } catch (err) {
-                window.clanHandleError(err, "Couldn't join this clan");
-            }
-        })();
-    };
-
-    window.leaveClan = function(clanID, btn) {
-        window.clanConfirm({
-            title: 'Leave this clan?',
-            message: "You'll lose your role and will need to join again to get back in.",
-            confirmLabel: 'Leave',
-            danger: true,
-            onConfirm: function() {
-                (async function() {
-                    try {
-                        await window.clanPost('/clans/' + clanID + '/leave', { button: btn });
-                        window.clanRefreshWithNotice(window.location.pathname, 'You left the clan.');
-                    } catch (err) {
-                        window.clanHandleError(err, "Couldn't leave this clan");
+                        window.clanWallError(err, "Couldn't delete that post.");
                     }
                 })();
             }
@@ -625,7 +623,7 @@
                 (async function() {
                     try {
                         await window.clanPost('/clans/' + clanID + '/request/cancel', { button: btn });
-                        window.clanRefreshWithNotice(window.location.pathname, 'Request cancelled.');
+                        window.clanRefresh(window.location.pathname);
                     } catch (err) {
                         window.clanHandleError(err, "Couldn't cancel your request");
                     }
@@ -659,7 +657,7 @@
                     data: { message: message },
                     button: btn
                 });
-                window.clanRefreshWithNotice(window.location.pathname, 'Request sent. An admin will review it.');
+                window.clanRefresh(window.location.pathname);
             } catch (err) {
                 window.clanHandleError(err, "Couldn't send your request");
             }
@@ -732,6 +730,70 @@
         window.__clnDetailResizeBound = true;
         window.addEventListener('resize', function() {
             if (document.querySelector('.cln-tabs')) window.updateClanTabIndicator();
+        });
+    }
+
+    if (!window.__clnComposeAnimBound) {
+        window.__clnComposeAnimBound = true;
+
+        document.addEventListener('click', function(e) {
+            if (!e.target || !e.target.closest) return;
+            const summary = e.target.closest('details.cln-compose > summary.cln-compose-sum');
+            if (!summary) return;
+            const details = summary.parentElement;
+            if (!details || details.tagName !== 'DETAILS') return;
+            e.preventDefault();
+
+            if (typeof details.animate !== 'function') {
+                details.open = !details.open;
+                return;
+            }
+            if (details._composeAnim) {
+                details._composeAnim.cancel();
+                details._composeAnim = null;
+            }
+
+            if (!details.open) {
+                const startH = details.offsetHeight;
+                details.classList.remove('is-closing');
+                details.open = true;
+                const endH = details.offsetHeight;
+                const anim = details.animate(
+                    [{ height: startH + 'px' }, { height: endH + 'px' }],
+                    { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                );
+                details._composeAnim = anim;
+                anim.onfinish = anim.oncancel = function() {
+                    details.style.height = '';
+                    details._composeAnim = null;
+                };
+                const firstInput = details.querySelector('input[type="text"], textarea');
+                if (firstInput) {
+                    setTimeout(function() {
+                        firstInput.focus({ preventScroll: true });
+                    }, 80);
+                }
+            } else {
+                const openH = details.offsetHeight;
+                const closedH = summary.offsetHeight + 2;
+                details.classList.add('is-closing');
+                const closeAnim = details.animate(
+                    [{ height: openH + 'px' }, { height: closedH + 'px' }],
+                    { duration: 210, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                );
+                details._composeAnim = closeAnim;
+                closeAnim.onfinish = function() {
+                    details.open = false;
+                    details.classList.remove('is-closing');
+                    details.style.height = '';
+                    details._composeAnim = null;
+                };
+                closeAnim.oncancel = function() {
+                    details.classList.remove('is-closing');
+                    details.style.height = '';
+                    details._composeAnim = null;
+                };
+            }
         });
     }
 })();

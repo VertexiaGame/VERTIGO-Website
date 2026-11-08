@@ -56,7 +56,7 @@ func Setup(app *fiber.App) {
 
 	app.Get("/livetimer", handlers.LiveTimerGet)
 	app.Get("/sitelock", handlers.SiteLockGet)
-	app.Post("/sitelock", handlers.SiteLockPost)
+	app.Post("/sitelock", handlers.AuthAttemptLimiter(), handlers.SiteLockPost)
 
 	app.Use("/ws/feed", func(c fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
@@ -75,17 +75,17 @@ func Setup(app *fiber.App) {
 
 	app.Get("/", handlers.Home)
 	app.Get("/login", handlers.LoginGet)
-	app.Post("/login", handlers.LoginPost)
+	app.Post("/login", handlers.AuthAttemptLimiter(), handlers.LoginPost)
 	app.Get("/register", handlers.RegisterGet)
-	app.Post("/register", handlers.RegisterPost)
+	app.Post("/register", handlers.AuthAttemptLimiter(), handlers.RegisterPost)
 	app.Get("/logout", handlers.Logout)
-	app.Get("/altcha", handlers.AltchaGet)
+	app.Get("/altcha", handlers.AltchaLimiter(), handlers.AltchaGet)
 	app.Get("/auth/validate", handlers.ValidateUkey)
 
 	app.Get("/studio/auth", handlers.StudioAuthGet)
 	app.Post("/studio/auth/allow", handlers.StudioAuthAllow)
 	app.Post("/studio/auth/deny", handlers.StudioAuthDeny)
-	app.Get("/studio/auth/poll", handlers.StudioAuthPoll)
+	app.Get("/studio/auth/poll", handlers.StudioPollLimiter(), handlers.StudioAuthPoll)
 
 	app.Get("/search", handlers.SearchRedirect)
 	app.Get("/api/v1/search", handlers.SearchAPI)
@@ -93,6 +93,8 @@ func Setup(app *fiber.App) {
 	app.Get("/profile", handlers.ProfileRedirect)
 	app.Get("/user/:id", handlers.ProfileGet)
 	app.Get("/u/:id", handlers.ProfileGet)
+	app.Get("/users", handlers.UsersGet)
+	app.Get("/users/cards", handlers.UsersCardsLimiter(), handlers.UsersCardsGet)
 
 	app.Get("/friends", handlers.FriendsGet)
 	app.Get("/friends/:id", handlers.FriendsGet)
@@ -120,6 +122,7 @@ func Setup(app *fiber.App) {
 	app.Post("/clans/:id/wall/:postId/react", handlers.ClanActionLimiter(), handlers.ClanWallReactPost)
 	app.Post("/clans/:id/announcements", handlers.ClanActionLimiter(), handlers.ClanAnnouncementCreatePost)
 	app.Post("/clans/:id/announcements/:announcementId/delete", handlers.ClanAnnouncementDeletePost)
+
 
 	app.Get("/settings", handlers.SettingsGet)
 	app.Post("/settings/displayname", handlers.SettingsDisplayNamePost)
@@ -206,11 +209,11 @@ func Setup(app *fiber.App) {
 
 	api := app.Group("/api/v1")
 
-	api.Get("/altcha", handlers.AltchaGet)
+	api.Get("/altcha", handlers.AltchaLimiter(), handlers.AltchaGet)
 	api.Get("/auth/validate", handlers.ValidateUkey)
 	api.Post("/studio/exchange", handlers.StudioAuthExchange)
 	api.Get("/studio/exchange", handlers.StudioAuthExchange)
-	api.Get("/studio/poll", handlers.StudioAuthPoll)
+	api.Get("/studio/poll", handlers.StudioPollLimiter(), handlers.StudioAuthPoll)
 	api.Post("/studio/games", handlers.GameCreateLimiter(), handlers.StudioGameCreatePost)
 	api.Get("/studio/games", handlers.StudioGamesListGet)
 	api.Post("/studio/games/:id/vrtx", handlers.GameUpdateLimiter(), handlers.StudioGameVrtxUploadPost)
@@ -297,8 +300,8 @@ func Setup(app *fiber.App) {
 	api.Post("/gameserver/servers/:id/leave", handlers.GameserverServerLeavePost)
 	api.Post("/gameserver/servers/:id/heartbeat", handlers.GameserverServerHeartbeatPost)
 
-	api.Get("/music/search", handlers.MusicSearchGet)
-	api.Get("/music/track/:id", handlers.MusicTrackGet)
+	api.Get("/music/search", handlers.ExternalAPILimiter(), handlers.MusicSearchGet)
+	api.Get("/music/track/:id", handlers.ExternalAPILimiter(), handlers.MusicTrackGet)
 	api.Post("/music/update", handlers.SettingsMusicPost)
 
 	api.Post("/create/preview", handlers.CreatePreviewLimiter(), handlers.CreatePreviewPost)

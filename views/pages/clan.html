@@ -22,14 +22,7 @@
                 <a href="/clans" hx-get="/clans" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">Back to Clans</a>
             </div>
         </div>
-        <div class="pane cln-detail" id="clnDetail" data-clan-id="{{.Clan.ID}}" data-csrf="{{.CSRF}}">
-            {{if .Error}}
-            <span class="frminerr visible" role="alert">{{.Error}}</span>
-            {{end}}
-            {{if .Notice}}
-            <span class="frminsuc visible" role="status">{{.Notice}}</span>
-            {{end}}
-
+        <div class="pane cln-detail" id="clnDetail" data-clan-id="{{.Clan.ID}}" data-csrf="{{.CSRF}}" data-clan-notice="{{.NoticeCode}}">
             <div class="prfhdr cln-hdr">
                 <div class="prfbnr cln-hdr-bnr{{if and (not .Clan.HasBanner) (not .Clan.HasIcon)}} is-plain{{end}}" aria-hidden="true"{{if and (not .Clan.HasBanner) (not .Clan.HasIcon)}} style="background-color: {{.Clan.Color}};"{{end}}>
                     {{if .Clan.HasBanner}}<img src="{{.Clan.BannerURL}}" alt="">{{else if .Clan.HasIcon}}<img src="{{.Clan.IconURL}}" alt="">{{end}}
@@ -57,7 +50,7 @@
                         </a>
                         {{end}}
                         {{if .IsMember}}
-                        {{if not .CanManageClan}}
+                        {{if not .IsOwner}}
                         <button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.leaveClan({{.Clan.ID}}, this)">
                             <span><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Leave Clan</span></span>
                         </button>
@@ -88,6 +81,12 @@
                         <button type="button" class="primary {{if .IsWearingTag}}hpyinf{{else}}hpyprim{{end}} hpyinl hpysm" id="clnWearTagBtn" onclick="window.toggleWornClanTag({{.Clan.ID}}, this)">
                             <span><i class="fa-solid fa-tag" aria-hidden="true"></i><span>{{if .IsWearingTag}}Stop Wearing Tag{{else}}Wear Clan Tag{{end}}</span></span>
                         </button>
+                        {{end}}
+                        {{if .Error}}
+                        <span class="frminerr visible" role="alert">{{.Error}}</span>
+                        {{end}}
+                        {{if and .Notice (not (or (eq .NoticeCode "announcement-posted") (eq .NoticeCode "announcement-deleted")))}}
+                        <span class="frminsuc visible" role="status">{{.Notice}}</span>
                         {{end}}
                     </div>
                 </div>
@@ -164,6 +163,9 @@
                             <h2 class="prfboxttl">Announcements</h2>
                             <span class="shp-subheading">{{len .Clan.Announcements}} updates</span>
                         </div>
+                        {{if or (eq .NoticeCode "announcement-posted") (eq .NoticeCode "announcement-deleted")}}
+                        <span class="frminsuc visible" role="status">{{.Notice}}</span>
+                        {{end}}
                         {{if .CanPostAnnouncement}}
                         <details class="cln-compose">
                             <summary class="cln-compose-sum">
