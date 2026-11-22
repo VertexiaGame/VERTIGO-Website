@@ -126,8 +126,10 @@ window.shopItemCardHTML = function(item) {
     const safeName = shopEsc(item.name);
     const safeCreator = shopEsc(item.creator_name);
     const safeType = shopEsc(item.type);
-    const isOffsale = item.onsale === 'false' || item.offsale === 'true';
     const isSpecial = item.special === 'true';
+    const isSoldOut = item.original_stock > 0 && item.stock <= 0;
+    const canResell = isSpecial && isSoldOut && item.approval_state === 'approved' && item.offsale !== 'true';
+    const isOffsale = !canResell && (item.onsale === 'false' || item.offsale === 'true');
     const isTimer = item.timer === 'true' || item.limited_time === 'true' || Boolean(item.time_left || item.days_left);
 
     let ribbonHtml = '';
@@ -144,8 +146,12 @@ window.shopItemCardHTML = function(item) {
     }
 
     let priceHtml = '';
-    if (isOffsale) {
+    if (canResell) {
+        priceHtml = '<span class="shp-stock-note">Resale</span>';
+    } else if (isOffsale) {
         priceHtml = '<span class="shp-price-off">Offsale</span>';
+    } else if (isSoldOut) {
+        priceHtml = '<span class="shp-price-off">Sold out</span>';
     } else if (item.bucks === 0 && item.bits === 0) {
         priceHtml = '<span class="shp-price-free">Free</span>';
     } else {
@@ -162,9 +168,12 @@ window.shopItemCardHTML = function(item) {
             </span>`;
         }
     }
+    if (isSpecial && !isOffsale && item.stock > 0) {
+        priceHtml += `<span class="shp-stock-note">${item.stock} left</span>`;
+    }
 
     return `
-        <div class="shp-card" data-id="${item.id}">
+        <a class="shp-card" data-id="${item.id}" href="/shop/item/${item.id}">
             <div class="avtitmimg${isOffsale ? ' shp-offimg' : ''}">
                 <img src="/api/v1/avatar/shop/${encodeURIComponent(safeType)}/${item.id}" alt="${safeName}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
             </div>
@@ -176,7 +185,7 @@ window.shopItemCardHTML = function(item) {
             <div class="shp-price-row">
                 ${priceHtml}
             </div>
-        </div>
+        </a>
     `;
 };
 
@@ -452,12 +461,11 @@ if (!window.__shopCardNavBound) {
         if (!event.target.closest('.shp-dropdown')) {
             document.querySelectorAll('.shp-dropdown.open').forEach(d => d.classList.remove('open'));
         }
-        var card = event.target.closest('#shopGrid .shp-card[data-id]');
-        if (card && !event.target.closest('button') && !event.target.closest('a')) {
-            var id = card.getAttribute('data-id');
-            if (id) {
-                window.navigateWithHistory('/shop/item/' + encodeURIComponent(id));
-            }
+        var card = event.target.closest('#shopGrid a.shp-card');
+        if (card && !card.hasAttribute('hx-get') && window.navigateWithHistory &&
+            !event.defaultPrevented && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+            event.preventDefault();
+            window.navigateWithHistory(card.href);
         }
     });
 }

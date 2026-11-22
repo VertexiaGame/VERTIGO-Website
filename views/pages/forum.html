@@ -10,7 +10,7 @@
             <span class="title">Forum</span>
             <div class="pill">
                 <img src="/static/useful/icons/search.png" class="icon" alt="Search">
-                <input type="text" class="input" placeholder="search ..." id="forumBarSearch" autocomplete="off">
+                <input type="text" class="input" placeholder="search boards" id="forumBarSearch" autocomplete="off">
             </div>
             <div class="barbtns">
                 <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
@@ -30,16 +30,12 @@
                             <span>Forum Rules</span>
                             <i class="fa-solid fa-chevron-down fbd-rules-caret" aria-hidden="true"></i>
                         </button>
-                        <button type="button" class="fbd-tool-btn">
+                        <a href="/forum/mine" hx-boost="false" class="fbd-tool-btn">
                             <i class="fa-solid fa-comments fbd-tool-ico" aria-hidden="true"></i>
                             <span>My Threads</span>
-                        </button>
-                        <button type="button" class="fbd-tool-btn">
-                            <i class="fa-solid fa-bookmark fbd-tool-ico" aria-hidden="true"></i>
-                            <span>Bookmarks</span>
-                        </button>
+                        </a>
                         <div class="setinbox fbd-search">
-                            <input type="search" class="setin" id="fbdSearchInput" name="q" placeholder="Search the forum" autocomplete="off" maxlength="80" aria-label="Search the forum">
+                            <input type="search" class="setin" id="fbdSearchInput" name="q" placeholder="Search boards" autocomplete="off" maxlength="80" aria-label="Search boards">
                         </div>
                     </div>
                     <div class="fbd-rules-body" id="fbdRulesBody">
@@ -72,4 +68,4 @@
         </div>
     </div>
 </div>
-<script src="/static/js/forum/forum.js?v={{.AssetV}}"></script>
+<script type="module" src="/static/js/forum/forum.js?v={{.AssetV}}"></script>

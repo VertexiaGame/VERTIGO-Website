@@ -9,7 +9,8 @@
     color: var(--ink);
     width: 100%;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
+    z-index: 2;
 }
 
 .prfbnr {
@@ -159,6 +160,49 @@
     align-items: center;
     gap: 8px;
     align-self: flex-end;
+}
+
+.prffriendstack {
+    position: relative;
+    display: grid;
+    isolation: isolate;
+}
+
+.prffriendstack > .primary:first-child {
+    z-index: 1;
+}
+
+.prffriendstack > .primary {
+    grid-area: 1 / 1;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.prffollowicon {
+    object-fit: fill !important;
+    filter: brightness(0) invert(1);
+}
+
+.prffriendstack .prffollow {
+    position: relative;
+    top: 5px;
+    left: 0;
+    white-space: nowrap;
+    transition: top 0.2s ease, transform 0.2s ease;
+}
+
+.prffriendstack:hover .prffollow,
+.prffriendstack:focus-within .prffollow {
+    top: calc(100% + 4px);
+}
+
+@media (hover: none) {
+    .prffriendstack { margin-bottom: 40px; }
+    .prffriendstack .prffollow { top: calc(100% + 4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .prffriendstack .prffollow { transition: none; }
 }
 
 .prfbody {

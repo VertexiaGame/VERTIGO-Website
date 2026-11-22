@@ -1,0 +1,14 @@
+<div class="crtfld">
+    <label class="crtlbl" for="forumImages">Images <span class="crtthumbcount" data-forum-upload-count hidden>0 / 3</span></label>
+    <label class="crtupload forum-upload">
+        <input id="forumImages" type="file" name="images" accept="image/png,image/jpeg" multiple data-forum-upload aria-describedby="forumImageHelp">
+        <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+        <span class="crtupmsg">Choose PNG or JPEG images</span>
+        <span class="crtupname" data-forum-upload-names aria-live="polite"></span>
+    </label>
+    <div class="forum-upload-actions" data-forum-upload-actions hidden>
+        <button type="button" class="primary hpyinf hpyinl hpysm" data-forum-upload-clear><span>Clear images</span></button>
+    </div>
+    <span class="forum-upload-error" data-forum-upload-error role="status"></span>
+    <span class="shp-subheading" id="forumImageHelp">Optional. Add up to 3 images, 2 MB each. Images appear after admin approval.</span>
+</div>

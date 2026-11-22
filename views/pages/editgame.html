@@ -17,7 +17,7 @@
             </div>
             <div class="barbtns">
                 <a href="/play/{{.Game.ID}}" hx-get="/play/{{.Game.ID}}" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">View</a>
-                <a href="/create/games" hx-get="/create/games" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">My Games</a>
+                <a href="/create/assets?tab=games" hx-get="/create/assets?tab=games" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">My Games</a>
             </div>
         </div>
         <div class="pane">
@@ -144,11 +144,12 @@
                                                 <span class="crtupmsg" id="crtGameFileMsg">Choose a new icon</span>
                                                 <span class="crtupname" id="crtGameFileName"></span>
                                             </label>
-                                            <span class="ttptxt">Square icon shown in game listings (optional)</span>
+                                            <span class="ttptxt">Square icon shown in game listings (optional; requires admin approval)</span>
                                         </div>
                                     </div>
                                     <div class="crtfld">
-                                        <label class="crtlbl" for="crtGameThumbFile">Thumbnails</label>
+                                        <p>Game icons and thumbnails require admin approval before they appear publicly.</p>
+                        <label class="crtlbl" for="crtGameThumbFile">Thumbnails</label>
                                         {{if .ThumbURLs}}
                                         <div class="crtthumbs" id="crtGameThumbsStrip" data-game-id="{{.Game.ID}}">
                                             {{range .ThumbURLs}}
@@ -163,7 +164,7 @@
                                                 <span class="crtupmsg" id="crtGameThumbMsg">Choose new thumbnails</span>
                                                 <span class="crtupname" id="crtGameThumbName"></span>
                                             </label>
-                                            <span class="ttptxt">Up to 5 wide banners, first is the main one (replaces all current)</span>
+                                            <span class="ttptxt">Up to 5 wide banners; submitted replacements require admin approval</span>
                                         </div>
                                         <div class="crtthumbs" id="crtGameThumbPicked"></div>
                                         {{if .ThumbURLs}}

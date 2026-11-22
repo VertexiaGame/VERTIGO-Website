@@ -1,0 +1,91 @@
+<section class="shpitm-pane shpitm-market{{if eq .ActiveTab "owners"}} shpitm-owners{{end}}" aria-label="{{if eq .ActiveTab "owners"}}Owners{{else}}Resellers{{end}}">
+    {{if .SpecialError}}
+        <div class="feedemt" role="status">{{.SpecialError}}</div>
+    {{else if eq .ActiveTab "owners"}}
+        {{if .SpecialOwners}}
+        <ul class="shpitm-market-list">
+            {{range .SpecialOwners}}
+            <li class="prfbox-card shpitm-market-row">
+                <a href="/user/{{.UserID}}" class="adm-owner-link shpitm-market-user">
+                    <img src="/api/v1/avatar/headshot/{{.UserID}}.png" alt="" class="shpitm-creator-pfp" loading="lazy">
+                    {{.Username}}
+                </a>
+                <span class="shpitm-serial">#{{.Serial}}</span>
+            </li>
+            {{end}}
+        </ul>
+        {{else}}
+        <div class="feedemt">No public owners to show.</div>
+        {{end}}
+    {{else}}
+        {{if .OwnCopy}}
+        <div class="prfbox-card shpitm-market-manage">
+            <h2 class="shpitm-relatedttl">Your serial #{{.OwnCopy.Serial}}</h2>
+            {{if .OwnCopy.Price}}<span>Listed for {{.OwnCopy.Price}} Vertices</span>{{end}}
+            <form method="post" action="/shop/item/{{.Item.ID}}/resale/{{.OwnCopy.Serial}}/list" hx-boost="false" onsubmit="return window.submitShopResale(event)">
+                <input type="hidden" name="csrf" value="{{.CSRF}}">
+                <input type="hidden" name="version" value="{{.OwnCopy.Version}}">
+                <label for="shpitmResalePrice">Price in Vertices</label>
+                <div class="shpitm-market-fields">
+                    <div class="setinbox">
+                        <input type="number" class="setin" id="shpitmResalePrice" name="price" min="1" max="{{.MaxResalePrice}}" step="1" required{{if .OwnCopy.Price}} value="{{.OwnCopy.Price}}"{{end}}>
+                    </div>
+                    <button type="submit" class="primary hpyprim hpyinl hpysm"><span>{{if .OwnCopy.Price}}Update Price{{else}}List Serial{{end}}</span></button>
+                    {{if .OwnCopy.Price}}
+                    <button type="submit" class="primary hpyinf hpyinl hpysm" formaction="/shop/item/{{.Item.ID}}/resale/{{.OwnCopy.Serial}}/remove" formnovalidate><span>Remove Listing</span></button>
+                    {{end}}
+                </div>
+            </form>
+        </div>
+        {{end}}
+        <div id="shpitmResaleStatus" class="shpitm-wearmsg" aria-live="polite"></div>
+        {{if .SpecialListings}}
+        <ul class="shpitm-market-list">
+            {{range .SpecialListings}}
+            <li class="prfbox-card shpitm-market-row">
+                <div class="shpitm-market-copy">
+                    <span class="shpitm-serial">#{{.Serial}}</span>
+                    {{if and $.OwnCopy (eq .Serial $.OwnCopy.Serial)}}
+                        <span>Your listing</span>
+                    {{else if .SellerID}}
+                        <a href="/user/{{.SellerID}}" class="adm-owner-link shpitm-market-user">
+                            <img src="/api/v1/avatar/headshot/{{.SellerID}}.png" alt="" class="shpitm-creator-pfp" loading="lazy">
+                            {{.SellerName}}
+                        </a>
+                    {{else}}
+                        <span>Private seller</span>
+                    {{end}}
+                </div>
+                <div class="shpitm-market-fields">
+                    <span class="shp-price-val">
+                        <img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices">
+                        <span>{{.Price}}</span>
+                    </span>
+                    {{if not $.IsLoggedIn}}
+                        <a href="/login?next={{printf "/shop/item/%d?tab=resellers" $.Item.ID | urlquery}}" class="primary hpyprim hpyinl hpysm"><span>Log In to Buy</span></a>
+                    {{else if not $.IsOwned}}
+                        <form method="post" action="/shop/item/{{$.Item.ID}}/resale/{{.Serial}}/buy" data-serial="{{.Serial}}" data-price="{{.Price}}" hx-boost="false" onsubmit="return window.submitShopResale(event)">
+                            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                            <input type="hidden" name="version" value="{{.Version}}">
+                            <button type="submit" class="primary hpysuc hpyinl hpysm"><span>Buy #{{.Serial}}</span></button>
+                        </form>
+                    {{end}}
+                </div>
+            </li>
+            {{end}}
+        </ul>
+        {{else}}
+        <div class="feedemt">No copies are listed for resale.</div>
+        {{end}}
+    {{end}}
+    {{if or .PrevSpecialPage .NextSpecialPage}}
+    <nav class="shpitm-market-pages" aria-label="Page navigation">
+        {{if .PrevSpecialPage}}
+        <a href="/shop/item/{{.Item.ID}}?tab={{.ActiveTab}}&amp;page={{.PrevSpecialPage}}" hx-get="/shop/item/{{.Item.ID}}?tab={{.ActiveTab}}&amp;page={{.PrevSpecialPage}}" hx-target="#shopItemTabs" hx-select="#shopItemTabs" hx-swap="outerHTML" hx-push-url="true" class="primary hpyinf hpyinl hpysm"><span>Previous</span></a>
+        {{end}}
+        {{if .NextSpecialPage}}
+        <a href="/shop/item/{{.Item.ID}}?tab={{.ActiveTab}}&amp;page={{.NextSpecialPage}}" hx-get="/shop/item/{{.Item.ID}}?tab={{.ActiveTab}}&amp;page={{.NextSpecialPage}}" hx-target="#shopItemTabs" hx-select="#shopItemTabs" hx-swap="outerHTML" hx-push-url="true" class="primary hpyinf hpyinl hpysm"><span>Next</span></a>
+        {{end}}
+    </nav>
+    {{end}}
+</section>

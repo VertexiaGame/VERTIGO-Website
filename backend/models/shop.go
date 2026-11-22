@@ -9,6 +9,8 @@ import (
 )
 
 const MaxShopTransformBytes = 2048
+const MaxShopSpecialStock = 2147483647
+const MaxShopResalePrice = 2147483647
 
 func ValidateShopTransform(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
@@ -119,6 +121,47 @@ type ShopFilter struct {
 	Page     int    `json:"page"`
 	Limit    int    `json:"limit"`
 }
+
+func (s *ShopItem) IsSpecial() bool {
+	return s.Special == "true"
+}
+
+func (s *ShopItem) SoldOut() bool {
+	return s.OriginalStock > 0 && s.Stock <= 0
+}
+
+func (s *ShopItem) CanResell() bool {
+	return s.IsSpecial() && s.SoldOut() && s.Deleted == 0 &&
+		s.ApprovalState == ShopApprovalApproved && s.OffSale != "true"
+}
+
+type SpecialCopy struct {
+	Serial  int
+	Price   int
+	Version int64
+}
+
+type SpecialOwner struct {
+	Serial   int
+	UserID   int
+	Username string
+}
+
+type SpecialListing struct {
+	SpecialCopy
+	SellerID   int
+	SellerName string
+}
+
+var (
+	ErrSpecialUnavailable       = errors.New("special items are temporarily unavailable")
+	ErrSpecialNotResellable     = errors.New("resale is unavailable for this item")
+	ErrSpecialNotOwner          = errors.New("you do not own this serial")
+	ErrSpecialListingChanged    = errors.New("this listing has changed. Refresh the page to see the current listing")
+	ErrSpecialOwnListing        = errors.New("you cannot buy your own listing")
+	ErrSpecialAlreadyOwned      = errors.New("you already own a copy of this item")
+	ErrSpecialInsufficientFunds = errors.New("insufficient Vertices")
+)
 
 const (
 	ShopApprovalApproved = "approved"

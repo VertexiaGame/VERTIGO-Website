@@ -1,0 +1,37 @@
+<section class="setcrd adm-forum-queue" aria-labelledby="admForumTitle">
+    <h3 class="setttl" id="admForumTitle">Forum Image Approvals</h3>
+    <div class="adm-grid">
+        {{range .Images}}
+        <article class="adm-card">
+            <div class="adm-cardhdr">
+                <h2 class="adm-cardttl"><i class="fa-solid fa-image" aria-hidden="true"></i><span>{{.Title}}</span></h2>
+                <span class="adm-badge adm-badge-image">{{if .ReplyID}}Reply{{else}}Thread{{end}}</span>
+            </div>
+            <a class="adm-forum-preview" href="/admin/forum-images/{{.ID}}" target="_blank" rel="noopener">
+                <img src="/admin/forum-images/{{.ID}}" alt="View pending image at full size" loading="lazy">
+            </a>
+            <div class="adm-rowlst">
+                <div class="adm-row"><span class="adm-lbl">Author</span><span class="adm-val">@{{.Author}}</span></div>
+            </div>
+            <p class="setinf adm-forum-post">{{.Body}}</p>
+            <form class="adm-modbtns" hx-boost="false" method="post" action="/admin/forum-images/{{.ID}}">
+                <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                <input type="hidden" name="after" value="{{$.After}}">
+                <button class="primary hpysuc hpyinl hpysm" type="submit" name="action" value="approve"><span>Approve</span></button>
+                <button class="primary hpydng hpyinl hpysm" type="submit" name="action" value="reject"><span>Reject</span></button>
+                <a class="primary hpyinf hpyinl hpysm" href="/forum/t/{{.ThreadID}}" target="_blank" rel="noopener"><span>View thread</span></a>
+            </form>
+        </article>
+        {{else}}
+        <div class="frnemt adm-emt">No forum images awaiting review{{if .After}} on this page{{end}}</div>
+        {{end}}
+    </div>
+    {{if or .After .Next}}
+    <nav class="adm-pgncnt" aria-label="Pending image pages">
+        <div class="adm-pgnbtns">
+            {{if .After}}<a class="primary hpyprim hpyinl hpysm" href="/admin?tab=forumimages" hx-boost="false"><span>First page</span></a>{{end}}
+            {{if .Next}}<a class="primary hpyprim hpyinl hpysm" href="/admin?tab=forumimages&amp;after={{.Next}}" hx-boost="false"><span>Next page</span></a>{{end}}
+        </div>
+    </nav>
+    {{end}}
+</section>

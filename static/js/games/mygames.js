@@ -1,3 +1,4 @@
+(function() {
 window.viewGame = function(id) {
     if (!id) return;
     window.navigateWithHistory('/play/' + encodeURIComponent(id));
@@ -28,7 +29,7 @@ const initMyGamesPage = () => {
             document.querySelectorAll('#myGamesGrid .shp-card').forEach(function(card) {
                 const nameEl = card.querySelector('.avtitmnm');
                 const match = !q || (nameEl && nameEl.textContent.toLowerCase().indexOf(q) !== -1);
-                card.style.display = match ? '' : 'none';
+                card.style.setProperty('display', match ? '' : 'none', match ? '' : 'important');
             });
         };
     }
@@ -68,4 +69,9 @@ if (!window.__myGamesNavBound) {
 }
 
 initMyGamesPage();
-document.addEventListener('htmx:afterSettle', initMyGamesPage);
+if (!window.__myGamesPageWired) {
+    window.__myGamesPageWired = true;
+    document.addEventListener('htmx:afterSettle', initMyGamesPage);
+}
+
+})();

@@ -1,0 +1,16 @@
+<div class="shp-grid" id="itemGrid">
+                    {{range .Items}}
+                    <div class="shp-card" data-id="{{.ID}}" data-type="{{.Type}}" data-goto="shop-item" tabindex="0" role="link" title="View shop item">
+                        <div class="avtitmimg">
+                            <img src="/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                            <span class="avtitmbdg avtitmbdg-{{.ApprovalState}}">{{.ApprovalLabel}}</span>
+                        </div>
+                        <div class="avtitmmeta">
+                            <span class="avtitmnm">{{.Name}}</span>
+                            <span class="avtitmcr">{{.TypeName}} {{.CreatedAt.Format "Jan 02, 2006"}}</span>
+                        </div>
+                    </div>
+                    {{else}}
+                    <div class="feedemt" style="grid-column: 1 / -1;">You haven't created any shop items yet.</div>
+                    {{end}}
+                </div>

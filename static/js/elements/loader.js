@@ -74,7 +74,7 @@
         if (e.detail.requestConfig && e.detail.requestConfig.boosted) return true;
         const elt = e.detail.elt;
         if (!elt) return false;
-        if (elt.closest && elt.closest('[hx-boost]')) return true;
+        if (e.detail.target === document.body) return true;
         if (elt.getAttribute) {
             if (elt.getAttribute('hx-push-url') === 'true') return true;
             if (elt.getAttribute('hx-target') === 'body') return true;

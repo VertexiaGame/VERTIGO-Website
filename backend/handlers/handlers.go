@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"mime"
 	"strconv"
 	"sync"
 	"time"
@@ -20,23 +21,25 @@ type FeedPost struct {
 	Username   string
 	UserID     int
 	Content    string
+	FeedType   string
 	TimeAgo    string
 	FullDate   string
 	Reactions  int
 	HasReacted bool
+	Images     []int           `json:"images,omitempty"`
 	Tag        *models.ClanTag `json:"tag,omitempty"`
 }
 
 type wsMessage struct {
-	Type      string `json:"type"`
-	ID        int    `json:"id"`
-	Username  string `json:"username"`
-	UserID    int    `json:"user_id"`
-	Content   string `json:"content"`
-	TimeAgo   string `json:"time_ago"`
-	FullDate  string `json:"full_date"`
-	Reactions int    `json:"reactions"`
-	FeedType  string `json:"feed_type"`
+	Type      string          `json:"type"`
+	ID        int             `json:"id"`
+	Username  string          `json:"username"`
+	UserID    int             `json:"user_id"`
+	Content   string          `json:"content"`
+	TimeAgo   string          `json:"time_ago"`
+	FullDate  string          `json:"full_date"`
+	Reactions int             `json:"reactions"`
+	FeedType  string          `json:"feed_type"`
 	Tag       *models.ClanTag `json:"tag,omitempty"`
 }
 
@@ -88,7 +91,7 @@ func enrichCommentTags(comments []*models.FeedComment) {
 	}
 }
 
-func toFeedPosts(dbPosts []*models.FeedPost) []FeedPost {
+func toFeedPosts(dbPosts []*models.FeedPost, feedType string) []FeedPost {
 	posts := make([]FeedPost, 0, len(dbPosts))
 	for _, dbP := range dbPosts {
 		posts = append(posts, FeedPost{
@@ -96,6 +99,8 @@ func toFeedPosts(dbPosts []*models.FeedPost) []FeedPost {
 			Username:   dbP.Username,
 			UserID:     dbP.UserID,
 			Content:    dbP.Content,
+			FeedType:   feedType,
+			Images:     dbP.Images,
 			TimeAgo:    service.FormatTimeAgo(dbP.CreationDate),
 			FullDate:   dbP.CreationDate.Format("January 02, 2006 at 03:04 PM"),
 			Reactions:  dbP.Reactions,
@@ -182,7 +187,7 @@ func Home(c fiber.Ctx) error {
 	if service.Feed != nil {
 		dbPosts, err := service.Feed.GetRecentFeed(10, currentUserID, "worldwide")
 		if err == nil {
-			currentFeed = toFeedPosts(dbPosts)
+			currentFeed = toFeedPosts(dbPosts, "worldwide")
 		}
 	}
 
@@ -230,7 +235,7 @@ func GetFeedPaginated(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(toFeedPosts(dbPosts))
+	return c.JSON(toFeedPosts(dbPosts, feedTypeOrDefault(feedType)))
 }
 
 func GetFeedSingle(c fiber.Ctx) error {
@@ -250,17 +255,11 @@ func GetFeedSingle(c fiber.Ctx) error {
 	if service.Feed == nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
 	}
-	post, resolvedType := service.Feed.GetSinglePost(feedID, currentUserID)
+	post, resolvedType := service.Feed.GetSinglePost(feedID, currentUserID, feedType)
 	if post == nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
 	}
-	if feedType != "" && feedType != "worldwide" && feedType != "friends" {
-		feedType = ""
-	}
-	if feedType == "" {
-		feedType = resolvedType
-	}
-	single := toFeedPosts([]*models.FeedPost{post})
+	single := toFeedPosts([]*models.FeedPost{post}, resolvedType)
 	if len(single) == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
 	}
@@ -269,12 +268,13 @@ func GetFeedSingle(c fiber.Ctx) error {
 		"username":    single[0].Username,
 		"user_id":     single[0].UserID,
 		"content":     single[0].Content,
+		"images":      single[0].Images,
 		"time_ago":    single[0].TimeAgo,
 		"full_date":   single[0].FullDate,
 		"reactions":   single[0].Reactions,
 		"has_reacted": single[0].HasReacted,
 		"tag":         single[0].Tag,
-		"feed_type":   feedType,
+		"feed_type":   resolvedType,
 	})
 }
 
@@ -344,19 +344,19 @@ func FeedSinglePage(c fiber.Ctx) error {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
 
-	post, resolvedType := service.Feed.GetSinglePost(feedID, currentUserID)
+	post, resolvedType := service.Feed.GetSinglePost(feedID, currentUserID, c.Query("type"))
 	if post == nil {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
 
 	var currentFeed []FeedPost
 	if dbPosts, err := service.Feed.GetRecentFeed(10, currentUserID, "worldwide"); err == nil {
-		currentFeed = toFeedPosts(dbPosts)
+		currentFeed = toFeedPosts(dbPosts, "worldwide")
 	}
-	focused := toFeedPosts([]*models.FeedPost{post})
+	focused := toFeedPosts([]*models.FeedPost{post}, resolvedType)
 	found := false
 	for _, p := range currentFeed {
-		if p.ID == feedID {
+		if p.ID == feedID && p.FeedType == resolvedType {
 			found = true
 			break
 		}
@@ -405,21 +405,43 @@ func PostFeed(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	content := c.FormValue("content")
-	feedType := c.FormValue("feed_type", "worldwide")
+	jsonResponse := c.Get(fiber.HeaderAccept) == fiber.MIMEApplicationJSON
+	fail := func(status int, message string) error {
+		if jsonResponse {
+			return c.Status(status).JSON(fiber.Map{"error": message})
+		}
+		return c.Status(status).SendString(message)
+	}
+
+	mediaType, _, _ := mime.ParseMediaType(c.Get(fiber.HeaderContentType))
+	var images []models.ForumImageUpload
+	if mediaType == "multipart/form-data" {
+		if !csrfValid(c) {
+			return fail(fiber.StatusForbidden, "Invalid CSRF token")
+		}
+		var err error
+		images, err = forumImageUploads(c)
+		if err != nil {
+			return fail(fiber.StatusBadRequest, err.Error())
+		}
+	}
 	if service.Feed == nil {
-		return c.Redirect().To("/")
+		return fail(fiber.StatusServiceUnavailable, "Feed is unavailable")
 	}
 
-	postID, userID, storedContent, err := service.Feed.PostToFeed(username, content, feedType)
+	feedType := feedTypeOrDefault(c.FormValue("feed_type"))
+	postID, userID, content, err := service.Feed.PostToFeed(username, c.FormValue("content"), feedType, images...)
 	if err != nil {
-		return c.Redirect().To("/")
+		if !jsonResponse && mediaType != "multipart/form-data" {
+			return c.Redirect().To("/")
+		}
+		return fail(fiber.StatusBadRequest, err.Error())
 	}
 
-	if postID > 0 {
-		BroadcastFeedPost(postID, username, userID, storedContent, feedType)
+	post := BroadcastFeedPost(postID, username, userID, content, feedType)
+	if jsonResponse {
+		return c.Status(fiber.StatusCreated).JSON(post)
 	}
-
 	return c.Redirect().To("/")
 }
 
@@ -554,19 +576,14 @@ func FeedWS(c *websocket.Conn) {
 
 				default:
 					if service.Feed != nil {
-						postID, _, storedContent, err := service.Feed.PostToFeed(username, clientMsg.Content, feedType)
+						postID, userID, storedContent, err := service.Feed.PostToFeed(username, clientMsg.Content, feedType)
 						if err != nil {
 							sendFeedError(client, err)
 							continue
 						}
 
 						if postID > 0 {
-							u, _ := service.User.GetUserByUsername(username)
-							uID := 0
-							if u != nil {
-								uID = u.ID
-							}
-							BroadcastFeedPost(postID, username, uID, storedContent, feedType)
+							BroadcastFeedPost(postID, username, userID, storedContent, feedType)
 						}
 					}
 				}
@@ -584,7 +601,7 @@ func (ws *WSClient) Write(messageType int, data []byte) error {
 	return ws.conn.WriteMessage(messageType, data)
 }
 
-func BroadcastFeedPost(id int, username string, userID int, content string, feedType string) {
+func BroadcastFeedPost(id int, username string, userID int, content, feedType string) wsMessage {
 	msg := wsMessage{
 		Type:      "new_post",
 		ID:        id,
@@ -597,28 +614,28 @@ func BroadcastFeedPost(id int, username string, userID int, content string, feed
 		FeedType:  feedType,
 		Tag:       wornClanTag(userID),
 	}
+	if content == "" {
+		return msg
+	}
 	data, err := json.Marshal(msg)
 	if err != nil {
-		return
+		return msg
 	}
 
-	clients := getFeedClientsSnapshot()
-
-	for _, item := range clients {
-		if feedType == "friends" {
-			senderUser, _ := service.User.GetUserByID(userID)
-			recipientUser, _ := service.User.GetUserByUsername(item.username)
-			if senderUser != nil && recipientUser != nil {
-				if senderUser.ID != recipientUser.ID {
-					status, _ := service.Friend.GetFriendStatus(recipientUser.ID, senderUser.ID)
-					if status != "friends" {
-						continue
-					}
-				}
+	for _, item := range getFeedClientsSnapshot() {
+		if feedType == "friends" && item.username != username {
+			recipient, err := service.User.GetUserByUsername(item.username)
+			if err != nil || recipient == nil || service.Friend == nil {
+				continue
+			}
+			status, _ := service.Friend.GetFriendStatus(recipient.ID, userID)
+			if status != "friends" {
+				continue
 			}
 		}
 		_ = item.client.Write(websocket.TextMessage, data)
 	}
+	return msg
 }
 
 func BroadcastCommentPost(comment *models.FeedComment) {

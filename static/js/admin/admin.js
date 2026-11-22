@@ -417,6 +417,14 @@ window.updateAdminTabIndicator = function() {
         indicator.style.width = activeTab.offsetWidth + 'px';
         indicator.style.height = activeTab.offsetHeight + 'px';
         indicator.style.top = activeTab.offsetTop + 'px';
+        const list = indicator.parentElement;
+        const left = activeTab.offsetLeft;
+        const right = left + activeTab.offsetWidth;
+        if (left < list.scrollLeft) {
+            list.scrollLeft = left;
+        } else if (right > list.scrollLeft + list.clientWidth) {
+            list.scrollLeft = right - list.clientWidth;
+        }
     }
 };
 
@@ -445,27 +453,121 @@ window.updateAdminViewportHeight = function() {
     }
 };
 
-window.updateAdminUrl = function(tabName) {
+window.updateAdminUrl = function(tabName, after) {
     try {
         const url = new URL(window.location.href);
         url.searchParams.set('tab', tabName);
-        window.history.replaceState({}, document.title, url.pathname + '?' + url.searchParams.toString());
+        if (after) url.searchParams.set('after', after);
+        else url.searchParams.delete('after');
+        window.history.replaceState(window.history.state, '', url);
     } catch (e) {}
 };
+
+const isAdminTabClick = event => event.button === 0 &&
+    !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
+
+const loadAdminImageQueue = async (panel, href) => {
+    const queue = panel.querySelector('[data-admin-image-queue]');
+    const status = panel.querySelector('.adm-image-queue-status');
+    panel.imageQueueRequest?.abort();
+    const request = new AbortController();
+    panel.imageQueueRequest = request;
+    const url = new URL(href);
+    queue.setAttribute('aria-busy', 'true');
+    status.textContent = queue.firstElementChild ? '' : 'Loading images…';
+    try {
+        const response = await fetch(url, {
+            headers: {'X-Admin-Image-Queue': 'true'},
+            signal: request.signal
+        });
+        if (!response.ok) throw new Error('Could not load the image queue.');
+        const html = await response.text();
+        if (request.signal.aborted || !panel.isConnected) return;
+        queue.innerHTML = html;
+        status.textContent = '';
+        if (panel.classList.contains('active')) {
+            window.updateAdminUrl(url.searchParams.get('tab'), url.searchParams.get('after'));
+            window.updateAdminViewportHeight();
+        }
+    } catch (error) {
+        if (request.signal.aborted || !panel.isConnected) return;
+        status.textContent = 'Could not load the image queue. Select the tab to retry.';
+        if (panel.classList.contains('active')) window.updateAdminViewportHeight();
+    } finally {
+        if (panel.imageQueueRequest === request) queue.removeAttribute('aria-busy');
+    }
+};
+
+document.addEventListener('click', event => {
+    const link = event.target.closest('.adm-forum-queue .adm-pgncnt a');
+    const panel = link?.closest('.settabcntnt.active');
+    if (!panel || !isAdminTabClick(event)) return;
+    event.preventDefault();
+    if (panel.imageReviewPending) return;
+    loadAdminImageQueue(panel, link.href);
+});
+
+document.addEventListener('submit', async event => {
+    const form = event.target.closest('[data-admin-image-queue] .adm-modbtns');
+    const panel = form?.closest('.settabcntnt');
+    if (!panel || !event.submitter) return;
+    event.preventDefault();
+    if (panel.imageReviewPending) return;
+
+    const data = new FormData(form, event.submitter);
+    const status = panel.querySelector('.adm-image-queue-status');
+    const buttons = panel.querySelectorAll('.adm-modbtns button');
+    panel.imageReviewPending = true;
+    status.textContent = '';
+    buttons.forEach(button => { button.disabled = true; });
+    try {
+        const response = await fetch(form.getAttribute('action'), {
+            method: 'POST',
+            body: data,
+            headers: {'X-Admin-Image-Queue': 'true'}
+        });
+        if (response.status !== 204 && response.status !== 409) throw new Error('Could not review the image.');
+        form.closest('.adm-card')?.remove();
+        if (panel.isConnected && panel.classList.contains('active')) {
+            await loadAdminImageQueue(panel, window.location.href);
+        }
+    } catch (error) {
+        if (panel.isConnected) status.textContent = error.message;
+    } finally {
+        panel.imageReviewPending = false;
+        buttons.forEach(button => { button.disabled = false; });
+    }
+});
 
 window.switchAdminTab = function(tabName, event) {
     const tabs = Array.from(document.querySelectorAll('.tabcnt:not(.adm-cat-tabs) .tabbtn'));
     const clickedTab = event ? event.currentTarget : null;
-    if (!clickedTab || clickedTab.classList.contains('active')) return;
+    if (!clickedTab) return;
 
     const currentContent = document.querySelector('.settabcntnt.active');
     const targetContent = document.getElementById('tab-' + tabName);
     if (!targetContent) return;
 
+    const imageQueue = clickedTab.matches('.adm-tab-link');
+    if (imageQueue) {
+        if (!isAdminTabClick(event)) return;
+        event.preventDefault();
+        if (clickedTab.classList.contains('active')) {
+            if (!targetContent.imageReviewPending) loadAdminImageQueue(targetContent, window.location.href);
+            return;
+        }
+    } else if (clickedTab.classList.contains('active')) {
+        return;
+    }
+
     window.destroyAllAdmin3DViewers();
 
-    tabs.forEach(tab => tab.classList.remove('active'));
+    tabs.forEach(tab => {
+        tab.classList.remove('active');
+        tab.removeAttribute('aria-current');
+    });
     clickedTab.classList.add('active');
+    if (imageQueue) clickedTab.setAttribute('aria-current', 'page');
 
     window.updateAdminTabIndicator();
     window.updateAdminUrl(tabName);
@@ -487,6 +589,7 @@ window.switchAdminTab = function(tabName, event) {
         targetContent.classList.add('active');
 
         window.updateAdminViewportHeight();
+        if (imageQueue) loadAdminImageQueue(targetContent, clickedTab.href);
     }
 };
 
@@ -1669,3 +1772,35 @@ window.addEventListener('resize', () => {
     window.updateShopItemTabIndicator();
     window.updateAdminViewportHeight();
 });
+window.fetchAdminGameMedia = async function() {
+    const grid = document.getElementById('admGameMediaGrid');
+    if (!grid) return;
+    grid.textContent = 'Loading...';
+    try {
+        const response = await fetch('/api/v1/admin/gamemedia');
+        if (!response.ok) throw new Error('Could not load submissions');
+        const data = await response.json();
+        grid.replaceChildren();
+        if (!data.items.length) { grid.textContent = 'No game images awaiting review'; return; }
+        data.items.forEach(item => {
+            const card = document.createElement('div'); card.className = 'adm-card';
+            const title = document.createElement('h3'); title.className = 'adm-cardttl';
+            title.textContent = item.name + ' (#' + item.id + ') — ' + (item.kind === 'icon' ? 'Icon' : 'Thumbnails'); card.appendChild(title);
+            for (let i = 1; i <= item.count; i++) {
+                const img = document.createElement('img'); img.src = '/api/v1/admin/gamemedia/' + encodeURIComponent(item.token) + '/' + i; img.alt = 'Pending image ' + i; img.style.cssText = 'width:100%;max-height:220px;object-fit:contain'; card.appendChild(img);
+            }
+            const buttons = document.createElement('div'); buttons.className = 'adm-modbtns';
+            ['approve', 'reject'].forEach(action => {
+                const button = document.createElement('button'); button.type = 'button'; button.className = 'primary hpyinl hpysm ' + (action === 'approve' ? 'hpysuc' : 'hpydng'); button.textContent = action === 'approve' ? 'Approve' : 'Reject';
+                button.onclick = async function() {
+                    button.disabled = true;
+                    const body = new FormData(); body.append('csrf', document.getElementById('admGameMediaCsrf').value);
+                    try { const r = await fetch('/api/v1/admin/gamemedia/' + encodeURIComponent(item.token) + '/' + action, {method:'POST', body:body}); if (!r.ok) throw new Error('Review failed; the submission may have changed.'); await window.fetchAdminGameMedia(); }
+                    catch (err) { alert(err.message); button.disabled = false; }
+                }; buttons.appendChild(button);
+            }); card.appendChild(buttons); grid.appendChild(card);
+        });
+    } catch (err) { grid.textContent = err.message; }
+};
+
+if (new URLSearchParams(window.location.search).get('tab') === 'gamemedia') window.fetchAdminGameMedia();

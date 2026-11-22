@@ -279,45 +279,6 @@ func ClanDetailGet(c fiber.Ctx) error {
 	return Render(c, "pages/clan", data, "layouts/main")
 }
 
-func MyClansPage(c fiber.Ctx) error {
-	user, err := clanViewer(c)
-	if err != nil {
-		return c.Redirect().To("/login")
-	}
-	if service.Clan == nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
-	}
-
-	owned, _ := service.Clan.GetOwnedClans(user.ID)
-	if owned == nil {
-		owned = []*models.Clan{}
-	}
-	joined, _ := service.Clan.GetJoinedClans(user.ID)
-	if joined == nil {
-		joined = []*models.Clan{}
-	}
-
-	ownedIDs := make(map[int]bool, len(owned))
-	for _, clan := range owned {
-		ownedIDs[clan.ID] = true
-	}
-	crews := make([]*models.Clan, 0, len(joined))
-	for _, clan := range joined {
-		if !ownedIDs[clan.ID] {
-			crews = append(crews, clan)
-		}
-	}
-
-	_, noticeText := takeClanNotice(c)
-	return Render(c, "pages/myclans", fiber.Map{
-		"Title":      "My Clans - VERTEXIA",
-		"Owned":      owned,
-		"Joined":     crews,
-		"WornClanID": user.PrimaryClan,
-		"Notice":     noticeText,
-	}, "layouts/main")
-}
-
 func ClanEditPage(c fiber.Ctx) error {
 	user, err := clanViewer(c)
 	if err != nil {

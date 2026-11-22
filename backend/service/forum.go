@@ -67,7 +67,21 @@ func (s *ForumService) GetThreadsByBoard(boardID int, sortBy string, limit, offs
 	return threads, nil
 }
 
-func (s *ForumService) CreateThread(user *models.User, boardID int, title, body string) (*models.ForumThread, error) {
+func (s *ForumService) GetThreadsByUser(userID, limit, offset int) ([]*models.ForumThread, error) {
+	if s.forumRepo == nil {
+		return nil, errors.New("forum service unavailable")
+	}
+	return s.forumRepo.GetThreadsByUser(userID, limit, offset)
+}
+
+func (s *ForumService) CountThreadsByUser(userID int) (int, error) {
+	if s.forumRepo == nil {
+		return 0, errors.New("forum service unavailable")
+	}
+	return s.forumRepo.CountThreadsByUser(userID)
+}
+
+func (s *ForumService) CreateThread(user *models.User, boardID int, title, body string, images ...models.ForumImageUpload) (*models.ForumThread, error) {
 	if s.forumRepo == nil {
 		return nil, errors.New("forum service unavailable")
 	}
@@ -76,8 +90,8 @@ func (s *ForumService) CreateThread(user *models.User, boardID int, title, body 
 	}
 
 	board, err := s.GetBoardByID(boardID)
-	if err != nil || board == nil {
-		return nil, ErrForumBoardNotFound
+	if err != nil {
+		return nil, err
 	}
 
 	title = strings.Join(strings.Fields(strings.TrimSpace(title)), " ")
@@ -105,7 +119,7 @@ func (s *ForumService) CreateThread(user *models.User, boardID int, title, body 
 		}
 	}
 
-	id, err := s.forumRepo.CreateThread(board.ID, user.ID, title, body)
+	id, err := s.forumRepo.CreateThread(board.ID, user.ID, title, body, images...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,4 +140,57 @@ func (s *ForumService) CreateThread(user *models.User, boardID int, title, body 
 		}
 	}
 	return created, nil
+}
+
+var ErrForumThreadNotFound = errors.New("thread not found")
+var ErrForumThreadLocked = errors.New("this thread is locked")
+
+func (s *ForumService) GetThread(id int) (*models.ForumThread, error) {
+	if s.forumRepo == nil || id <= 0 {
+		return nil, ErrForumThreadNotFound
+	}
+	thread, err := s.forumRepo.GetThreadByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if thread == nil {
+		return nil, ErrForumThreadNotFound
+	}
+	return thread, nil
+}
+func (s *ForumService) CountThreads(boardID int) (int, error) {
+	return s.forumRepo.CountThreads(boardID)
+}
+func (s *ForumService) GetReplies(threadID, limit, offset int) ([]*models.ForumReply, error) {
+	return s.forumRepo.GetReplies(threadID, limit, offset)
+}
+func (s *ForumService) CreateReply(user *models.User, threadID int, body string, images ...models.ForumImageUpload) (int, error) {
+	if user == nil || user.ID <= 0 {
+		return 0, errors.New("you must be signed in to reply")
+	}
+	thread, err := s.GetThread(threadID)
+	if err != nil {
+		return 0, err
+	}
+	if thread.Locked {
+		return 0, ErrForumThreadLocked
+	}
+	body = strings.TrimSpace(body)
+	length := utf8.RuneCountInString(body)
+	if length < ForumThreadBodyMin || length > ForumThreadBodyMax {
+		return 0, fmt.Errorf("reply must be between %d and %d characters", ForumThreadBodyMin, ForumThreadBodyMax)
+	}
+	if s.cooldown != nil {
+		if ok, remaining := s.cooldown.Allow(fmt.Sprintf("forum-reply:%d", user.ID), 10*time.Second); !ok {
+			return 0, fmt.Errorf("slow down for %s", s.cooldown.FormatRemaining(remaining))
+		}
+	}
+	replyID, err := s.forumRepo.CreateReply(threadID, user.ID, body, images...)
+	if err != nil {
+		return 0, err
+	}
+	if replyID == 0 {
+		return 0, ErrForumThreadLocked
+	}
+	return replyID, nil
 }

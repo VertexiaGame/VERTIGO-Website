@@ -1136,6 +1136,12 @@ window.createShowPending = function(title, body) {
     });
 };
 
+window.toggleShopSpecial = function(checkbox) {
+    const field = document.getElementById('crtShopStockField');
+    field.hidden = !checkbox.checked;
+    field.querySelector('input').disabled = !checkbox.checked;
+};
+
 window.submitShopItem = function(event) {
     if (event) {
         if (event.preventDefault) event.preventDefault();
@@ -1266,6 +1272,9 @@ window.submitShopItem = function(event) {
         if (span) span.textContent = 'Publishing… ' + pct + '%';
     };
 
+    var specialInput = form.elements.special;
+    var isSpecial = specialInput && specialInput.checked;
+    var stock = isSpecial ? form.elements.stock.value : '';
     var sendItem = function(modelToSend) {
         var fd = new FormData();
         fd.append('category', window.createCat);
@@ -1273,6 +1282,11 @@ window.submitShopItem = function(event) {
         fd.append('description', description);
         fd.append('bucks', String(bucks));
         fd.append('bits', String(bits));
+        if (isSpecial) {
+            fd.append('special', 'true');
+            fd.append('stock', stock);
+            fd.append('csrf', form.elements.csrf.value);
+        }
         if (file) fd.append('file', file, file.name);
         if (isModelCat && modelToSend) fd.append('model', modelToSend, modelToSend.name || 'model.obj');
         if (transformEl && transformEl.value) fd.append('transform', transformEl.value);
@@ -1328,6 +1342,7 @@ window.submitShopItem = function(event) {
                 setBtnProgress(100);
                 restoreBtn();
                 form.reset();
+                if (specialInput) window.toggleShopSpecial(specialInput);
                 window.pendingCreateModelFile = null;
                 window.pendingCreateTextureFile = null;
                 if (window.setCreateModelFile) window.setCreateModelFile(null);
@@ -1438,15 +1453,15 @@ window.hideShopUploadProgress = function() {
 window.goToMyItems = function() {
     try {
         if (window.navigateWithHistory) {
-            window.navigateWithHistory('/create/items');
+            window.navigateWithHistory('/create/assets?tab=items');
             return;
         }
         if (window.htmx) {
-            window.htmx.ajax('GET', '/create/items', { target: 'body' });
+            window.htmx.ajax('GET', '/create/assets?tab=items', { target: 'body' });
             return;
         }
     } catch (e) {}
-    window.location.href = '/create/items';
+    window.location.href = '/create/assets?tab=items';
 };
 
 window.setGameFileProgress = function(percent, label) {
@@ -1826,12 +1841,11 @@ window.submitGameEdit = function(event, gameId) {
             window.renderGameThumbPicked();
             var thumbMsgEl = document.getElementById('crtGameThumbMsg');
             if (thumbMsgEl) thumbMsgEl.textContent = 'Choose new thumbnails';
-            if (pickedCount > 0) window.refreshGameThumbsStrip(gameId, pickedCount);
             window.updateGamePreviewName();
             if (!window.showModal) return false;
             window.showModal({
                 title: 'Game Updated!',
-                body: '<p style="font-family: \'Ubuntu\', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">Your changes are live.</p>' +
+                body: '<p style="font-family: \'Ubuntu\', sans-serif; font-size: 14px; color: #3D3D3D; line-height: 1.5; margin: 0;">Your game details are saved. New icons and thumbnails will appear after admin approval.</p>' +
                     '<div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">' +
                     '<button type="button" class="primary hpyinf hpyinl hpysm" onclick="window.closeModal()"><span>Keep Editing</span></button>' +
                     '<button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.closeModal(); window.goToGame(' + gameId + ')"><span>View Game</span></button>' +

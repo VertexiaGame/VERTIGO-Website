@@ -15,7 +15,7 @@
             <span class="title">Manage Clan</span>
             <div class="barbtns">
                 <a href="/clans/{{.Clan.SlugPath}}" hx-get="/clans/{{.Clan.SlugPath}}" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">View</a>
-                <a href="/create/clans" hx-get="/create/clans" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">My Clans</a>
+                <a href="/create/assets?tab=clans" hx-get="/create/assets?tab=clans" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">My Clans</a>
             </div>
         </div>
         <div class="pane" id="clnEditPage" data-clan-id="{{.Clan.ID}}" data-csrf="{{.CSRF}}">

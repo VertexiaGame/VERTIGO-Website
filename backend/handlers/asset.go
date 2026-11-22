@@ -231,27 +231,55 @@ func isAuthorizedForAsset(c fiber.Ctx, asset *models.Asset) bool {
 
 func AssetsPage(c fiber.Ctx) error {
 	username := GetActiveUser(c)
-	if username == "" {
+	if username == "" || service.User == nil {
 		return c.Redirect().To("/login")
 	}
-
 	user, err := service.User.GetUserByUsername(username)
 	if err != nil || user == nil {
 		return c.Redirect().To("/login")
+	}
+
+	tab := c.Query("tab")
+	switch tab {
+	case "items", "games", "clans":
+	default:
+		tab = "assets"
 	}
 
 	var assets []*models.Asset
 	if service.Asset != nil {
 		assets, _ = service.Asset.GetUserAssets(user.ID)
 	}
-	if assets == nil {
-		assets = []*models.Asset{}
+	var items []*models.ShopItem
+	if service.Shop != nil {
+		items, _ = service.Shop.GetUserItems(user.ID)
+	}
+	var games []*models.Game
+	if service.Game != nil {
+		games, _ = service.Game.GetUserGames(user.ID)
 	}
 
+	var owned, joined []*models.Clan
+	if service.Clan != nil {
+		owned, _ = service.Clan.GetOwnedClans(user.ID)
+		joined, _ = service.Clan.GetJoinedClans(user.ID)
+	}
+	ownedIDs := make(map[int]bool, len(owned))
+	for _, clan := range owned {
+		ownedIDs[clan.ID] = true
+	}
+	crews := make([]*models.Clan, 0, len(joined))
+	for _, clan := range joined {
+		if !ownedIDs[clan.ID] {
+			crews = append(crews, clan)
+		}
+	}
+	_, notice := takeClanNotice(c)
 	return Render(c, "pages/assets", fiber.Map{
-		"Title":    "My Assets - VERTEXIA",
-		"Username": username,
-		"Assets":   assets,
+		"Title": "My Assets - VERTEXIA", "ActiveTab": tab,
+		"Assets": assets, "Items": items, "Games": games,
+		"Owned": owned, "Joined": crews, "WornClanID": user.PrimaryClan,
+		"Notice": notice,
 	}, "layouts/main")
 }
 

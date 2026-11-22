@@ -10,6 +10,8 @@
     <div class="navdiv"></div>
     <a href="/clans" hx-get="/clans" hx-target="body" hx-push-url="true" class="navlnk navclans">Clans</a>
     <div class="navdiv"></div>
+    <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="navlnk navforum">Forum</a>
+    <div class="navdiv"></div>
     <a href="/upgrade" hx-get="/upgrade" hx-target="body" hx-push-url="true" class="navlnk navupg">Upgrade</a>
     
     {{if .IsLoggedIn}}
@@ -29,6 +31,10 @@
     <div class="mobdiv"></div>
     <a href="/play" hx-get="/play" hx-target="body" hx-push-url="true" class="mobitm">
         <img src="/static/useful/icons/m/games.png" alt="Games">
+    </a>
+    <div class="mobdiv"></div>
+    <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="mobitm">
+        <img src="/static/useful/icons/m/forum.png" alt="Forum">
     </a>
     <div class="mobdiv"></div>
     <a href="/profile" hx-get="/profile" hx-target="body" hx-push-url="true" class="mobitm mobcenter">

@@ -29,9 +29,9 @@ const clanViewerSelect = `SELECT c.id, c.name, c.slug, COALESCE(c.description, '
 	FROM clans c
 	LEFT JOIN users u ON c.owner_id = u.id`
 
-func scanClan(scanner interface{ Scan(dest ...any) error }) (*models.Clan, error) {
+func scanClan(scanner interface{ Scan(dest ...any) error }, extra ...any) (*models.Clan, error) {
 	clan := &models.Clan{}
-	err := scanner.Scan(
+	dest := []any{
 		&clan.ID,
 		&clan.Name,
 		&clan.Slug,
@@ -52,7 +52,8 @@ func scanClan(scanner interface{ Scan(dest ...any) error }) (*models.Clan, error
 		&clan.ItemCount,
 		&clan.Joined,
 		&clan.Pending,
-	)
+	}
+	err := scanner.Scan(append(dest, extra...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +162,8 @@ func (r *ClanRepository) GetJoinedClans(userID int) ([]*models.Clan, error) {
 	if r.db == nil || userID <= 0 {
 		return []*models.Clan{}, nil
 	}
-	query := clanViewerSelect + ` JOIN clan_members jm ON jm.clan_id = c.id AND jm.user_id = ?
+	query := strings.Replace(clanViewerSelect, "FROM clans c", ", jr.name FROM clans c", 1) + ` JOIN clan_members jm ON jm.clan_id = c.id AND jm.user_id = ?
+		JOIN clan_roles jr ON jr.id = jm.role_id AND jr.clan_id = c.id
 		WHERE 1 = 1
 		ORDER BY jm.joined_at DESC, c.name ASC`
 	rows, err := r.db.Query(query, userID, userID, userID)
@@ -171,10 +173,12 @@ func (r *ClanRepository) GetJoinedClans(userID int) ([]*models.Clan, error) {
 	defer rows.Close()
 	var clans []*models.Clan
 	for rows.Next() {
-		clan, err := scanClan(rows)
+		var role string
+		clan, err := scanClan(rows, &role)
 		if err != nil {
 			return nil, err
 		}
+		clan.MemberRole = role
 		clan.Joined = true
 		clans = append(clans, clan)
 	}

@@ -1,0 +1,25 @@
+<div class="shp-grid" id="assetGrid">
+                    {{range .Assets}}
+                    <div class="shp-card" data-id="{{.ID}}" data-type="{{.Type}}" tabindex="0" role="button" title="Click to expand" onclick="window.expandAsset(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.expandAsset(this);}">
+                        <div class="avtitmimg{{if eq .Type "sound"}} avtitmico{{end}}">
+                            {{if eq .Type "image"}}
+                            <img src="/api/v1/assets/{{.ID}}/file" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                            {{else if eq .Type "sound"}}
+                            <i class="fa-solid fa-music"></i>
+                            {{else}}
+                            <img src="/api/v1/assets/{{.ID}}/render" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
+                            {{end}}
+                            <span class="avtitmbdg avtitmbdg-{{.ApprovalState}}">{{.ApprovalLabel}}</span>
+                        </div>
+                        <div class="avtitmmeta">
+                            <span class="avtitmnm">{{.Name}}</span>
+                            <span class="avtitmcr">{{.TypeName}} {{.CreatedAt.Format "Jan 02, 2006"}}</span>
+                        </div>
+                        {{if .ReviewNote}}
+                        <span class="avtitmnote">{{.ReviewNote}}</span>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div class="feedemt" style="grid-column: 1 / -1;">You haven't uploaded any assets yet.</div>
+                    {{end}}
+                </div>

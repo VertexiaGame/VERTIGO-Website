@@ -2,11 +2,13 @@
 <link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
 <script>
 window.profileTabPanes = {
     about: 'prfTabAbout',
     games: 'prfTabGames',
     shop: 'prfTabShop',
+    clans: 'prfTabClans',
     inventory: 'prfTabInventory'
 };
 
@@ -110,8 +112,8 @@ window.switchProfileTab = function(tabName, event) {
                             <a href="/friends/{{.ProfileUser.ID}}" hx-get="/friends/{{.ProfileUser.ID}}" hx-target="body" hx-push-url="true" class="prfst" style="text-decoration: none; color: inherit;">
                                 <strong>{{.FriendsCount}}</strong> Friends
                             </a>
-                            <span class="prfst"><strong>{{.FollowersCount}}</strong> Followers</span>
-                            <span class="prfst"><strong>{{.FollowingCount}}</strong> Following</span>
+                            <a href="/follows/{{.ProfileUser.ID}}?tab=followers" hx-get="/follows/{{.ProfileUser.ID}}?tab=followers" hx-target="body" hx-push-url="true" class="prfst" style="text-decoration: none; color: inherit;"><strong id="profileFollowersCount">{{.FollowersCount}}</strong> Followers</a>
+                            <a href="/follows/{{.ProfileUser.ID}}?tab=following" hx-get="/follows/{{.ProfileUser.ID}}?tab=following" hx-target="body" hx-push-url="true" class="prfst" style="text-decoration: none; color: inherit;"><strong>{{.FollowingCount}}</strong> Following</a>
                         </div>
                     </div>
                 </div>
@@ -259,6 +261,30 @@ window.switchProfileTab = function(tabName, event) {
                     {{else}}
                     <div class="prfbox-card">
                         <p class="prfboxtxt">{{if .IsOwnProfile}}You haven't created any shop items yet.{{else}}This user hasn't created any shop items yet.{{end}}</p>
+                    </div>
+                    {{end}}
+                </div>
+                <div class="prfcrd" id="prfTabClans" style="display: none;">
+                    {{if .ClansError}}
+                    <div class="feedemt">Clans could not be loaded. Please try again later.</div>
+                    {{else if .ProfileClans}}
+                    <div class="cln-grid">
+                        {{range .ProfileClans}}
+                        <div class="cln-card cln-mine-card">
+                            <a class="cln-mine-crestlink" href="/clans/{{.SlugPath}}" hx-get="/clans/{{.SlugPath}}" hx-target="body" hx-push-url="true" aria-label="View {{.Name}}">
+                                <div class="cln-crest">
+                                    <span class="cln-crtltr">{{.Letter}}</span>
+                                    {{if .HasIcon}}<img class="cln-crtimg" src="{{.IconURL}}" alt="" loading="lazy" onerror="this.remove();">{{end}}
+                                </div>
+                            </a>
+                            <span class="cln-nm">{{if .HasTag}}<span class="cln-tag" style="{{.TagStyle}}">{{.TagLabel}}</span>{{end}}{{.Name}}</span>
+                            <span class="cln-mb"><span class="cln-mbcount"><i class="fa-solid fa-user" aria-hidden="true"></i><span>{{.Members}}</span></span><span class="cln-state">{{.MemberRole}}</span></span>
+                        </div>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div class="prfbox-card">
+                        <p class="prfboxtxt">{{if .IsOwnProfile}}You haven't joined any clans yet.{{else}}This user hasn't joined any clans yet.{{end}}</p>
                     </div>
                     {{end}}
                 </div>

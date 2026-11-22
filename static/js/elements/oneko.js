@@ -1,4 +1,3 @@
-// Adapted from https://github.com/tylxr59/oneko.js (based on adryd325/oneko.js)
 (function() {
     var SPRITE = '/static/useful/oneko.gif';
     var SPEED = 10;

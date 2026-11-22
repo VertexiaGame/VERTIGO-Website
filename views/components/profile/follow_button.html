@@ -1,0 +1,4 @@
+<button type="button" class="primary hpyinf hpysm prffollow" hx-post="/{{if .IsFollowing}}unfollow{{else}}follow{{end}}/{{.ProfileUser.ID}}" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="this">
+    <img src="/static/useful/icons/follow.svg" class="hpyico prffollowicon" alt="">
+    <span>{{if .IsFollowing}}Unfollow User{{else}}Follow User{{end}}</span>
+</button>

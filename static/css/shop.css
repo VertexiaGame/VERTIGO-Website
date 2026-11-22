@@ -295,6 +295,7 @@
 }
 
 .shp-card {
+    text-decoration: none;
     background: var(--surface-raised) !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--radius-lg) !important;
@@ -363,6 +364,7 @@
 .shp-price-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: 4px;
     min-height: 22px;
@@ -786,6 +788,78 @@
 
 .shpitm-tabbtn {
     flex: 1 !important;
+    text-decoration: none;
+    text-align: center;
+}
+
+.shpitm-tabbtn:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: -2px;
+}
+
+.shp-stock-note,
+.shpitm-serial {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.shp-stock-note {
+    margin-inline-start: auto;
+}
+
+.shpitm-market,
+.shpitm-market-list,
+.shpitm-market-manage,
+.shpitm-market-manage form {
+    display: grid;
+    gap: 10px;
+}
+
+.shpitm-market {
+    color: var(--ink);
+}
+
+.shpitm-owners {
+    padding-top: 16px;
+}
+
+.shpitm-market-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.shpitm-market-row,
+.shpitm-market-copy,
+.shpitm-market-user,
+.shpitm-market-fields,
+.shpitm-market-pages {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.shpitm-market-row {
+    justify-content: space-between;
+}
+
+.shpitm-market-row,
+.shpitm-market-manage {
+    padding: 12px;
+}
+
+.shpitm-market-fields .setinbox {
+    width: min(100%, 160px) !important;
+}
+
+.shpitm-market-pages {
+    justify-content: flex-end;
+}
+
+#shpitmResaleStatus:empty {
+    display: none;
 }
 
 .shpitm-pane {

@@ -1,3 +1,5 @@
+import { initImageGalleries, initImageUploads } from '../image-attachments.js';
+
 (function () {
     var filterForumBoards = function (rawQuery) {
         var input = document.getElementById('fbdSearchInput');
@@ -37,7 +39,7 @@
 
         var q = (rawQuery !== undefined ? rawQuery : (input ? input.value : '')).trim().toLowerCase();
         var shown = 0;
-        var rows = list.querySelectorAll('.fth-row');
+        var rows = list.querySelectorAll('.forum-thread-item');
 
         rows.forEach(function (row) {
             var title = (row.getAttribute('data-thread-title') || '').toLowerCase();
@@ -48,12 +50,11 @@
             if (match) {
                 shown++;
                 if (wasHidden) {
-                    row.classList.remove('is-filtered-in');
-                    void row.offsetWidth;
+                    row.style.animation = 'none';
                     row.classList.add('is-filtered-in');
+                    void row.offsetWidth;
+                    row.style.animation = '';
                 }
-            } else {
-                row.classList.remove('is-filtered-in');
             }
         });
 
@@ -62,6 +63,53 @@
         var noneFound = !!(q && shown === 0);
         if (table) table.hidden = noneFound;
         if (empty) empty.hidden = !noneFound;
+    };
+
+    var sortForumThreads = async function (link) {
+        var results = document.getElementById('fthResults');
+        var error = document.getElementById('fthSortError');
+        if (!results) { window.location.href = link.href; return; }
+        if (window.forumSortController) window.forumSortController.abort();
+        var controller = new AbortController();
+        window.forumSortController = controller;
+        results.classList.remove('is-sorting');
+        results.setAttribute('aria-busy', 'true');
+        if (error) { error.hidden = true; error.classList.remove('visible'); }
+        try {
+            var response = await fetch(link.href, {signal: controller.signal});
+            if (!response.ok) throw new Error('Could not sort threads. Please try again.');
+            var doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            var replacement = doc.getElementById('fthResults');
+            if (!replacement) throw new Error('Could not sort threads. Please try again.');
+            if (!results.isConnected || controller.signal.aborted) return;
+            results.classList.add('is-sorting');
+            var reduce = document.documentElement.classList.contains('reduced-motion') || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+            if (!reduce) await new Promise(function (resolve) { setTimeout(resolve, 160); });
+            if (!results.isConnected || controller.signal.aborted) return;
+            results.innerHTML = replacement.innerHTML;
+            if (window.htmx) window.htmx.process(results);
+            var input = document.getElementById('fthSearchInput');
+            if (input && input.value) filterForumThreads(input.value);
+            document.querySelectorAll('#forumBoardPane .fbd-sort-btn').forEach(function (item) {
+                var active = item === link;
+                item.classList.toggle('is-active', active);
+                if (active) item.setAttribute('aria-current', 'true'); else item.removeAttribute('aria-current');
+            });
+            window.history.replaceState(window.history.state, '', link.href);
+            void results.offsetWidth;
+            results.classList.remove('is-sorting');
+        } catch (err) {
+            if (err.name !== 'AbortError' && error && results.isConnected) {
+                error.textContent = 'Could not sort threads. Please try again.';
+                error.hidden = false; error.classList.add('visible');
+            }
+        } finally {
+            if (window.forumSortController === controller) {
+                results.classList.remove('is-sorting');
+                results.setAttribute('aria-busy', 'false');
+                window.forumSortController = null;
+            }
+        }
     };
 
     var toggleComposeDetails = function (details, summary) {
@@ -117,7 +165,77 @@
         }
     };
 
+    var submitForumReply = async function (form) {
+        if (form.dataset.submitting === '1') return;
+        var field = form.querySelector('textarea[name="body"]');
+        var button = form.querySelector('button[type="submit"]');
+        var uploads = form.querySelector('[data-forum-upload]');
+        var status = document.getElementById('forumReplyStatus');
+        if (!field || !button || !form.reportValidity()) return;
+        form.dataset.submitting = '1';
+        var body = new FormData(form);
+        button.disabled = true; field.disabled = true; uploads.disabled = true;
+        var clearUploads = form.querySelector('[data-forum-upload-clear]');
+        clearUploads.disabled = true;
+        if (status) { status.hidden = true; status.classList.remove('visible'); }
+        var posted = false;
+        try {
+            var response = await fetch(form.action, {method: 'POST', body: body, headers: {'Accept': 'application/json'}});
+            var data = await response.json().catch(function () { return {}; });
+            if (!response.ok || !data.success) throw new Error(data.error || 'Could not post your reply. Please try again.');
+            posted = true;
+            form.reset();
+            if (!form.isConnected) return;
+            var destination = new URL(data.path || window.location.href, window.location.href);
+            if (destination.origin !== window.location.origin) throw new Error('Could not display your reply.');
+            var page = await fetch(destination.pathname + destination.search);
+            if (!page.ok) throw new Error('Could not display your reply.');
+            var doc = new DOMParser().parseFromString(await page.text(), 'text/html');
+            var discussion = document.getElementById('forumDiscussion');
+            var updated = doc.getElementById('forumDiscussion');
+            if (!discussion || !updated || !form.isConnected) throw new Error('Could not display your reply.');
+            discussion.innerHTML = updated.innerHTML;
+            initImageGalleries(discussion);
+            var imageStatus = document.getElementById('forumImageStatus');
+            var updatedImageStatus = doc.getElementById('forumImageStatus');
+            if (imageStatus && updatedImageStatus) {
+                imageStatus.textContent = updatedImageStatus.textContent;
+                imageStatus.classList.toggle('visible', updatedImageStatus.classList.contains('visible'));
+            }
+            var footer = document.querySelector('#thread .forum-post-footer');
+            var updatedFooter = doc.querySelector('#thread .forum-post-footer');
+            if (footer && updatedFooter) footer.innerHTML = updatedFooter.innerHTML;
+            if (window.htmx) window.htmx.process(discussion);
+            window.history.replaceState(window.history.state, '', destination.pathname + destination.search + destination.hash);
+            var newReply = document.getElementById('reply-' + data.id);
+            if (newReply) {
+                newReply.classList.add('is-new');
+                var reduced = document.documentElement.classList.contains('reduced-motion') || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+                newReply.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block: 'nearest'});
+            }
+        } catch (err) {
+            if (status && form.isConnected) {
+                status.textContent = posted ? 'Your reply was posted. Reload the page to see it.' : (err.message || 'Could not post your reply. Please try again.');
+                status.hidden = false; status.classList.add('visible');
+            }
+        } finally {
+            delete form.dataset.submitting;
+            button.disabled = false; field.disabled = false; uploads.disabled = false;
+            clearUploads.disabled = false;
+        }
+    };
+
     var initForum = function () {
+        initImageGalleries(document);
+        initImageUploads(document);
+        var replyForm = document.getElementById('ftdReplyForm');
+        if (replyForm && replyForm.dataset.forumBound !== '1') {
+            replyForm.dataset.forumBound = '1';
+            replyForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                submitForumReply(replyForm);
+            });
+        }
         var boardInput = document.getElementById('fbdSearchInput');
         if (boardInput && boardInput.dataset.fbdBound !== '1') {
             boardInput.dataset.fbdBound = '1';
@@ -158,6 +276,13 @@
 
         document.addEventListener('click', function (e) {
             if (!e.target || !e.target.closest) return;
+
+            var sortLink = e.target.closest('#forumBoardPane .fbd-sort-btn');
+            if (sortLink && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                e.preventDefault();
+                sortForumThreads(sortLink);
+                return;
+            }
 
             var rulesBtn = e.target.closest('[data-fbd-rules]');
             if (rulesBtn) {

@@ -27,6 +27,38 @@ func NewUserService(userRepo *repository.UserRepository, cooldown *CooldownServi
 	}
 }
 
+func (s *UserService) GetFollowersCount(userID int) (int, error) {
+	return s.userRepo.GetFollowersCount(userID)
+}
+
+func (s *UserService) IsFollowing(userID, targetID int) (bool, error) {
+	if s.userRepo == nil {
+		return false, errors.New("user repository uninitialized")
+	}
+	return s.userRepo.IsFollowing(userID, targetID)
+}
+
+func (s *UserService) SetFollowing(userID, targetID int, follow bool) error {
+	if s.userRepo == nil || userID <= 0 || targetID <= 0 || userID == targetID {
+		return errors.New("invalid follow request")
+	}
+	target, err := s.userRepo.GetByID(targetID)
+	if err != nil {
+		return err
+	}
+	if target == nil {
+		return errors.New("user not found")
+	}
+	return s.userRepo.SetFollowing(userID, targetID, follow)
+}
+
+func (s *UserService) GetFollowList(userID int, followers bool) ([]*models.FriendUserInfo, error) {
+	if s.userRepo == nil || userID <= 0 {
+		return nil, errors.New("invalid user")
+	}
+	return s.userRepo.GetFollowList(userID, followers)
+}
+
 func (s *UserService) GetUserByID(id int) (*models.User, error) {
 	return s.userRepo.GetByID(id)
 }

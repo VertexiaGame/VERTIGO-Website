@@ -4,16 +4,30 @@
         <button class="tabbtn active" data-tab="worldwide">Worldwide Feed</button>
         <button class="tabbtn" data-tab="friends">Friends Feed</button>
     </div>
-    <form action="/api/v1/feed" method="POST" class="feedinbox" hx-boost="false">
+    <form action="/api/v1/feed" method="POST" enctype="multipart/form-data" class="feed-composer" hx-boost="false" data-image-upload-field>
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
         <input type="hidden" name="feed_type" id="feedTypeInput" value="worldwide">
-        <input type="text" name="content" class="feedin" placeholder="Chat in Worldwide Feed" required autocomplete="off">
-        <button type="submit" class="feedsnd">
-            <i class="fa-solid fa-paper-plane" style="font-size: 24px !important;"></i>
-        </button>
+        <div class="feedinbox">
+            <input type="text" name="content" class="feedin" placeholder="Chat in Worldwide Feed" autocomplete="off">
+            <input id="feedImages" type="file" name="images" accept="image/png,image/jpeg" multiple data-forum-upload hidden>
+            <button type="button" class="feedsnd feed-attach-button" data-image-picker aria-label="Attach images" title="Up to 3 PNG or JPEG images, 2 MB each. Images appear after admin approval.">
+                <i class="fa-regular fa-image" aria-hidden="true"></i>
+            </button>
+            <button type="submit" class="feedsnd" aria-label="Post to feed">
+                <i class="fa-solid fa-paper-plane" style="font-size: 24px !important;" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="feed-attachments" data-forum-upload-actions hidden>
+            <span class="crtthumbcount" data-forum-upload-count>0 / 3</span>
+            <span class="crtupname" data-forum-upload-names aria-live="polite"></span>
+            <button type="button" class="primary hpyinf hpyinl hpysm" data-forum-upload-clear><span>Clear images</span></button>
+        </div>
+        <span class="feed-upload-error" data-forum-upload-error role="status"></span>
+        <span class="feed-upload-success" role="status"></span>
     </form>
     <div class="pstlst">
         {{range $post := .Feed}}
-        <div class="pstitm" data-id="{{$post.ID}}" data-username="{{$post.Username}}" data-feed-type="{{if eq $post.ID $.FocusedFeedID}}{{$.FocusedFeedType}}{{else}}worldwide{{end}}">
+        <div class="pstitm" data-id="{{$post.ID}}" data-username="{{$post.Username}}" data-feed-type="{{$post.FeedType}}">
             <div class="pstcrd">
                 <div class="pstavt">
                     <img src="/api/v1/avatar/headshot/{{$post.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{$post.Username}}">
@@ -37,6 +51,18 @@
                     </a>
                 </div>
                 <div class="pbdy">{{$post.Content}}</div>
+                {{with $post.Images}}
+                <div class="forum-gallery carcnt feed-gallery" data-forum-gallery data-forum-autoplay="off" role="group" aria-label="Attached images">
+                    <div class="cartrk" data-forum-track>
+                        {{range .}}
+                        <a class="carsld" href="/feed/images/{{.}}" hx-boost="false" target="_blank" rel="noopener" data-forum-slide>
+                            <img class="carimg" src="/feed/images/{{.}}" alt="View attached image at full size" loading="lazy">
+                        </a>
+                        {{end}}
+                    </div>
+                    {{if gt (len .) 1}}{{template "components/forum/image_gallery_controls" (len .)}}{{end}}
+                </div>
+                {{end}}
             </div>
             <div class="rctbdg{{if $post.HasReacted}} reacted{{end}}">
                 <div class="rctico">
@@ -48,6 +74,16 @@
         </div>
         {{end}}
     </div>
+    <template id="feedImageGallery">
+        <div class="forum-gallery carcnt feed-gallery" data-forum-gallery data-forum-autoplay="off" role="group" aria-label="Attached images">
+            <div class="cartrk" data-forum-track>
+                <a class="carsld" hx-boost="false" target="_blank" rel="noopener" data-forum-slide>
+                    <img class="carimg" alt="View attached image at full size" loading="lazy">
+                </a>
+            </div>
+            {{template "components/forum/image_gallery_controls" 0}}
+        </div>
+    </template>
 </div>
 
 <script type="module" src="/static/js/feed/feed.js?v={{.AssetV}}"></script>

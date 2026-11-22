@@ -12,40 +12,7 @@ type ForumRepository struct {
 }
 
 func NewForumRepository(db *sql.DB) *ForumRepository {
-	repo := &ForumRepository{db: db}
-	repo.ensureTables()
-	return repo
-}
-
-func (r *ForumRepository) ensureTables() {
-	if r.db == nil {
-		return
-	}
-	_, _ = r.db.Exec(`CREATE TABLE IF NOT EXISTS forum_threads (
-		id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
-		board_id   INT UNSIGNED NOT NULL,
-		user_id    INT          NOT NULL,
-		title      VARCHAR(120) NOT NULL,
-		body       TEXT         NOT NULL,
-		pinned     TINYINT(1)   NOT NULL DEFAULT 0,
-		locked     TINYINT(1)   NOT NULL DEFAULT 0,
-		created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-		PRIMARY KEY (id),
-		KEY idx_forum_threads_board (board_id, pinned, created_at),
-		KEY idx_forum_threads_user (user_id)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
-
-	_, _ = r.db.Exec(`CREATE TABLE IF NOT EXISTS forum_replies (
-		id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
-		thread_id  INT UNSIGNED NOT NULL,
-		user_id    INT          NOT NULL,
-		body       TEXT         NOT NULL,
-		created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		PRIMARY KEY (id),
-		KEY idx_forum_replies_thread (thread_id, created_at),
-		KEY idx_forum_replies_user (user_id)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
+	return &ForumRepository{db: db}
 }
 
 func (r *ForumRepository) GetBoards() ([]*models.ForumBoard, error) {
@@ -125,7 +92,7 @@ func (r *ForumRepository) GetThreadsByBoard(boardID int, sortBy string, limit, o
 		offset = 0
 	}
 
-	orderBy := "t.pinned DESC, t.created_at DESC, t.id DESC"
+	orderBy := "t.pinned DESC, GREATEST(t.created_at, COALESCE((SELECT MAX(r.created_at) FROM forum_replies r WHERE r.thread_id = t.id), t.created_at)) DESC, t.id DESC"
 	switch sortBy {
 	case "replies":
 		orderBy = "t.pinned DESC, replies_count DESC, t.created_at DESC, t.id DESC"
@@ -153,6 +120,42 @@ func (r *ForumRepository) GetThreadsByBoard(boardID int, sortBy string, limit, o
 	return threads, rows.Err()
 }
 
+func (r *ForumRepository) GetThreadsByUser(userID, limit, offset int) ([]*models.ForumThread, error) {
+	if r.db == nil || userID <= 0 {
+		return nil, errors.New("database connection or user unavailable")
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	rows, err := r.db.Query(forumThreadSelect+" WHERE t.user_id = ? ORDER BY t.created_at DESC, t.id DESC LIMIT ? OFFSET ?", userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var threads []*models.ForumThread
+	for rows.Next() {
+		thread, err := scanForumThread(rows)
+		if err != nil {
+			return nil, err
+		}
+		threads = append(threads, thread)
+	}
+	return threads, rows.Err()
+}
+
+func (r *ForumRepository) CountThreadsByUser(userID int) (int, error) {
+	if r.db == nil || userID <= 0 {
+		return 0, errors.New("database connection or user unavailable")
+	}
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM forum_threads WHERE user_id = ?", userID).Scan(&count)
+	return count, err
+}
+
 func (r *ForumRepository) GetThreadByID(id int) (*models.ForumThread, error) {
 	if r.db == nil || id <= 0 {
 		return nil, nil
@@ -167,20 +170,41 @@ func (r *ForumRepository) GetThreadByID(id int) (*models.ForumThread, error) {
 	return t, nil
 }
 
-func (r *ForumRepository) CreateThread(boardID, userID int, title, body string) (int, error) {
+func (r *ForumRepository) CreateThread(boardID, userID int, title, body string, images ...models.ForumImageUpload) (int, error) {
+	return r.createForumPost("INSERT INTO forum_threads (board_id, user_id, title, body) VALUES (?, ?, ?, ?)", []any{boardID, userID, title, body}, 0, images)
+}
+
+func (r *ForumRepository) CountThreads(boardID int) (int, error) {
 	if r.db == nil {
 		return 0, errors.New("database connection is offline")
 	}
-	res, err := r.db.Exec(
-		"INSERT INTO forum_threads (board_id, user_id, title, body) VALUES (?, ?, ?, ?)",
-		boardID, userID, title, body,
-	)
-	if err != nil {
-		return 0, err
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM forum_threads WHERE board_id = ?", boardID).Scan(&count)
+	return count, err
+}
+
+func (r *ForumRepository) GetReplies(threadID, limit, offset int) ([]*models.ForumReply, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection is offline")
 	}
-	id, err := res.LastInsertId()
+	rows, err := r.db.Query(`SELECT r.id, r.thread_id, r.user_id, COALESCE(u.username, 'Player'), COALESCE(u.displayname, ''), r.body, r.created_at
+ FROM forum_replies r LEFT JOIN users u ON u.id = r.user_id WHERE r.thread_id = ? ORDER BY r.created_at ASC, r.id ASC LIMIT ? OFFSET ?`, threadID, limit, offset)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return int(id), nil
+	defer rows.Close()
+	replies := []*models.ForumReply{}
+	for rows.Next() {
+		var reply models.ForumReply
+		if err := rows.Scan(&reply.ID, &reply.ThreadID, &reply.UserID, &reply.AuthorUsername, &reply.AuthorDisplayName, &reply.Body, &reply.CreatedAt); err != nil {
+			return nil, err
+		}
+		replies = append(replies, &reply)
+	}
+	return replies, rows.Err()
+}
+
+func (r *ForumRepository) CreateReply(threadID, userID int, body string, images ...models.ForumImageUpload) (int, error) {
+	return r.createForumPost(`INSERT INTO forum_replies (thread_id, user_id, body)
+		SELECT id, ?, ? FROM forum_threads WHERE id = ? AND locked = 0`, []any{userID, body, threadID}, threadID, images)
 }

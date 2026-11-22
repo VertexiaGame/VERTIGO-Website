@@ -1,0 +1,27 @@
+.collection-tabs a.tabbtn {
+    text-decoration: none;
+}
+
+@media (max-width: 480px) {
+    .collection-tabs {
+        left: 8px !important;
+        right: 8px !important;
+        gap: 4px !important;
+    }
+
+    .collection-tabs .tabbtn {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 0 5px !important;
+        font-size: 12px;
+    }
+}
+
+.pill .input[hidden],
+.barbtns [data-collection-create][hidden] {
+    display: none !important;
+}
+
+.collection-viewport {
+    height: auto !important;
+}

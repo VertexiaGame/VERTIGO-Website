@@ -108,3 +108,11 @@
         gap: 12px;
     }
 }
+
+[data-follow-user][hidden] {
+    display: none;
+}
+.follow-tabs a.tabbtn {
+    text-decoration: none;
+    font-weight: 400 !important;
+}

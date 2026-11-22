@@ -156,6 +156,39 @@
         </div>
     </div>
 </div>
+<div id="gamLaunchOverlay" class="movl" aria-hidden="true">
+    <section class="mcard" role="dialog" aria-modal="true" aria-labelledby="gamLaunchTitle" aria-describedby="gamLaunchStatus">
+        <div class="mhdr">
+            <h2 class="mtitle" id="gamLaunchTitle">Play Game</h2>
+            <button type="button" class="mclose" id="gamLaunchClose" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        </div>
+        <div class="mbody">
+            <div class="adm-card gam-launch-game">
+                <img class="gam-launch-icon" src="/static/uploads/games/{{.Game.ID}}.png" alt="" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
+                <div class="shpitm-titlehdr">
+                    <h3 class="shpitm-title">{{.Game.Name}}</h3>
+                    <span class="shpitm-creator">By {{.Game.CreatorName}}</span>
+                </div>
+            </div>
+            <div id="gamLaunchProgress" class="gam-launch-status">
+                <svg class="dmspn" viewBox="0 0 100 100" aria-hidden="true">
+                    <rect class="sq sq-1" x="43" y="7" width="14" height="14"/><rect class="sq sq-2" x="25" y="25" width="14" height="14"/>
+                    <rect class="sq sq-3" x="7" y="43" width="14" height="14"/><rect class="sq sq-4" x="25" y="61" width="14" height="14"/>
+                    <rect class="sq sq-5" x="43" y="79" width="14" height="14"/><rect class="sq sq-6" x="61" y="61" width="14" height="14"/>
+                    <rect class="sq sq-7" x="79" y="43" width="14" height="14"/><rect class="sq sq-8" x="61" y="25" width="14" height="14"/>
+                </svg>
+                <span id="gamLaunchStatus" role="status" aria-live="polite">Looking for servers...</span>
+            </div>
+            <div id="gamLaunchDownload" hidden>
+                <h3 class="prfboxttl">You're almost there!</h3>
+                <p class="gam-launch-message">Click below to begin the download of the VERTEXIA launcher.</p>
+                <button type="button" class="primary hpyprim hpyinl hpysm" disabled><span><i class="fa-solid fa-download" aria-hidden="true"></i> Download</span></button>
+                <p class="gam-launch-note">If VERTEXIA didn’t open, you may need the launcher. Download coming soon.</p>
+            </div>
+            <div id="gamLaunchError" class="gam-launch-message" role="alert" hidden></div>
+        </div>
+    </section>
+</div>
 {{if .Game.TriggerWarningsText}}
 <div id="triggerWarningsModal" class="movl" data-game-id="{{.Game.ID}}" data-warnings="{{.Game.TriggerWarningsText}}">
     <div class="mcard" onclick="event.stopPropagation()">

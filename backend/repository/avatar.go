@@ -22,14 +22,17 @@ func (r *AvatarRepository) GetAvatar(userID int) (*models.Avatar, error) {
 	if r.db == nil {
 		return models.DefaultAvatar(userID), nil
 	}
+	return readAvatar(r.db, userID)
+}
 
+func readAvatar(db interface{ QueryRow(string, ...any) *sql.Row }, userID int) (*models.Avatar, error) {
 	query := `SELECT head_color, larm_color, rarm_color, torso_color, lleg_color, rleg_color,
 	                 hat1, hat2, hat3, hat4, hat5, tool, shirt, tshirt, pants, face
               FROM avatar WHERE id = ?`
 
 	var a models.Avatar
 	a.ID = userID
-	err := r.db.QueryRow(query, userID).Scan(
+	err := db.QueryRow(query, userID).Scan(
 		&a.HeadColor, &a.LArmColor, &a.RArmColor, &a.TorsoColor, &a.LLegColor, &a.RLegColor,
 		&a.Hat1, &a.Hat2, &a.Hat3, &a.Hat4, &a.Hat5, &a.Tool, &a.Shirt, &a.TShirt, &a.Pants, &a.Face,
 	)
@@ -100,7 +103,34 @@ func (r *AvatarRepository) EquipItem(userID int, itemType string, itemID int) er
 	if r.db == nil || itemID <= 0 {
 		return nil
 	}
-	av, err := r.GetAvatar(userID)
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := lockAvatarInventory(tx, userID); err != nil {
+		return err
+	}
+	var specialType string
+	err = tx.QueryRow(`SELECT type FROM shopitem WHERE id = ? AND special = 'true'`, itemID).Scan(&specialType)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	if err == nil {
+		want, _ := models.NormalizeShopCategory(specialType)
+		requested, _ := models.NormalizeShopCategory(itemType)
+		if want != requested {
+			return errors.New("invalid item type")
+		}
+		var owned bool
+		if err := tx.QueryRow(`SELECT EXISTS (SELECT 1 FROM crate WHERE uid = ? AND iid = ?)`, userID, itemID).Scan(&owned); err != nil {
+			return err
+		}
+		if !owned {
+			return errors.New("you do not own this special item")
+		}
+	}
+	av, err := readAvatar(tx, userID)
 	if err != nil {
 		return err
 	}
@@ -113,60 +143,67 @@ func (r *AvatarRepository) EquipItem(userID int, itemType string, itemID int) er
 			return nil
 		}
 		if av.Hat1 == 0 {
-			_, err = r.db.Exec("UPDATE avatar SET hat1 = ? WHERE id = ?", itemID, userID)
+			_, err = tx.Exec("UPDATE avatar SET hat1 = ? WHERE id = ?", itemID, userID)
 		} else if av.Hat2 == 0 {
-			_, err = r.db.Exec("UPDATE avatar SET hat2 = ? WHERE id = ?", itemID, userID)
+			_, err = tx.Exec("UPDATE avatar SET hat2 = ? WHERE id = ?", itemID, userID)
 		} else if av.Hat3 == 0 {
-			_, err = r.db.Exec("UPDATE avatar SET hat3 = ? WHERE id = ?", itemID, userID)
+			_, err = tx.Exec("UPDATE avatar SET hat3 = ? WHERE id = ?", itemID, userID)
 		} else if av.Hat4 == 0 {
-			_, err = r.db.Exec("UPDATE avatar SET hat4 = ? WHERE id = ?", itemID, userID)
+			_, err = tx.Exec("UPDATE avatar SET hat4 = ? WHERE id = ?", itemID, userID)
 		} else if av.Hat5 == 0 {
-			_, err = r.db.Exec("UPDATE avatar SET hat5 = ? WHERE id = ?", itemID, userID)
+			_, err = tx.Exec("UPDATE avatar SET hat5 = ? WHERE id = ?", itemID, userID)
 		} else {
-			_, err = r.db.Exec("UPDATE avatar SET hat1 = ? WHERE id = ?", itemID, userID)
+			_, err = tx.Exec("UPDATE avatar SET hat1 = ? WHERE id = ?", itemID, userID)
 		}
 	case "shirt", "shirts":
-		_, err = r.db.Exec("UPDATE avatar SET shirt = ? WHERE id = ?", itemID, userID)
+		_, err = tx.Exec("UPDATE avatar SET shirt = ? WHERE id = ?", itemID, userID)
 	case "pants":
-		_, err = r.db.Exec("UPDATE avatar SET pants = ? WHERE id = ?", itemID, userID)
+		_, err = tx.Exec("UPDATE avatar SET pants = ? WHERE id = ?", itemID, userID)
 	case "tshirt", "tshirts":
-		_, err = r.db.Exec("UPDATE avatar SET tshirt = ? WHERE id = ?", itemID, userID)
+		_, err = tx.Exec("UPDATE avatar SET tshirt = ? WHERE id = ?", itemID, userID)
 	case "face", "faces":
-		_, err = r.db.Exec("UPDATE avatar SET face = ? WHERE id = ?", itemID, userID)
+		_, err = tx.Exec("UPDATE avatar SET face = ? WHERE id = ?", itemID, userID)
 	case "gear", "tool", "tools":
-		_, err = r.db.Exec("UPDATE avatar SET tool = ? WHERE id = ?", itemID, userID)
+		_, err = tx.Exec("UPDATE avatar SET tool = ? WHERE id = ?", itemID, userID)
 	default:
 		return errors.New("invalid item type")
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *AvatarRepository) UnequipItem(userID int, itemType string, itemID int) error {
 	if r.db == nil || itemID <= 0 {
 		return nil
 	}
+	return unequipAvatarItem(r.db, userID, itemType, itemID)
+}
+
+func unequipAvatarItem(db interface{ Exec(string, ...any) (sql.Result, error) }, userID int, itemType string, itemID int) error {
 	itemType = strings.ToLower(strings.TrimSpace(itemType))
 
 	switch itemType {
 	case "hat", "hats":
 		query := "UPDATE avatar SET hat1 = IF(hat1 = ?, 0, hat1), hat2 = IF(hat2 = ?, 0, hat2), hat3 = IF(hat3 = ?, 0, hat3), hat4 = IF(hat4 = ?, 0, hat4), hat5 = IF(hat5 = ?, 0, hat5) WHERE id = ?"
-		_, err := r.db.Exec(query, itemID, itemID, itemID, itemID, itemID, userID)
+		_, err := db.Exec(query, itemID, itemID, itemID, itemID, itemID, userID)
 		return err
 	case "shirt", "shirts":
-		_, err := r.db.Exec("UPDATE avatar SET shirt = 0 WHERE id = ? AND shirt = ?", userID, itemID)
+		_, err := db.Exec("UPDATE avatar SET shirt = 0 WHERE id = ? AND shirt = ?", userID, itemID)
 		return err
 	case "pants":
-		_, err := r.db.Exec("UPDATE avatar SET pants = 0 WHERE id = ? AND pants = ?", userID, itemID)
+		_, err := db.Exec("UPDATE avatar SET pants = 0 WHERE id = ? AND pants = ?", userID, itemID)
 		return err
 	case "tshirt", "tshirts":
-		_, err := r.db.Exec("UPDATE avatar SET tshirt = 0 WHERE id = ? AND tshirt = ?", userID, itemID)
+		_, err := db.Exec("UPDATE avatar SET tshirt = 0 WHERE id = ? AND tshirt = ?", userID, itemID)
 		return err
 	case "face", "faces":
-		_, err := r.db.Exec("UPDATE avatar SET face = 0 WHERE id = ? AND face = ?", userID, itemID)
+		_, err := db.Exec("UPDATE avatar SET face = 0 WHERE id = ? AND face = ?", userID, itemID)
 		return err
 	case "gear", "tool", "tools":
-		_, err := r.db.Exec("UPDATE avatar SET tool = 0 WHERE id = ? AND tool = ?", userID, itemID)
+		_, err := db.Exec("UPDATE avatar SET tool = 0 WHERE id = ? AND tool = ?", userID, itemID)
 		return err
 	default:
 		return errors.New("invalid item type")
@@ -521,16 +558,44 @@ func (r *AvatarRepository) WearOutfit(userID, outfitID int) error {
 		return errors.New("unauthorized")
 	}
 
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := lockAvatarInventory(tx, userID); err != nil {
+		return err
+	}
+	var missingSpecial bool
+	err = tx.QueryRow(`SELECT EXISTS (SELECT 1 FROM shopitem s
+		WHERE s.special = 'true' AND s.id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		AND NOT EXISTS (SELECT 1 FROM crate c WHERE c.uid = ? AND c.iid = s.id))`,
+		outfit.Hat1, outfit.Hat2, outfit.Hat3, outfit.Hat4, outfit.Hat5, outfit.Tool, outfit.Shirt, outfit.TShirt, outfit.Pants, outfit.Face,
+		userID).Scan(&missingSpecial)
+	if err != nil {
+		return err
+	}
+	if missingSpecial {
+		return errors.New("this outfit contains a special item you no longer own")
+	}
+
 	query := `UPDATE avatar SET 
 	          head_color = ?, larm_color = ?, rarm_color = ?, torso_color = ?, lleg_color = ?, rleg_color = ?,
 	          hat1 = ?, hat2 = ?, hat3 = ?, hat4 = ?, hat5 = ?, tool = ?, shirt = ?, tshirt = ?, pants = ?, face = ?
 	          WHERE id = ?`
-	_, err = r.db.Exec(query,
+	_, err = tx.Exec(query,
 		outfit.HeadColor, outfit.LArmColor, outfit.RArmColor, outfit.TorsoColor, outfit.LLegColor, outfit.RLegColor,
 		outfit.Hat1, outfit.Hat2, outfit.Hat3, outfit.Hat4, outfit.Hat5, outfit.Tool, outfit.Shirt, outfit.TShirt, outfit.Pants, outfit.Face,
 		userID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func lockAvatarInventory(tx *sql.Tx, userID int) error {
+	return tx.QueryRow(`SELECT id FROM users WHERE id = ? FOR UPDATE`, userID).Scan(&userID)
 }
 
 func (r *AvatarRepository) DeleteOutfit(userID, outfitID int) error {

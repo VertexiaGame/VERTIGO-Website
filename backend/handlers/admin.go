@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -305,9 +306,59 @@ func canModerateTarget(adminUser, targetUser *models.User) bool {
 }
 
 func AdminIndex(c fiber.Ctx) error {
+	partial := c.Get("X-Admin-Image-Queue") == "true"
+	c.Vary("X-Admin-Image-Queue")
+	if partial {
+		c.Set(fiber.HeaderCacheControl, "no-store")
+	}
 	user, err := getAdminUser(c)
 	if err != nil {
+		if partial {
+			return adminAPIError(c, err)
+		}
 		return adminAuthError(c, err)
+	}
+
+	activeTab := c.Query("tab", "status")
+	if partial && activeTab != "forumimages" && activeTab != "feedimages" {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+	switch activeTab {
+	case "status", "servers", "users", "reports", "assets", "shop", "banners", "clanmedia", "gamemedia", "forumimages", "feedimages", "logs", "filter":
+	default:
+		activeTab = "status"
+	}
+
+	var forumImages fiber.Map
+	if activeTab == "forumimages" {
+		c.Set(fiber.HeaderCacheControl, "no-store")
+		if service.Forum == nil {
+			return serveErrorPage(c, fiber.StatusServiceUnavailable)
+		}
+		forumImages, err = loadAdminForumImages(c)
+		if err != nil {
+			log.Printf("Forum image queue failed: %v", err)
+			return serveErrorPage(c, fiber.StatusInternalServerError)
+		}
+		if partial {
+			return c.Render("components/admin/forum_images", forumImages)
+		}
+	}
+
+	var feedImages fiber.Map
+	if activeTab == "feedimages" {
+		c.Set(fiber.HeaderCacheControl, "no-store")
+		if service.Feed == nil {
+			return serveErrorPage(c, fiber.StatusServiceUnavailable)
+		}
+		feedImages, err = loadAdminFeedImages(c)
+		if err != nil {
+			log.Printf("Feed image queue failed: %v", err)
+			return serveErrorPage(c, fiber.StatusInternalServerError)
+		}
+		if partial {
+			return c.Render("components/admin/feed_images", feedImages)
+		}
 	}
 
 	stats, m := getSystemStats()
@@ -410,19 +461,14 @@ func AdminIndex(c fiber.Ctx) error {
 		initialClanMedia = []*models.Clan{}
 	}
 
-	activeTab := c.Query("tab", "status")
-	switch activeTab {
-	case "status", "servers", "users", "reports", "assets", "shop", "banners", "clanmedia", "logs", "filter":
-	default:
-		activeTab = "status"
-	}
-
 	return Render(c, "pages/admin", fiber.Map{
 		"Title":               "Admin - VERTEXIA",
 		"AdminUser":           user,
 		"RoleName":            user.RoleName(),
 		"RoleDisplayName":     user.RoleDisplayName(),
 		"ActiveTab":           activeTab,
+		"ForumImages":         forumImages,
+		"FeedImages":          feedImages,
 		"StartTimeMs":         startTime.UnixMilli(),
 		"Uptime":              stats["uptime"],
 		"StartTime":           startTime.Format("Jan 02, 2006 15:04"),
@@ -649,13 +695,11 @@ func AdminUserDetailAPI(c fiber.Ctx) error {
 	return c.JSON(formatUserForAdmin(targetUser, adminUser.Power))
 }
 
-func adminRedirectToUser(c fiber.Ctx, targetID int) error {
-	path := fmt.Sprintf("/admin/users/%d", targetID)
+func respondAdminUserAction(c fiber.Ctx, targetID int) error {
 	if c.Get("HX-Request") == "true" {
-		c.Set("HX-Redirect", path)
-		return c.SendStatus(fiber.StatusOK)
+		return AdminUserViewPage(c)
 	}
-	return c.Redirect().To(path)
+	return c.Redirect().To(fmt.Sprintf("/admin/users/%d", targetID))
 }
 
 func adminModerationError(c fiber.Ctx, msg string) error {
@@ -701,7 +745,7 @@ func AdminScrubPost(c fiber.Ctx) error {
 		return adminModerationError(c, err.Error())
 	}
 
-	return adminRedirectToUser(c, targetID)
+	return respondAdminUserAction(c, targetID)
 }
 
 func AdminBadgePost(c fiber.Ctx) error {
@@ -727,7 +771,7 @@ func AdminBadgePost(c fiber.Ctx) error {
 		return adminModerationError(c, err.Error())
 	}
 
-	return adminRedirectToUser(c, targetUser.ID)
+	return respondAdminUserAction(c, targetUser.ID)
 }
 
 func AdminModhistRetractPost(c fiber.Ctx) error {
@@ -758,7 +802,7 @@ func AdminModhistRetractPost(c fiber.Ctx) error {
 		return adminModerationError(c, err.Error())
 	}
 
-	return adminRedirectToUser(c, targetID)
+	return respondAdminUserAction(c, targetID)
 }
 
 func adminTargetForAction(c fiber.Ctx) (*models.User, *models.User, error) {
@@ -809,7 +853,7 @@ func AdminResetAvatarPost(c fiber.Ctx) error {
 		}
 	}
 
-	return adminRedirectToUser(c, targetUser.ID)
+	return respondAdminUserAction(c, targetUser.ID)
 }
 
 func AdminOutfitDeletePost(c fiber.Ctx) error {
@@ -841,5 +885,5 @@ func AdminOutfitDeletePost(c fiber.Ctx) error {
 		}
 	}
 
-	return adminRedirectToUser(c, targetUser.ID)
+	return respondAdminUserAction(c, targetUser.ID)
 }

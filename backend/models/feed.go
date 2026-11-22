@@ -9,6 +9,7 @@ type FeedPost struct {
 	ID           int
 	UserID       int
 	Username     string
+	Images       []int
 	Content      string
 	Removed      string
 	Edited       string
@@ -35,4 +36,12 @@ type FeedComment struct {
 	HasReacted   bool           `json:"has_reacted"`
 	Tag          *ClanTag       `json:"tag,omitempty"`
 	Replies      []*FeedComment `json:"replies,omitempty"`
+}
+
+type PendingFeedImage struct {
+	ID       int
+	FeedID   int
+	FeedType string
+	Author   string
+	Body     string
 }

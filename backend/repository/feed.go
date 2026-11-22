@@ -2,6 +2,8 @@ package repository
 
 import (
 	"database/sql"
+	"strconv"
+	"strings"
 
 	"vertexia-frontend/backend/models"
 )
@@ -14,10 +16,20 @@ func NewFeedRepository(db *sql.DB) *FeedRepository {
 	return &FeedRepository{db: db}
 }
 
-func scanFeedPost(rows *sql.Rows) (*models.FeedPost, error) {
+func scanFeedPost(row scannable) (*models.FeedPost, error) {
 	var p models.FeedPost
-	if err := rows.Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted); err != nil {
+	var imageIDs string
+	if err := row.Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted, &imageIDs); err != nil {
 		return nil, err
+	}
+	if imageIDs != "" {
+		for _, value := range strings.Split(imageIDs, ",") {
+			id, err := strconv.Atoi(value)
+			if err != nil {
+				return nil, err
+			}
+			p.Images = append(p.Images, id)
+		}
 	}
 	return &p, nil
 }
@@ -76,10 +88,13 @@ func (r *FeedRepository) GetRecentFeedPosts(limit, currentUserID int) ([]*models
 func (r *FeedRepository) GetRecentFeedPostsPaginated(limit, offset, currentUserID int) ([]*models.FeedPost, error) {
 	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
 	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
-	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
+	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE), '') AS images
               FROM feed f 
               INNER JOIN users u ON f.user_id = u.id 
-              WHERE f.removed = 'false' 
+              WHERE f.removed = 'false'
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE))
               ORDER BY f.creation_date DESC, f.id DESC LIMIT ? OFFSET ?`
 	return r.queryFeedPosts(query, currentUserID, limit, offset)
 }
@@ -90,16 +105,18 @@ func (r *FeedRepository) GetFeedPostByID(id, currentUserID int) (*models.FeedPos
 	}
 	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
 	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
-	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
+	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE), '') AS images
               FROM feed f
               INNER JOIN users u ON f.user_id = u.id
-              WHERE f.id = ? AND f.removed = 'false'`
-	var p models.FeedPost
-	err := r.db.QueryRow(query, currentUserID, id).Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted)
-	if err != nil {
+              WHERE f.id = ? AND f.removed = 'false'
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE))`
+	post, err := scanFeedPost(r.db.QueryRow(query, currentUserID, id))
+	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	return &p, nil
+	return post, err
 }
 
 func (r *FeedRepository) GetFriendsFeedPostByID(id, currentUserID int) (*models.FeedPost, error) {
@@ -108,29 +125,22 @@ func (r *FeedRepository) GetFriendsFeedPostByID(id, currentUserID int) (*models.
 	}
 	query := `SELECT f.id, f.userid, u.username, f.status, f.removed, f.edited, f.editdate, f.creationdate,
 	                 (SELECT COUNT(*) FROM ffreact r WHERE r.fid = f.id) AS reactions,
-	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
+	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE), '') AS images
               FROM ffeed f
               INNER JOIN users u ON f.userid = u.id
-              WHERE f.id = ? AND f.removed = 'false'`
-	var p models.FeedPost
-	err := r.db.QueryRow(query, currentUserID, id).Scan(&p.ID, &p.UserID, &p.Username, &p.Content, &p.Removed, &p.Edited, &p.EditDate, &p.CreationDate, &p.Reactions, &p.HasReacted)
-	if err != nil {
+              WHERE f.id = ? AND f.removed = 'false'
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE))
+                AND (f.userid = ? OR EXISTS (
+                    SELECT 1 FROM friends WHERE state = 'accepted'
+                    AND ((uid = ? AND fid = f.userid) OR (fid = ? AND uid = f.userid))
+                ))`
+	post, err := scanFeedPost(r.db.QueryRow(query, currentUserID, id, currentUserID, currentUserID, currentUserID))
+	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	return &p, nil
-}
-
-func (r *FeedRepository) CreatePost(userID int, content string) (int, error) {
-	if r.db == nil {
-		return 0, nil
-	}
-	_, err := r.db.Exec("INSERT INTO feed (id, user_id, status) VALUES ((SELECT COALESCE(MAX(x.id), 0) + 1 FROM (SELECT id FROM feed) x), ?, ?)", userID, content)
-	if err != nil {
-		return 0, err
-	}
-	var postID int
-	err = r.db.QueryRow("SELECT MAX(id) FROM feed WHERE user_id = ?", userID).Scan(&postID)
-	return postID, err
+	return post, err
 }
 
 func (r *FeedRepository) HasUserReacted(userID, feedID int) (bool, error) {
@@ -156,10 +166,13 @@ func (r *FeedRepository) GetRecentFriendsFeedPosts(limit, currentUserID int) ([]
 func (r *FeedRepository) GetRecentFriendsFeedPostsPaginated(limit, offset, currentUserID int) ([]*models.FeedPost, error) {
 	query := `SELECT f.id, f.userid, u.username, f.status, f.removed, f.edited, f.editdate, f.creationdate,
 	                 (SELECT COUNT(*) FROM ffreact r WHERE r.fid = f.id) AS reactions,
-	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted
+	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE), '') AS images
               FROM ffeed f 
               INNER JOIN users u ON f.userid = u.id 
-              WHERE f.removed = 'false' 
+              WHERE f.removed = 'false'
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE))
                 AND (f.userid = ? OR f.userid IN (
                     SELECT CASE WHEN uid = ? THEN fid ELSE uid END 
                     FROM friends 
@@ -167,19 +180,6 @@ func (r *FeedRepository) GetRecentFriendsFeedPostsPaginated(limit, offset, curre
                 ))
               ORDER BY f.creationdate DESC, f.id DESC LIMIT ? OFFSET ?`
 	return r.queryFeedPosts(query, currentUserID, currentUserID, currentUserID, currentUserID, currentUserID, limit, offset)
-}
-
-func (r *FeedRepository) CreateFriendsPost(userID int, content string) (int, error) {
-	if r.db == nil {
-		return 0, nil
-	}
-	_, err := r.db.Exec("INSERT INTO ffeed (id, userid, status) VALUES ((SELECT COALESCE(MAX(x.id), 0) + 1 FROM (SELECT id FROM ffeed) x), ?, ?)", userID, content)
-	if err != nil {
-		return 0, err
-	}
-	var postID int
-	err = r.db.QueryRow("SELECT MAX(id) FROM ffeed WHERE userid = ?", userID).Scan(&postID)
-	return postID, err
 }
 
 func (r *FeedRepository) HasUserReactedFriends(userID, feedID int) (bool, error) {

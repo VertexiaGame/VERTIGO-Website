@@ -1,0 +1,14 @@
+{{if .}}
+<div class="forum-gallery carcnt" data-forum-gallery role="group" aria-label="Attached images">
+    <div class="cartrk" data-forum-track>
+        {{range .}}
+        <a class="carsld" href="/forum/images/{{.}}" hx-boost="false" target="_blank" rel="noopener" data-forum-slide>
+            <img class="carimg" src="/forum/images/{{.}}" alt="View attached image at full size" loading="lazy">
+        </a>
+        {{end}}
+    </div>
+    {{if gt (len .) 1}}
+    {{template "components/forum/image_gallery_controls" (len .)}}
+    {{end}}
+</div>
+{{end}}

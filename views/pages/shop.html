@@ -41,6 +41,10 @@
                                         <i class="fa-solid fa-shapes"></i>
                                         <span>All Items</span>
                                     </button>
+                                    <button type="button" class="shp-cat-item{{if eq .ActiveCat "special"}} active{{end}}" data-cat="special" onclick="window.switchShopCategoryTab('special', event)">
+                                        <i class="fa-solid fa-gem"></i>
+                                        <span>Specials</span>
+                                    </button>
                                     <button type="button" class="shp-cat-item{{if eq .ActiveCat "hat"}} active{{end}}" data-cat="hat" onclick="window.switchShopCategoryTab('hat', event)">
                                         <i class="fa-solid fa-hat-cowboy"></i>
                                         <span>Hats</span>

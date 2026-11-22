@@ -17,29 +17,8 @@ window.updateItemTabIndicator = function() {
         indicator.style.top = activeTab.offsetTop + 'px';
     }
 };
-window.switchItemTab = function(tabName, event) {
-    if (event) event.preventDefault();
-    const tabs = Array.from(document.querySelectorAll('.shpitm-tabbtn'));
-    const clickedTab = event ? event.currentTarget : null;
-    if (!clickedTab) return;
-    if (clickedTab.classList.contains('active')) return;
-    tabs.forEach(tab => tab.classList.remove('active'));
-    clickedTab.classList.add('active');
-    window.updateItemTabIndicator();
-    const commentsPane = document.getElementById('shpitmPaneComments');
-    const relatedPane = document.getElementById('shpitmPaneRelated');
-    if (commentsPane && relatedPane) {
-        if (tabName === 'comments') {
-            commentsPane.style.display = '';
-            relatedPane.style.display = 'none';
-        } else {
-            commentsPane.style.display = 'none';
-            relatedPane.style.display = '';
-        }
-    }
-};
 </script>
-<div class="wrap">
+<div class="wrap" hx-history="false">
     <div class="cont">
         <div class="studs"></div>
         <div class="bar">
@@ -62,7 +41,7 @@ window.switchItemTab = function(tabName, event) {
                             {{else}}
                             <img src="/api/v1/avatar/shop/{{.Item.Type}}/{{.Item.ID}}" alt="{{.Item.Name}}" class="adm-rendimg avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
                             {{end}}
-                            {{if or (eq .Item.OnSale "false") (eq .Item.OffSale "true")}}
+                            {{if and (not .Item.IsSpecial) (not .IsOnSale)}}
                             <div class="shp-ribbon shp-ribbon-off">
                                 <img src="/static/useful/icons/off.png" class="shp-ribicon" alt="Offsale">
                                 <span class="shp-ribtext">OFFSALE</span>
@@ -87,9 +66,13 @@ window.switchItemTab = function(tabName, event) {
                                 <span class="shpitm-creator">By <a href="/user/{{.Item.CID}}" hx-get="/user/{{.Item.CID}}" hx-target="body" hx-push-url="true" class="adm-owner-link"><img src="/api/v1/avatar/headshot/{{.Item.CID}}.png" alt="" class="shpitm-creator-pfp" onerror="this.src='/static/useful/temp/pfp.png';">{{.Item.CreatorName}}</a>{{if .CreatorCertified}}<span class="ttpcnt shpitm-creatorbadge"><img src="/static/useful/icons/badge_creator.png" alt="Certified Creator"><span class="ttptxt">This user is a certified item creator!</span></span>{{end}}</span>
                             </div>
                             <div class="shpitm-priceblock">
-                                {{if or (eq .Item.OnSale "false") (eq .Item.OffSale "true")}}
+                                {{if .CanResell}}
+                                    <span class="shp-price-off">Sold out</span>
+                                    <span class="shpitm-price-note">Owners can resell their numbered copies.</span>
+                                {{else if not .IsOnSale}}
                                     <span class="shp-price-off">Offsale</span>
-                                    <span class="shpitm-price-note">This item is not for sale.</span>
+                                {{else if .Item.SoldOut}}
+                                    <span class="shp-price-off">Sold out</span>
                                 {{else if and (eq .Item.Bucks 0) (eq .Item.Bits 0)}}
                                     <span class="shp-price-free" style="font-size:18px;">Free</span>
                                 {{else}}
@@ -108,9 +91,16 @@ window.switchItemTab = function(tabName, event) {
                                         {{end}}
                                     </div>
                                 {{end}}
+                                {{if and .CanViewFull .Item.IsSpecial (gt .Item.OriginalStock 0)}}
+                                    <span class="shpitm-price-note">Stock {{.Item.Stock}} / {{.Item.OriginalStock}}</span>
+                                {{end}}
+                                {{if .OwnCopy}}
+                                    <span class="shpitm-serial">Your serial #{{.OwnCopy.Serial}} of {{.Item.OriginalStock}}</span>
+                                {{end}}
                                 <div class="shpitm-actions" id="shpitmActions"
                                     data-item-id="{{.Item.ID}}"
                                     data-item-type="{{.Item.Type}}"
+                                    data-is-special="{{.Item.IsSpecial}}"
                                     data-is-owned="{{.IsOwned}}"
                                     data-is-equipped="{{.IsEquipped}}"
                                     data-is-logged="{{.IsLoggedIn}}">
@@ -122,9 +112,10 @@ window.switchItemTab = function(tabName, event) {
                                             <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.toggleItemWear(true)"><span>Wear</span></button>
                                             {{end}}
                                         {{else}}
-                                            {{if or (eq .Item.OnSale "false") (eq .Item.OffSale "true")}}
+                                            {{if and (not .IsOnSale) (not .CanResell)}}
                                                 <button type="button" class="primary hpyinl hpysm" disabled style="opacity:0.6;cursor:not-allowed;"><span>Offsale</span></button>
-                                            {{else if and (eq .Item.Bucks 0) (eq .Item.Bits 0)}}
+                                            {{else if and .IsOnSale (not .Item.SoldOut)}}
+                                            {{if .IsFree}}
                                                 <button type="button" class="primary hpysuc hpyinl hpysm" onclick="window.purchaseItem('free')"><span>Get</span></button>
                                             {{else if and (gt .Item.Bucks 0) (gt .Item.Bits 0)}}
                                                 <button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.purchaseItem('vertices')"><span style="display:inline-flex;align-items:center;gap:6px;"><img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices" style="width:14px;height:14px;"> Buy for {{.Item.Bucks}}</span></button>
@@ -134,9 +125,13 @@ window.switchItemTab = function(tabName, event) {
                                             {{else}}
                                                 <button type="button" class="primary hpyinl hpysm" style="background: var(--grad-warning); color:#fff; border-color: rgba(255,255,255,0.3);" onclick="window.purchaseItem('tickets')"><span style="display:inline-flex;align-items:center;gap:6px;"><img src="/static/useful/icons/ticketc.png" class="shp-price-ico" alt="Tickets" style="width:14px;height:14px;"> Buy for {{.Item.Bits}}</span></button>
                                             {{end}}
+                                            {{end}}
                                         {{end}}
-                                    {{else}}
+                                    {{else if and .IsOnSale (not .Item.SoldOut)}}
                                         <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration:none;"><span>Login to Buy</span></a>
+                                    {{end}}
+                                    {{if and .CanResell (ne .ActiveTab "resellers")}}
+                                        <a href="/shop/item/{{.Item.ID}}?tab=resellers" class="primary hpyinf hpyinl hpysm"><span>{{if .IsOwned}}Manage Listing{{else}}View Resellers{{end}}</span></a>
                                     {{end}}
                                 </div>
                                 <div id="shpitmWearMsg" class="shpitm-wearmsg"></div>
@@ -168,13 +163,23 @@ window.switchItemTab = function(tabName, event) {
                         <p class="prfboxtxt shpitm-desctxt">{{if not .CanViewFull}}[Content Pending]{{else}}{{if .Item.Description}}{{.Item.Description}}{{else}}No description provided.{{end}}{{end}}</p>
                     </div>
                 </div>
-                <div class="prftabcnt shpitm-tabw">
+                <div id="shopItemTabs">
+                <nav class="prftabcnt shpitm-tabw" aria-label="Item details">
                     <div class="prftablst">
-                        <div class="prftabind shpitm-tabind"></div>
-                        <button type="button" class="prftabbtn shpitm-tabbtn active" onclick="window.switchItemTab('comments', event)">Comments</button>
-                        <button type="button" class="prftabbtn shpitm-tabbtn" onclick="window.switchItemTab('related', event)">Related Items</button>
+                        <div id="shopItemTabIndicator" class="prftabind shpitm-tabind" hx-preserve="true"></div>
+                        {{if .CanResell}}
+                        <a href="/shop/item/{{.Item.ID}}?tab=resellers" hx-get="/shop/item/{{.Item.ID}}?tab=resellers" hx-target="#shopItemTabs" hx-select="#shopItemTabs" hx-swap="outerHTML" hx-push-url="true" class="prftabbtn shpitm-tabbtn{{if eq .ActiveTab "resellers"}} active{{end}}"{{if eq .ActiveTab "resellers"}} aria-current="page"{{end}}>Resellers</a>
+                        {{end}}
+                        {{if .ShowOwners}}
+                        <a href="/shop/item/{{.Item.ID}}?tab=owners" hx-get="/shop/item/{{.Item.ID}}?tab=owners" hx-target="#shopItemTabs" hx-select="#shopItemTabs" hx-swap="outerHTML" hx-push-url="true" class="prftabbtn shpitm-tabbtn{{if eq .ActiveTab "owners"}} active{{end}}"{{if eq .ActiveTab "owners"}} aria-current="page"{{end}}>Owners</a>
+                        {{end}}
+                        <a href="/shop/item/{{.Item.ID}}?tab=comments" hx-get="/shop/item/{{.Item.ID}}?tab=comments" hx-target="#shopItemTabs" hx-select="#shopItemTabs" hx-swap="outerHTML" hx-push-url="true" class="prftabbtn shpitm-tabbtn{{if eq .ActiveTab "comments"}} active{{end}}"{{if eq .ActiveTab "comments"}} aria-current="page"{{end}}>Comments</a>
+                        <a href="/shop/item/{{.Item.ID}}?tab=related" hx-get="/shop/item/{{.Item.ID}}?tab=related" hx-target="#shopItemTabs" hx-select="#shopItemTabs" hx-swap="outerHTML" hx-push-url="true" class="prftabbtn shpitm-tabbtn{{if eq .ActiveTab "related"}} active{{end}}"{{if eq .ActiveTab "related"}} aria-current="page"{{end}}>Related Items</a>
                     </div>
-                </div>
+                </nav>
+                {{if or (eq .ActiveTab "owners") (eq .ActiveTab "resellers")}}
+                {{template "components/shop/special" .}}
+                {{else if eq .ActiveTab "comments"}}
                 <div id="shpitmPaneComments" class="shpitm-pane">
                     <div class="shpitm-commentwrap">
                         <div class="feedinbox shpitm-feedinbox" id="shpitmFeedBox">
@@ -188,7 +193,8 @@ window.switchItemTab = function(tabName, event) {
                         </div>
                     </div>
                 </div>
-                <div id="shpitmPaneRelated" class="shpitm-pane" style="display:none;">
+                {{else}}
+                <div id="shpitmPaneRelated" class="shpitm-pane">
                     <div class="shpitm-relatedhdr">
                         <h3 class="shpitm-relatedttl">Related Items</h3>
                         <a href="/shop?cat={{.Item.Type}}" hx-get="/shop?cat={{.Item.Type}}" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration:none;"><span>More Items</span></a>
@@ -196,54 +202,14 @@ window.switchItemTab = function(tabName, event) {
                     {{if .Related}}
                     <div class="shp-grid" style="margin-top:12px;">
                         {{range .Related}}
-                        <a href="/shop/item/{{.ID}}" hx-get="/shop/item/{{.ID}}" hx-target="body" hx-push-url="true" class="shp-card" style="text-decoration:none;" data-id="{{.ID}}">
-                            <div class="avtitmimg{{if or (eq .OnSale "false") (eq .OffSale "true")}} shp-offimg{{end}}">
-                                <img src="/api/v1/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
-                                {{if and (ne .OnSale "false") (ne .OffSale "true") (ne .Special "true") (eq .Bucks 0) (eq .Bits 0)}}
-                                    <span class="avtitmbdg" style="background: rgba(40, 167, 69, 0.85);">Free</span>
-                                {{end}}
-                            </div>
-                            {{if or (eq .OnSale "false") (eq .OffSale "true")}}
-                            <div class="shp-ribbon shp-ribbon-off">
-                                <img src="/static/useful/icons/off.png" class="shp-ribicon" alt="Offsale">
-                                <span class="shp-ribtext">OFFSALE</span>
-                            </div>
-                            {{else if eq .Special "true"}}
-                            <div class="shp-ribbon shp-ribbon-special">
-                                <img src="/static/useful/icons/special.png" class="shp-ribicon" alt="Special">
-                                <span class="shp-ribtext">SPECIAL</span>
-                            </div>
-                            {{end}}
-                            <div class="avtitmmeta">
-                                <span class="avtitmnm">{{.Name}}</span>
-                                <span class="avtitmcr">by {{.CreatorName}}</span>
-                            </div>
-                            <div class="shp-price-row">
-                                {{if or (eq .OnSale "false") (eq .OffSale "true")}}
-                                    <span class="shp-price-off">Offsale</span>
-                                {{else if and (eq .Bucks 0) (eq .Bits 0)}}
-                                    <span class="shp-price-free">Free</span>
-                                {{else}}
-                                    {{if gt .Bucks 0}}
-                                    <span class="shp-price-val">
-                                        <img src="/static/useful/icons/verticec.png" class="shp-price-ico" alt="Vertices">
-                                        <span>{{.Bucks}}</span>
-                                    </span>
-                                    {{end}}
-                                    {{if gt .Bits 0}}
-                                    <span class="shp-price-val">
-                                        <img src="/static/useful/icons/ticketc.png" class="shp-price-ico" alt="Tickets">
-                                        <span>{{.Bits}}</span>
-                                    </span>
-                                    {{end}}
-                                {{end}}
-                            </div>
-                        </a>
+                        {{template "components/shop/card" .}}
                         {{end}}
                     </div>
                     {{else}}
                     <div class="feedemt" style="margin-top:12px;">No related items found.</div>
                     {{end}}
+                </div>
+                {{end}}
                 </div>
             </div>
         </div>

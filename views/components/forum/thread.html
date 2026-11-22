@@ -1,49 +1,20 @@
-<article class="fth-row{{if .Pinned}} is-pinned{{end}}{{if .Locked}} is-locked{{end}}" data-thread-id="{{.ID}}" data-thread-title="{{.Title}}" data-thread-author="{{.Author}} {{.AuthorUsername}}">
-    <div class="fth-main">
-        <div class="fth-title-line">
-            {{if .Pinned}}
-            <span class="fth-badge is-pinned" title="Pinned thread">
-                <i class="fa-solid fa-thumbtack" aria-hidden="true"></i>
-                <span>Pinned</span>
-            </span>
-            {{end}}
-            {{if .Locked}}
-            <span class="fth-badge is-locked" title="Locked thread">
-                <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                <span>Locked</span>
-            </span>
-            {{end}}
-            <h3 class="fth-title">{{.Title}}</h3>
+<article class="forum-post forum-thread-item" data-thread-id="{{.ID}}" data-thread-title="{{.Title}}" data-thread-author="{{.Author}} {{.AuthorUsername}}">
+    <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-avatar" aria-label="View {{.Author}}'s profile">
+        <img src="/avatar/{{.UserID}}.png" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';" alt="" loading="lazy">
+    </a>
+    <div class="forum-post-main">
+        <div class="forum-post-head">
+            <div class="forum-post-meta">
+                <span class="forum-post-author">{{template "components/clan/tag" .Tag}}<a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-author-name">{{.Author}}</a></span>
+                <span class="ttpcnt forum-post-time" tabindex="0" aria-label="Posted {{.FullDate}}"><span>Posted {{.TimeAgo}}</span><span class="ttptxt" aria-hidden="true">{{.FullDate}}</span></span>
+            </div>
         </div>
-        {{if .Excerpt}}
-        <p class="fth-excerpt">{{.Excerpt}}</p>
-        {{end}}
-    </div>
-
-    <div class="fth-creator">
-        <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="fth-avt" aria-label="{{.Author}}">
-            <img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';" alt="{{.Author}}" loading="lazy">
-        </a>
-        <div class="fth-creator-meta">
-            <span class="fth-creator-lbl">Creator</span>
-            <span class="fth-creator-name">
-                {{template "components/clan/tag" .Tag}}
-                <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="fth-author-link">{{.Author}}</a>
-            </span>
+        <h2 class="forum-post-title"><a class="forum-thread-title" href="{{.Path}}" hx-get="{{.Path}}" hx-target="body" hx-push-url="true">{{.Title}}</a></h2>
+        {{if .Excerpt}}<p class="forum-post-body">{{.Excerpt}}</p>{{end}}
+        <div class="forum-thread-meta forum-post-footer">
+            <span><i class="fa-solid fa-reply" aria-hidden="true"></i> {{.RepliesLabel}}</span>
+            {{if .Pinned}}<span><i class="fa-solid fa-thumbtack" aria-hidden="true"></i> Pinned</span>{{end}}
+            {{if .Locked}}<span><i class="fa-solid fa-lock" aria-hidden="true"></i> Locked</span>{{end}}
         </div>
-    </div>
-
-    <div class="fth-date" title="{{.FullDate}}">
-        <span class="fth-date-lbl">Date posted</span>
-        <span class="fth-date-rel">{{.TimeAgo}}</span>
-        <span class="fth-date-abs">{{.DatePosted}}</span>
-    </div>
-
-    <div class="fth-replies" title="{{.RepliesLabel}}">
-        <span class="fth-replies-pill">
-            <i class="fa-solid fa-reply fth-replies-ico" aria-hidden="true"></i>
-            <span class="fth-replies-num">{{.RepliesCount}}</span>
-        </span>
-        <span class="fth-replies-txt">{{if eq .RepliesCount 1}}reply{{else}}replies{{end}}</span>
     </div>
 </article>

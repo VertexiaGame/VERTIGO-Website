@@ -73,6 +73,22 @@
                             </div>
                         </div>
                     </div>
+                    {{if .IsAdmin}}
+                    <input type="hidden" name="csrf" value="{{.CSRF}}">
+                    <div class="crtfld">
+                        <label class="crtlbl">
+                            <input type="checkbox" id="crtShopSpecial" name="special" value="true" onchange="window.toggleShopSpecial(this)">
+                            Special item
+                        </label>
+                    </div>
+                    <div class="crtfld" id="crtShopStockField" hidden>
+                        <label class="crtlbl" for="crtShopStock">Stock</label>
+                        <div class="setinbox">
+                            <input type="number" id="crtShopStock" name="stock" class="setin" min="1" max="{{.MaxSpecialStock}}" step="1" required disabled>
+                        </div>
+                        <span class="setinf">Owners can resell their numbered copies after the stock sells out.</span>
+                    </div>
+                    {{end}}
                     <div class="crtfld">
                         <label class="crtlbl" for="crtShopFile">Asset File</label>
                         <div class="ttpcnt">
@@ -112,7 +128,7 @@
                         <button type="submit" class="primary hpyprim hpyinl hpysm" id="crtShopSubmitBtn">
                             <span>Create Item</span>
                         </button>
-                        <a href="/create/items" hx-get="/create/items" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                        <a href="/create/assets?tab=items" hx-get="/create/assets?tab=items" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
                             <span>My Items</span>
                         </a>
                     </div>

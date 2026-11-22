@@ -54,9 +54,11 @@ func handleFriendAction(c fiber.Ctx, action func(userID, targetID int) error, fa
 			targetUser, _ := service.User.GetUserByID(targetID)
 			if targetUser != nil {
 				friendStatus, _ := service.Friend.GetFriendStatus(user.ID, targetID)
+				isFollowing, _ := service.User.IsFollowing(user.ID, targetID)
 				return c.Render("components/profile/actions", fiber.Map{
 					"ProfileUser":  targetUser,
 					"FriendStatus": friendStatus,
+					"IsFollowing":  isFollowing,
 					"IsOwnProfile": false,
 				})
 			}
@@ -142,4 +144,90 @@ func FriendCancelPost(c fiber.Ctx) error {
 
 func FriendRemovePost(c fiber.Ctx) error {
 	return handleFriendAction(c, service.Friend.RemoveFriend, "")
+}
+
+func FollowsGet(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Redirect().To("/login")
+	}
+	if service.User == nil {
+		return c.SendStatus(fiber.StatusServiceUnavailable)
+	}
+	viewer, err := service.User.GetUserByUsername(username)
+	if err != nil || viewer == nil {
+		return c.Redirect().To("/login")
+	}
+	target := viewer
+	if idParam := c.Params("id"); idParam != "" {
+		id, err := strconv.Atoi(idParam)
+		if err != nil || id <= 0 {
+			return c.Status(fiber.StatusNotFound).SendString("User not found")
+		}
+		target, err = service.User.GetUserByID(id)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+		if target == nil {
+			return c.Status(fiber.StatusNotFound).SendString("User not found")
+		}
+	}
+	tab := c.Query("tab")
+	if tab != "following" {
+		tab = "followers"
+	}
+	followers, err := service.User.GetFollowList(target.ID, true)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error loading follow list")
+	}
+	following, err := service.User.GetFollowList(target.ID, false)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error loading follow list")
+	}
+	return Render(c, "pages/follows", fiber.Map{
+		"Title":      "Followers - VERTEXIA",
+		"TargetUser": target,
+		"ActiveTab":  tab,
+		"Followers":  followers,
+		"Following":  following,
+	}, "layouts/main")
+}
+
+func FollowUserPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/login")
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
+		return c.Redirect().To("/login")
+	}
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if service.User == nil {
+		return c.SendStatus(fiber.StatusServiceUnavailable)
+	}
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if user.ID == id {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	follow := strings.HasPrefix(c.Path(), "/follow/")
+	if err := service.User.SetFollowing(user.ID, id, follow); err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	if c.Get("HX-Request") == "true" {
+		count, err := service.User.GetFollowersCount(id)
+		return c.Render("components/profile/follow_update", fiber.Map{
+			"ProfileUser":    fiber.Map{"ID": id},
+			"IsFollowing":    follow,
+			"FollowersCount": count,
+			"CountAvailable": err == nil,
+		})
+	}
+	return c.Redirect().To("/user/" + strconv.Itoa(id))
 }

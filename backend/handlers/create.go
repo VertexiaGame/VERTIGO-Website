@@ -283,6 +283,7 @@ func CreateGet(c fiber.Ctx) error {
 		"CanUploadAccessories": canUploadAccessories,
 		"CanCreateGame":        true,
 		"CanCreatePublicGame":  canCreatePublicGame,
+		"MaxSpecialStock":      models.MaxShopSpecialStock,
 		"AccountAgeDays":       int(accountAge.Hours() / 24),
 		"ClanCreateCost":       service.ClanCreateCost,
 	}, "layouts/main")
@@ -486,51 +487,24 @@ func GameCreatePost(c fiber.Ctx) error {
 	}
 
 	cleanup := func() {
-		os.Remove(gameIconPath(gameID))
-		clearGameThumbs(gameID)
+		removePendingGameMedia(gameID)
 		_ = service.Game.DeleteGame(gameID)
 	}
 
 	if header := openGameUpload(c, "icon", "file"); header != nil {
-		if err := saveGameUploadImage(header, "Icon", gameIconPath(gameID)); err != nil {
+		if err := submitGameMedia(gameID, "icon", []*multipart.FileHeader{header}); err != nil {
 			cleanup()
 			return fail(err.Error(), fiber.StatusBadRequest)
 		}
 	}
-	for i, header := range thumbs {
-		if err := saveGameUploadImage(header, "Thumbnail", gameThumbPath(gameID, i+1)); err != nil {
+	if len(thumbs) > 0 {
+		if err := submitGameMedia(gameID, "thumbs", thumbs); err != nil {
 			cleanup()
 			return fail(err.Error(), fiber.StatusBadRequest)
 		}
 	}
 
 	return succeed(gameID)
-}
-
-func MyGamesPage(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		return c.Redirect().To("/login")
-	}
-
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		return c.Redirect().To("/login")
-	}
-
-	var games []*models.Game
-	if service.Game != nil {
-		games, _ = service.Game.GetUserGames(user.ID)
-	}
-	if games == nil {
-		games = []*models.Game{}
-	}
-
-	return Render(c, "pages/mygames", fiber.Map{
-		"Title":    "My Games - VERTEXIA",
-		"Username": username,
-		"Games":    games,
-	}, "layouts/main")
 }
 
 func GameEditPage(c fiber.Ctx) error {
@@ -657,7 +631,7 @@ func GameUpdatePost(c fiber.Ctx) error {
 	}
 
 	if header := openGameUpload(c, "icon"); header != nil {
-		if err := saveGameUploadImage(header, "Icon", gameIconPath(gameID)); err != nil {
+		if err := submitGameMedia(gameID, "icon", []*multipart.FileHeader{header}); err != nil {
 			return fail(err.Error(), fiber.StatusBadRequest)
 		}
 	}
@@ -665,11 +639,14 @@ func GameUpdatePost(c fiber.Ctx) error {
 	if err != nil {
 		return fail(err.Error(), fiber.StatusBadRequest)
 	}
-	if strings.TrimSpace(c.FormValue("clear_thumbnails")) == "1" || len(thumbs) > 0 {
+	if strings.TrimSpace(c.FormValue("clear_thumbnails")) == "1" {
+		gameMediaMu.Lock()
 		clearGameThumbs(gameID)
+		removePendingGameMediaKind(gameID, "thumbs")
+		gameMediaMu.Unlock()
 	}
-	for i, header := range thumbs {
-		if err := saveGameUploadImage(header, "Thumbnail", gameThumbPath(gameID, i+1)); err != nil {
+	if len(thumbs) > 0 {
+		if err := submitGameMedia(gameID, "thumbs", thumbs); err != nil {
 			return fail(err.Error(), fiber.StatusBadRequest)
 		}
 	}
@@ -720,6 +697,8 @@ func GameThumbRemovePost(c fiber.Ctx) error {
 		return c.Status(status).JSON(fiber.Map{"error": err.Error()})
 	}
 	index, _ := strconv.Atoi(strings.TrimSpace(c.FormValue("index")))
+	gameMediaMu.Lock()
+	defer gameMediaMu.Unlock()
 	if err := removeGameThumb(gameID, index); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -733,6 +712,8 @@ func GameThumbMovePost(c fiber.Ctx) error {
 	}
 	from, _ := strconv.Atoi(strings.TrimSpace(c.FormValue("from")))
 	to, _ := strconv.Atoi(strings.TrimSpace(c.FormValue("to")))
+	gameMediaMu.Lock()
+	defer gameMediaMu.Unlock()
 	if err := swapGameThumbs(gameID, from, to); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}

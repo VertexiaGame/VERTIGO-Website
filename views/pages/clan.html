@@ -18,7 +18,7 @@
                 <input type="text" class="input" placeholder="search clans" id="clanDetailBarSearch" autocomplete="off" onkeydown="if(event.key==='Enter'){window.location.href='/clans?q='+encodeURIComponent(this.value)}">
             </div>
             <div class="barbtns">
-                <a href="/create/clans" hx-get="/create/clans" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">My Clans</a>
+                <a href="/create/assets?tab=clans" hx-get="/create/assets?tab=clans" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">My Clans</a>
                 <a href="/clans" hx-get="/clans" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">Back to Clans</a>
             </div>
         </div>

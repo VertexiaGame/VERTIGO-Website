@@ -117,6 +117,7 @@ type Clan struct {
 	Joined        bool
 	Pending       bool
 	IsOwner       bool
+	MemberRole    string
 	Announcements []*ClanAnnouncement
 	Wall          []*ClanWallPost
 	Roster        []*ClanMember

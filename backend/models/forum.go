@@ -8,6 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 )
+
 var forumTones = []int{277, 262, 292, 248, 305, 270}
 
 type ForumBoard struct {
@@ -18,6 +19,33 @@ type ForumBoard struct {
 
 func (b *ForumBoard) Path() string {
 	return "/forum/s/" + strconv.Itoa(b.ID)
+}
+
+func (b *ForumBoard) ImageURL() string {
+	var sb strings.Builder
+	dash := false
+	for _, r := range strings.ToLower(strings.TrimSpace(b.Name)) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			sb.WriteRune(r)
+			dash = false
+		} else if !dash && sb.Len() > 0 {
+			sb.WriteByte('-')
+			dash = true
+		}
+	}
+	slug := strings.Trim(sb.String(), "-")
+	if slug == "" {
+		return ""
+	}
+	return "/static/useful/pages/forum/" + slug + ".png"
+}
+
+func (b *ForumBoard) ImageStyle() template.CSS {
+	u := b.ImageURL()
+	if u == "" {
+		return ""
+	}
+	return template.CSS("background-image: url('" + u + "');")
 }
 
 func (b *ForumBoard) Letter() string {
@@ -51,6 +79,7 @@ type ForumThread struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	Tag               *ClanTag
+	Images            []int
 }
 
 func (t *ForumThread) Path() string {
@@ -119,3 +148,23 @@ func (t *ForumThread) Excerpt() string {
 	runes := []rune(clean)
 	return strings.TrimSpace(string(runes[:140])) + "…"
 }
+
+type ForumReply struct {
+	ID, ThreadID, UserID                    int
+	AuthorUsername, AuthorDisplayName, Body string
+	CreatedAt                               time.Time
+	Tag                                     *ClanTag
+	Images                                  []int
+}
+
+func (r *ForumReply) Author() string {
+	if strings.TrimSpace(r.AuthorDisplayName) != "" {
+		return r.AuthorDisplayName
+	}
+	if strings.TrimSpace(r.AuthorUsername) != "" {
+		return r.AuthorUsername
+	}
+	return "Player"
+}
+func (r *ForumReply) TimeAgo() string  { return RelativeClanTime(r.CreatedAt) }
+func (r *ForumReply) FullDate() string { return r.CreatedAt.Format("Jan 2, 2006 at 3:04 PM") }

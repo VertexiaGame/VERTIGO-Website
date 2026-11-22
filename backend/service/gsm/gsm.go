@@ -120,6 +120,10 @@ func (m *Manager) pickCandidate(servers []GameServer, max int, now time.Time) (G
 }
 
 func (m *Manager) Join(gameID int, member string) (GameServer, bool, error) {
+	return m.JoinWithProgress(gameID, member, nil)
+}
+
+func (m *Manager) JoinWithProgress(gameID int, member string, progress func(string)) (GameServer, bool, error) {
 	if m == nil || m.store == nil || m.launcher == nil {
 		return GameServer{}, false, ErrUnavailable
 	}
@@ -164,6 +168,9 @@ func (m *Manager) Join(gameID int, member string) (GameServer, bool, error) {
 		_ = m.store.Save(gs)
 		gs.Host = m.cfg.PublicHost
 		return gs, true, nil
+	}
+	if progress != nil {
+		progress("starting")
 	}
 	gs, err := m.spawn(gameID, max, member)
 	if err != nil {

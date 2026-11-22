@@ -94,10 +94,11 @@
                                 <span class="crtupmsg" id="crtGameFileMsg">Choose a PNG or JPEG</span>
                                 <span class="crtupname" id="crtGameFileName"></span>
                             </label>
-                            <span class="ttptxt">Square icon shown in game listings (optional)</span>
+                            <span class="ttptxt">Square icon shown in game listings (optional; requires admin approval)</span>
                         </div>
                     </div>
                     <div class="crtfld">
+                        <p>Game icons and thumbnails require admin approval before they appear publicly.</p>
                         <label class="crtlbl" for="crtGameThumbFile">Thumbnails <span class="crtthumbcount" id="crtGameThumbCount">0/5</span></label>
                         <div class="ttpcnt">
                             <label class="crtupload" for="crtGameThumbFile">
@@ -118,7 +119,7 @@
                         <button type="submit" class="primary hpyprim hpyinl hpysm" id="crtGameSubmitBtn">
                             <span>Create Game</span>
                         </button>
-                        <a href="/create/games" hx-get="/create/games" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
+                        <a href="/create/assets?tab=games" hx-get="/create/assets?tab=games" hx-target="body" hx-push-url="true" class="primary hpyinf hpyinl hpysm" style="text-decoration: none;">
                             <span>My Games</span>
                         </a>
                     </div>

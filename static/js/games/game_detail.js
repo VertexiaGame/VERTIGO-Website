@@ -77,72 +77,91 @@ window.launchClientJoinUri = function(uri) {
     setTimeout(hideAfterLaunch, 600);
 };
 
-window.joinGame = function(event) {
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
+window.closeGameLaunch = function() {
+    const overlay = document.getElementById('gamLaunchOverlay');
+    if (!overlay || !overlay.classList.contains('active')) return;
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    if (window.gameLaunchAbort) window.gameLaunchAbort.abort();
+    window.gameLaunchAbort = null;
+    clearTimeout(window.gameLaunchFallback);
+    window.joinGameInFlight = false;
+    if (window.gameLaunchPreviousFocus && window.gameLaunchPreviousFocus.isConnected) window.gameLaunchPreviousFocus.focus();
+};
+
+window.joinGame = async function(event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
     const playBtn = document.getElementById('gamPlayBtn');
     if (playBtn && playBtn.dataset.logged !== 'true') {
         window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
         return;
     }
     const gameId = window.gameDetailGameId();
-    if (!gameId) return;
-    if (window.joinGameInFlight) return;
+    const overlay = document.getElementById('gamLaunchOverlay');
+    if (!gameId || !overlay || window.joinGameInFlight) return;
+    const status = document.getElementById('gamLaunchStatus');
+    const progress = document.getElementById('gamLaunchProgress');
+    const download = document.getElementById('gamLaunchDownload');
+    const errorBox = document.getElementById('gamLaunchError');
+    const close = document.getElementById('gamLaunchClose');
+    const controller = new AbortController();
+    window.gameLaunchAbort = controller;
     window.joinGameInFlight = true;
-    const playSpan = playBtn ? playBtn.querySelector('span') : null;
-    const playOrig = playSpan ? playSpan.innerHTML : '';
-    if (playBtn) {
-        playBtn.disabled = true;
-        playBtn.classList.add('is-launching');
-        playBtn.classList.remove('is-launched');
-    }
-    if (playSpan) playSpan.textContent = 'Launching…';
-    const restorePlayBtn = function() {
-        window.joinGameInFlight = false;
-        if (playBtn) {
-            playBtn.disabled = false;
-            playBtn.classList.remove('is-launching');
-            if (playSpan) playSpan.innerHTML = playOrig;
-        }
-    };
-    const flashLaunched = function() {
-        if (!playBtn || !playSpan) return;
-        playBtn.classList.remove('is-launching');
-        playBtn.classList.add('is-launched');
-        playSpan.innerHTML = '<i class="fa-solid fa-check"></i> Launched';
-        setTimeout(function() {
-            if (!document.getElementById('gamPlayBtn')) return;
-            playBtn.classList.remove('is-launched');
-            if (playSpan) playSpan.innerHTML = playOrig;
-        }, 2200);
-    };
-    fetch('/api/v1/games/' + encodeURIComponent(gameId) + '/join', {method: 'POST', headers: {'HX-Request': 'true'}})
-        .then(function(res) { return res.json().then(function(j) { return {ok: res.ok, status: res.status, body: j}; }); })
-        .then(function(out) {
-            restorePlayBtn();
-            if (!out.ok) {
-                if (out.status === 401) {
-                    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
-                    return;
-                }
-                const msg = (out.body && out.body.error) || 'Could not join game. Please try again.';
-                if (window.showModal) window.showModal({title: 'Could Not Join', body: '<p style="font-family:Ubuntu,sans-serif;font-size:14px;color:#3D3D3D;margin:0;">' + window.escapeHTML(msg) + '</p>'});
-                return;
+    window.gameLaunchPreviousFocus = document.activeElement;
+    overlay.classList.add('active'); overlay.setAttribute('aria-hidden', 'false'); progress.hidden = false; download.hidden = true; errorBox.hidden = true;
+    status.textContent = 'Looking for servers...';
+    close.onclick = window.closeGameLaunch;
+    overlay.onclick = function(e) { if (e.target === overlay) window.closeGameLaunch(); };
+    close.focus();
+    try {
+        const res = await fetch('/api/v1/games/' + encodeURIComponent(gameId) + '/join/progress', {method:'POST', signal:controller.signal});
+        if (res.status === 401) { window.closeGameLaunch(); window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname); return; }
+        if (!res.ok) { const body = await res.json().catch(function() { return {}; }); throw new Error(body.error || 'Could not join game. Please try again.'); }
+        if (!res.body || !res.body.getReader) throw new Error('Your browser cannot open the game. Please try a supported browser.');
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let launched = false;
+        const handle = function(line) {
+            if (!line.trim()) return;
+            const data = JSON.parse(line);
+            if (data.error) throw new Error(data.error);
+            if (data.stage === 'starting') { status.textContent = 'Starting a server...'; }
+            if (data.stage === 'joining' && data.client_uri) {
+                status.textContent = 'Joining a server...'; launched = true;
+                window.launchClientJoinUri(data.client_uri);
+                window.refreshGameServers(null);
+                window.gameLaunchFallback = setTimeout(function() {
+                    if (!overlay.classList.contains('active') || controller.signal.aborted) return;
+                    if (document.hidden) { window.closeGameLaunch(); return; }
+                    progress.hidden = true; download.hidden = false;
+                }, 4000);
             }
-            const d = out.body || {};
-            const srv = d.server || {};
-            const uri = d.client_uri || window.buildClientJoinUri(srv.host, srv.port, d.ukey);
-            window.launchClientJoinUri(uri);
-            flashLaunched();
-            window.refreshGameServers(null);
-        })
-        .catch(function() {
-            restorePlayBtn();
-            if (window.showModal) window.showModal({title: 'Could Not Join', body: '<p style="font-family:Ubuntu,sans-serif;font-size:14px;color:#3D3D3D;margin:0;">Connection lost. Please check your connection and try again.</p>'});
-        });
+        };
+        while (true) {
+            const chunk = await reader.read();
+            buffer += decoder.decode(chunk.value || new Uint8Array(), {stream:!chunk.done});
+            const lines = buffer.split('\n'); buffer = lines.pop(); lines.forEach(handle);
+            if (chunk.done) { if (buffer.trim()) handle(buffer); break; }
+        }
+        if (!launched) throw new Error('Connection lost. Please try again.');
+    } catch (err) {
+        if (controller.signal.aborted) return;
+        progress.hidden = true; download.hidden = true; errorBox.textContent = err.message || 'Connection lost. Please try again.'; errorBox.hidden = false;
+    } finally { if (window.gameLaunchAbort === controller) window.joinGameInFlight = false; }
 };
+
+if (!window.__gameLaunchKeysBound) {
+    window.__gameLaunchKeysBound = true;
+    document.addEventListener('keydown', function(event) {
+        const overlay = document.getElementById('gamLaunchOverlay');
+        if (!overlay || !overlay.classList.contains('active')) return;
+        if (event.key === 'Escape') { event.preventDefault(); window.closeGameLaunch(); }
+        if (event.key === 'Tab') {
+            const buttons = Array.from(overlay.querySelectorAll('button:not([disabled])')).filter(function(b) { return b.offsetParent !== null; });
+            if (!buttons.length) return;
+            if (event.shiftKey && document.activeElement === buttons[0]) { event.preventDefault(); buttons[buttons.length - 1].focus(); }
+            else if (!event.shiftKey && document.activeElement === buttons[buttons.length - 1]) { event.preventDefault(); buttons[0].focus(); }
+        }
+    });
+}
 
 window.refreshGameServers = function(event) {
     if (event) {
@@ -505,6 +524,7 @@ initGameDetailPage();
 
 document.addEventListener('htmx:afterSettle', initGameDetailPage);
 document.addEventListener('htmx:beforeTransition', function() {
+    window.closeGameLaunch();
     window.removeEventListener('resize', window.updateGameDetailTabIndicator);
     if (window.triggerWarningsTimer) {
         clearInterval(window.triggerWarningsTimer);

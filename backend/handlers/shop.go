@@ -93,6 +93,9 @@ func ShopGet(c fiber.Ctx) error {
 	}
 
 	normCat, normCatName := models.NormalizeShopCategory(filter.Category)
+	if strings.EqualFold(filter.Category, "special") {
+		normCat, normCatName = "special", "Specials"
+	}
 
 	return Render(c, "pages/shop", fiber.Map{
 		"Title":         "Shop - VERTEXIA",
@@ -182,6 +185,7 @@ func ShopItemPage(c fiber.Ctx) error {
 	if err != nil || item == nil {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
+	c.Set("Cache-Control", "private, no-store")
 	var related []*models.ShopItem
 	if service.Shop != nil {
 		related, _ = service.Shop.GetRelatedItems(item, 6)
@@ -218,7 +222,7 @@ func ShopItemPage(c fiber.Ctx) error {
 	if !canViewFull {
 		pageTitle = "[Content Pending] - VERTEXIA"
 	}
-	return Render(c, "pages/item", fiber.Map{
+	data := fiber.Map{
 		"Title":            pageTitle,
 		"Item":             item,
 		"Related":          related,
@@ -232,7 +236,9 @@ func ShopItemPage(c fiber.Ctx) error {
 		"CreatorID":        creatorID,
 		"CreatorCertified": creatorCertified,
 		"Sales":            sales,
-	}, "layouts/main")
+	}
+	populateShopItemTabs(c, item, currentUserID, data)
+	return Render(c, "pages/item", data, "layouts/main")
 }
 
 func ShopItemRedirect(c fiber.Ctx) error {
@@ -287,6 +293,10 @@ func ShopPurchaseAPI(c fiber.Ctx) error {
 		switch {
 		case strings.Contains(lower, "already owned"):
 			status = fiber.StatusConflict
+		case strings.Contains(lower, "out of stock"):
+			status = fiber.StatusConflict
+		case errors.Is(err, models.ErrSpecialUnavailable):
+			status = fiber.StatusServiceUnavailable
 		case strings.Contains(lower, "insufficient"):
 			status = fiber.StatusPaymentRequired
 		case strings.Contains(lower, "offsale"):
@@ -317,32 +327,6 @@ func ShopPurchaseAPI(c fiber.Ctx) error {
 
 func ShopPurchasePost(c fiber.Ctx) error {
 	return ShopPurchaseAPI(c)
-}
-
-func ItemsPage(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		return c.Redirect().To("/login")
-	}
-
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		return c.Redirect().To("/login")
-	}
-
-	var items []*models.ShopItem
-	if service.Shop != nil {
-		items, _ = service.Shop.GetUserItems(user.ID)
-	}
-	if items == nil {
-		items = []*models.ShopItem{}
-	}
-
-	return Render(c, "pages/items", fiber.Map{
-		"Title":    "My Items - VERTEXIA",
-		"Username": username,
-		"Items":    items,
-	}, "layouts/main")
 }
 
 func saveShopItemImage(src io.Reader, dstPath string) error {
@@ -398,11 +382,32 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 		if jsonResponse {
 			return c.JSON(fiber.Map{"success": true, "id": itemID})
 		}
-		return c.Redirect().To("/create/items")
+		return c.Redirect().To("/create/assets?tab=items")
 	}
 
 	if normType == "all" {
 		return fail("Invalid item category", fiber.StatusBadRequest)
+	}
+
+	stock := 0
+	switch c.FormValue("special") {
+	case "true":
+		if !user.HasAdminAccess() {
+			return fail("Only admins can create special items", fiber.StatusForbidden)
+		}
+		if !csrfValid(c) {
+			return fail("Invalid session token. Refresh the page and try again.", fiber.StatusForbidden)
+		}
+		stock, err = strconv.Atoi(strings.TrimSpace(c.FormValue("stock")))
+		if err != nil || stock < 1 || stock > models.MaxShopSpecialStock {
+			return fail("Stock must be a whole number between 1 and "+strconv.Itoa(models.MaxShopSpecialStock), fiber.StatusBadRequest)
+		}
+	case "", "false":
+		if strings.TrimSpace(c.FormValue("stock")) != "" {
+			return fail("Stock is only available for special items", fiber.StatusBadRequest)
+		}
+	default:
+		return fail("Invalid special item option", fiber.StatusBadRequest)
 	}
 
 	accountAge := time.Since(user.CreationDate)
@@ -439,8 +444,11 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 		return fail("Shop service unavailable", fiber.StatusInternalServerError)
 	}
 
-	itemID, itemType, err := service.Shop.CreateItem(user.ID, c.FormValue("name"), c.FormValue("description"), normType, bucks, bits, c.FormValue("transform"))
+	itemID, itemType, err := service.Shop.CreateItem(user, c.FormValue("name"), c.FormValue("description"), normType, bucks, bits, c.FormValue("transform"), stock)
 	if err != nil {
+		if errors.Is(err, models.ErrSpecialUnavailable) {
+			return fail(err.Error(), fiber.StatusServiceUnavailable)
+		}
 		return fail(err.Error(), fiber.StatusBadRequest)
 	}
 
@@ -545,9 +553,11 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 		}
 	}
 
-	if err := service.Shop.GrantItem(user.ID, itemID, models.BoughtViaAwarded, 0, 0); err != nil {
-		cleanup()
-		return fail("Could not save upload", fiber.StatusInternalServerError)
+	if stock == 0 {
+		if err := service.Shop.GrantItem(user.ID, itemID, models.BoughtViaAwarded, 0, 0); err != nil {
+			cleanup()
+			return fail("Could not save upload", fiber.StatusInternalServerError)
+		}
 	}
 
 	return succeed(itemID)

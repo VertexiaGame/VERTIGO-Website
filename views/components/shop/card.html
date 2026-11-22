@@ -1,12 +1,12 @@
-<div class="shp-card" data-id="{{.ID}}" data-type="{{.Type}}">
-    <div class="avtitmimg{{if or (eq .OnSale "false") (eq .OffSale "true")}} shp-offimg{{end}}">
+<a href="/shop/item/{{.ID}}" hx-get="/shop/item/{{.ID}}" hx-target="body" hx-push-url="true" class="shp-card" data-id="{{.ID}}" data-type="{{.Type}}">
+    <div class="avtitmimg{{if and (not .CanResell) (or (eq .OnSale "false") (eq .OffSale "true"))}} shp-offimg{{end}}">
         {{if ne .ApprovalState "approved"}}
         <img src="/static/useful/icons/missing.png" alt="[Content Pending]" loading="lazy" class="avtldimg" onload="this.classList.add('ld');">
         {{else}}
         <img src="/api/v1/avatar/shop/{{.Type}}/{{.ID}}" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png'; this.classList.add('ld');" onload="this.classList.add('ld');">
         {{end}}
     </div>
-    {{if or (eq .OnSale "false") (eq .OffSale "true")}}
+    {{if and (not .CanResell) (or (eq .OnSale "false") (eq .OffSale "true"))}}
     <div class="shp-ribbon shp-ribbon-off">
         <img src="/static/useful/icons/off.png" class="shp-ribicon" alt="Offsale">
         <span class="shp-ribtext">OFFSALE</span>
@@ -22,8 +22,12 @@
         <span class="avtitmcr">by {{.CreatorName}}</span>
     </div>
     <div class="shp-price-row">
-        {{if or (eq .OnSale "false") (eq .OffSale "true")}}
+        {{if .CanResell}}
+            <span class="shp-stock-note">Resale</span>
+        {{else if or (eq .OnSale "false") (eq .OffSale "true")}}
             <span class="shp-price-off">Offsale</span>
+        {{else if .SoldOut}}
+            <span class="shp-price-off">Sold out</span>
         {{else if and (eq .Bucks 0) (eq .Bits 0)}}
             <span class="shp-price-free">Free</span>
         {{else}}
@@ -40,5 +44,8 @@
             </span>
             {{end}}
         {{end}}
+        {{if and .IsSpecial (gt .Stock 0) (ne .OnSale "false") (ne .OffSale "true")}}
+            <span class="shp-stock-note">{{.Stock}} left</span>
+        {{end}}
     </div>
-</div>
+</a>

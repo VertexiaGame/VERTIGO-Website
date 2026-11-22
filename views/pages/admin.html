@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/frn.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/admin.css?v={{.AssetV}}">
-<div class="wrap">
+<div class="wrap" hx-history="false">
     <div class="cont">
         <div class="studs"></div>
         <div class="bar">
@@ -22,7 +22,7 @@
             <div class="frmlay">
                 <div class="frmmain" style="padding-top: 24px !important;">
                     <div class="tabcnt settabcnt" style="max-width: 100% !important;">
-                        <div class="tablst">
+                        <div class="tablst adm-main-tab-list">
                             <div class="tabind"></div>
                             <button class="tabbtn{{if eq .ActiveTab "status"}} active{{end}}" onclick="window.switchAdminTab('status', event)">Status</button>
                             <button class="tabbtn{{if eq .ActiveTab "servers"}} active{{end}}" onclick="window.switchAdminTab('servers', event)">Servers</button>
@@ -31,7 +31,10 @@
                             <button class="tabbtn{{if eq .ActiveTab "assets"}} active{{end}}" onclick="window.switchAdminTab('assets', event)">Assets</button>
                             <button class="tabbtn{{if eq .ActiveTab "shop"}} active{{end}}" onclick="window.switchAdminTab('shop', event)">Shop Items</button>
                             <button class="tabbtn{{if eq .ActiveTab "banners"}} active{{end}}" onclick="window.switchAdminTab('banners', event)">Banners</button>
+                            <button class="tabbtn{{if eq .ActiveTab "gamemedia"}} active{{end}}" onclick="window.switchAdminTab('gamemedia', event); window.fetchAdminGameMedia()">Game Media</button>
                             <button class="tabbtn{{if eq .ActiveTab "clanmedia"}} active{{end}}" onclick="window.switchAdminTab('clanmedia', event)">Clan Media</button>
+                            <a class="tabbtn adm-tab-link{{if eq .ActiveTab "forumimages"}} active{{end}}" href="/admin?tab=forumimages" hx-boost="false" onclick="window.switchAdminTab('forumimages', event)"{{if eq .ActiveTab "forumimages"}} aria-current="page"{{end}}>Forum Images</a>
+                            <a class="tabbtn adm-tab-link{{if eq .ActiveTab "feedimages"}} active{{end}}" href="/admin?tab=feedimages" hx-boost="false" onclick="window.switchAdminTab('feedimages', event)"{{if eq .ActiveTab "feedimages"}} aria-current="page"{{end}}>Feed Images</a>
                             <button class="tabbtn{{if eq .ActiveTab "logs"}} active{{end}}" onclick="window.switchAdminTab('logs', event)">Logs</button>
                             <button class="tabbtn{{if eq .ActiveTab "filter"}} active{{end}}" onclick="window.switchAdminTab('filter', event)">Filter</button>
                         </div>
@@ -489,6 +492,22 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div id="tab-forumimages" class="settabcntnt{{if eq .ActiveTab "forumimages"}} active{{end}}">
+                                <span class="adm-image-queue-status setinf" role="status"></span>
+                                <div data-admin-image-queue>
+                                    {{if eq .ActiveTab "forumimages"}}{{template "components/admin/forum_images" .ForumImages}}{{end}}
+                                </div>
+                            </div>
+
+                            <div id="tab-feedimages" class="settabcntnt{{if eq .ActiveTab "feedimages"}} active{{end}}">
+                                <span class="adm-image-queue-status setinf" role="status"></span>
+                                <div data-admin-image-queue>
+                                    {{if eq .ActiveTab "feedimages"}}{{template "components/admin/feed_images" .FeedImages}}{{end}}
+                                </div>
+                            </div>
+
+                            <div id="tab-gamemedia" class="settabcntnt{{if eq .ActiveTab "gamemedia"}} active{{end}}"><div class="setcrd"><h3 class="setttl">Game Icon &amp; Thumbnail Approvals</h3><input type="hidden" id="admGameMediaCsrf" value="{{.CSRF}}"><div class="adm-grid" id="admGameMediaGrid"></div></div></div>
 
                             <div id="tab-clanmedia" class="settabcntnt{{if eq .ActiveTab "clanmedia"}} active{{end}}">
                                 <div class="setcrd">

@@ -56,6 +56,49 @@
         if (window.updateItemTabIndicator) window.updateItemTabIndicator();
     }
 
+    async function updateSpecialItemDetails(box) {
+        const priceBlock = box.closest('.shpitm-priceblock');
+        const market = document.querySelector('.shpitm-market');
+        const tabs = document.querySelector('#shopItemTabs .prftablst');
+        const activeTab = tabs?.querySelector('.shpitm-tabbtn.active');
+        const url = new URL(window.location.href);
+        if (activeTab) url.searchParams.set('tab', new URL(activeTab.href).searchParams.get('tab'));
+
+        const response = await fetch(url, {cache: 'no-store'});
+        if (!response.ok) throw new Error('Could not load updated item details.');
+        const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const updatedPriceBlock = page.querySelector('.shpitm-priceblock');
+        if (!priceBlock?.isConnected) return;
+        if (!updatedPriceBlock) throw new Error('Could not load updated item details.');
+
+        const meta = document.querySelector('.shpitm-metastrip');
+        const updatedMeta = page.querySelector('.shpitm-metastrip');
+        if (meta && updatedMeta) meta.replaceChildren(...updatedMeta.childNodes);
+        for (const selector of ['.sbtnvrt .navtxt', '.sbtntix .navtxt', '#userVerticesCount']) {
+            const updated = page.querySelector(selector);
+            if (updated) document.querySelectorAll(selector).forEach(el => { el.textContent = updated.textContent; });
+        }
+
+        const resellerTab = '#shopItemTabs .shpitm-tabbtn[href$="?tab=resellers"]';
+        const updatedResellerTab = page.querySelector(resellerTab);
+        if (tabs?.isConnected && updatedResellerTab && !document.querySelector(resellerTab)) {
+            const indicator = tabs.querySelector('#shopItemTabIndicator');
+            indicator.after(updatedResellerTab);
+            window.htmx?.process(updatedResellerTab);
+            refreshTabIndicator();
+        }
+
+        const updatedMarket = page.querySelector('.shpitm-market');
+        if (market?.isConnected && updatedMarket) {
+            market.replaceWith(updatedMarket);
+            window.htmx?.process(updatedMarket);
+        }
+
+        priceBlock.replaceWith(updatedPriceBlock);
+        window.htmx?.process(updatedPriceBlock);
+        return updatedPriceBlock.querySelector('#shpitmWearMsg');
+    }
+
     window.purchaseItem = function(currency) {
         var box = document.getElementById('shpitmActions');
         var msg = document.getElementById('shpitmWearMsg');
@@ -71,11 +114,11 @@
             if (currency) fd.append('currency', currency);
             fetch('/api/v1/shop/purchase/' + encodeURIComponent(itemId), {method:'POST', body: fd, headers:{'HX-Request':'true'}})
                 .then(function(res){ return res.json().then(function(j){ return {ok:res.ok, status:res.status, body:j}; }); })
-                .then(function(out){
+                .then(async function(out){
                     if (!out.ok) throw new Error((out.body && out.body.error) || 'Purchase failed');
+                    if (!box.isConnected) return;
                     box.setAttribute('data-is-owned', 'true');
                     box.innerHTML = '<button type="button" class="primary hpyprim hpyinl hpysm" onclick="window.toggleItemWear(true)"><span>Wear</span></button>';
-                    if (msg) { msg.textContent = 'Purchased! You now own this item.'; msg.className = 'shpitm-wearmsg ok'; }
                     try {
                         if (typeof out.body.bucks !== 'undefined') {
                             var vEl = document.getElementById('userVerticesCount');
@@ -86,6 +129,15 @@
                             document.querySelectorAll('.sbtntix .navtxt').forEach(function(el){ el.textContent = out.body.bits; });
                         }
                     } catch(e){}
+                    var message = 'Purchased! You now own this item.';
+                    if (box.dataset.isSpecial === 'true') {
+                        try {
+                            msg = await updateSpecialItemDetails(box);
+                        } catch (error) {
+                            message = 'Purchased! Updated stock and serial details could not be loaded.';
+                        }
+                    }
+                    if (msg) { msg.textContent = message; msg.className = 'shpitm-wearmsg ok'; }
                     setTimeout(function(){ if(msg) msg.textContent=''; }, 3200);
                 })
                 .catch(function(err){
@@ -145,6 +197,65 @@
         doPurchase();
     };
 
+    window.submitShopResale = function(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const url = event.submitter?.getAttribute('formaction') || form.action;
+        const status = document.getElementById('shpitmResaleStatus');
+        const itemActions = document.getElementById('shpitmActions');
+        const submit = async () => {
+            const buttons = form.querySelectorAll('button');
+            buttons.forEach(button => { button.disabled = true; });
+            status.textContent = 'Saving…';
+            status.className = 'shpitm-wearmsg';
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { Accept: 'application/json' }
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.error);
+                if (!itemActions?.isConnected) return;
+                try {
+                    const notice = await updateSpecialItemDetails(itemActions);
+                    if (notice) {
+                        notice.textContent = form.dataset.serial ? 'Purchased! You now own this item.' : 'Listing updated.';
+                        notice.className = 'shpitm-wearmsg ok';
+                    }
+                } catch (error) {
+                    status.textContent = 'Transaction completed. Updated item details could not be loaded.';
+                    status.className = 'shpitm-wearmsg ok';
+                    buttons.forEach(button => { button.disabled = false; });
+                }
+            } catch (error) {
+                status.textContent = error.message || 'The transaction could not be completed.';
+                status.className = 'shpitm-wearmsg err';
+                status.scrollIntoView({ block: 'nearest' });
+                buttons.forEach(button => { button.disabled = false; });
+            }
+        };
+        if (form.dataset.serial) {
+            const body = document.createElement('div');
+            body.innerHTML = '<p></p><div class="shpitm-market-fields">'
+                + '<button type="button" class="primary hpyinf hpyinl hpysm"><span>Cancel</span></button>'
+                + '<button type="button" class="primary hpysuc hpyinl hpysm"><span>Confirm Purchase</span></button>'
+                + '</div>';
+            body.querySelector('p').textContent = 'Buy serial #' + form.dataset.serial + ' for ' + form.dataset.price + ' Vertices?';
+            const [cancel, confirm] = body.querySelectorAll('button');
+            cancel.onclick = () => window.closeModal();
+            confirm.onclick = () => {
+                window.closeModal();
+                submit();
+            };
+            window.showModal({ title: 'Confirm Purchase', body });
+            cancel.focus();
+        } else {
+            submit();
+        }
+        return false;
+    };
+
     window.toggleItemWear = function(wear) {
         var box = document.getElementById('shpitmActions');
         var msg = document.getElementById('shpitmWearMsg');
@@ -153,6 +264,9 @@
         var itemType = box.getAttribute('data-item-type');
         if (!itemId || !itemType) return;
         if (msg) { msg.textContent = wear ? 'Equipping...' : 'Unequipping...'; msg.className = 'shpitm-wearmsg'; }
+        const wearButton = box.querySelector('button');
+        if (wearButton?.disabled) return;
+        if (wearButton) wearButton.disabled = true;
         var url = wear ? '/avatar/wear' : '/avatar/unwear';
         var fd = new FormData();
         fd.append('type', itemType);
@@ -161,25 +275,25 @@
             .then(function(res){ return res.json().then(function(j){ return {ok:res.ok, body:j}; }); })
             .then(function(out){
                 if (!out.ok) throw new Error((out.body && out.body.error) || 'Failed');
-                if (wear) {
-                    window.location.href = '/avatar';
-                    return;
+                if (!box.isConnected) return;
+                box.dataset.isEquipped = String(wear);
+                const button = box.querySelector('button');
+                if (button) {
+                    button.classList.toggle('hpydng', wear);
+                    button.classList.toggle('hpyprim', !wear);
+                    button.querySelector('span').textContent = wear ? 'Take Off' : 'Wear';
+                    button.onclick = () => window.toggleItemWear(!wear);
                 }
-                if (msg) { msg.textContent = 'Unequipped!'; msg.className = 'shpitm-wearmsg ok'; }
-                var renderUrl = (out.body && out.body.render_url) ? out.body.render_url : null;
-                if (renderUrl) {
-                    try {
-                        var bust = renderUrl + (renderUrl.indexOf('?')>-1 ? '&' : '?') + 't=' + Date.now();
-                        var preload = new Image();
-                        preload.src = bust;
-                    } catch(e){}
+                if (msg) {
+                    msg.textContent = wear ? 'Equipped!' : 'Unequipped!';
+                    msg.className = 'shpitm-wearmsg ok';
                 }
-                setTimeout(function(){
-                    window.location.href = '/avatar';
-                }, 550);
             })
             .catch(function(err){
                 if (msg) { msg.textContent = err.message || 'Failed to update.'; msg.className = 'shpitm-wearmsg err'; }
+            })
+            .finally(function(){
+                if (wearButton) wearButton.disabled = false;
             });
     };
 

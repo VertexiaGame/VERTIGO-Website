@@ -2,8 +2,12 @@
 <link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/frn.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/avt.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/play.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/collections.css?v={{.AssetV}}">
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -11,48 +15,69 @@
             <span class="title">My Assets</span>
             <div class="pill">
                 <img src="/static/useful/icons/search.png" class="icon" alt="Search">
-                <input type="text" class="input" placeholder="search" id="assetSearch" autocomplete="off">
+                <input type="search" class="input" placeholder="search" aria-label="Search assets" id="assetSearch" autocomplete="off"{{if ne .ActiveTab "assets"}} hidden{{end}}>
+                <input type="search" class="input" placeholder="search" aria-label="Search items" id="itemSearch" autocomplete="off"{{if ne .ActiveTab "items"}} hidden{{end}}>
+                <input type="search" class="input" placeholder="search" aria-label="Search games" id="myGamesSearch" autocomplete="off"{{if ne .ActiveTab "games"}} hidden{{end}}>
+                <input type="search" class="input" placeholder="search" aria-label="Search clans" id="myClansSearch" autocomplete="off"{{if ne .ActiveTab "clans"}} hidden{{end}}>
             </div>
             <div class="barbtns">
-                <a href="/create?type=asset" hx-get="/create?type=asset" hx-target="body" hx-push-url="true" class="button barbtn" style="text-decoration: none;">Create</a>
+                <a data-collection-create="assets" href="/create?type=asset" hx-get="/create?type=asset" hx-target="body" hx-push-url="true" class="button barbtn"{{if ne .ActiveTab "assets"}} hidden{{end}}>Create</a>
+                <a data-collection-create="items" href="/create?type=shop" hx-get="/create?type=shop" hx-target="body" hx-push-url="true" class="button barbtn"{{if ne .ActiveTab "items"}} hidden{{end}}>Create</a>
+                <a data-collection-create="games" href="/create?type=game" hx-get="/create?type=game" hx-target="body" hx-push-url="true" class="button barbtn"{{if ne .ActiveTab "games"}} hidden{{end}}>Create</a>
+                <a data-collection-create="clans" href="/create?type=clan" hx-get="/create?type=clan" hx-target="body" hx-push-url="true" class="button barbtn"{{if ne .ActiveTab "clans"}} hidden{{end}}>Create</a>
                 <button hx-get="/" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
             </div>
         </div>
-        <div class="pane">
-            <div class="shp-lay">
-                <div class="shp-hdr-block">
-                    <h1 class="shp-heading">My Assets</h1>
-                    <span class="shp-subheading">Assets are reviewed by our moderation team before they can be used</span>
-                </div>
-                <div class="shp-grid" id="assetGrid">
-                    {{range .Assets}}
-                    <div class="shp-card" data-id="{{.ID}}" data-type="{{.Type}}" tabindex="0" role="button" title="Click to expand" onclick="window.expandAsset(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.expandAsset(this);}">
-                        <div class="avtitmimg{{if eq .Type "sound"}} avtitmico{{end}}">
-                            {{if eq .Type "image"}}
-                            <img src="/api/v1/assets/{{.ID}}/file" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
-                            {{else if eq .Type "sound"}}
-                            <i class="fa-solid fa-music"></i>
-                            {{else}}
-                            <img src="/api/v1/assets/{{.ID}}/render" alt="{{.Name}}" loading="lazy" class="avtldimg" onerror="this.src='/static/useful/temp/pfp.png';">
-                            {{end}}
-                            <span class="avtitmbdg avtitmbdg-{{.ApprovalState}}">{{.ApprovalLabel}}</span>
+        <div class="pane" id="myClansPage" data-csrf="{{.CSRF}}">
+            <div class="frmlay">
+                <div class="frmmain" style="padding-top: 24px !important;">
+                    <div class="tabcnt settabcnt" style="max-width: 100% !important;">
+                        <nav class="tablst follow-tabs collection-tabs" aria-label="My assets categories">
+                            <div class="tabind"></div>
+                            <a class="tabbtn{{if eq .ActiveTab "assets"}} active{{end}}" data-collection-tab="assets" href="/create/assets" hx-boost="false" onclick="return window.switchCollectionTab(event, 'assets')"{{if eq .ActiveTab "assets"}} aria-current="page"{{end}}>Assets</a>
+                            <a class="tabbtn{{if eq .ActiveTab "items"}} active{{end}}" data-collection-tab="items" href="/create/assets?tab=items" hx-boost="false" onclick="return window.switchCollectionTab(event, 'items')"{{if eq .ActiveTab "items"}} aria-current="page"{{end}}>Items</a>
+                            <a class="tabbtn{{if eq .ActiveTab "games"}} active{{end}}" data-collection-tab="games" href="/create/assets?tab=games" hx-boost="false" onclick="return window.switchCollectionTab(event, 'games')"{{if eq .ActiveTab "games"}} aria-current="page"{{end}}>Games</a>
+                            <a class="tabbtn{{if eq .ActiveTab "clans"}} active{{end}}" data-collection-tab="clans" href="/create/assets?tab=clans" hx-boost="false" onclick="return window.switchCollectionTab(event, 'clans')"{{if eq .ActiveTab "clans"}} aria-current="page"{{end}}>Clans</a>
+                        </nav>
+                        <div class="settabvwp collection-viewport">
+                            <div id="collection-assets" class="settabcntnt{{if eq .ActiveTab "assets"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h1 class="setttl">My Assets</h1>
+                                    <span class="setinf">Assets are reviewed by our moderation team before they can be used</span>
+                                    {{template "components/create/collections/assets" .}}
+                                </div>
+                            </div>
+                            <div id="collection-items" class="settabcntnt{{if eq .ActiveTab "items"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h1 class="setttl">My Items</h1>
+                                    <span class="setinf">Items are reviewed by our moderation team before they appear in the shop</span>
+                                    {{template "components/create/collections/items" .}}
+                                </div>
+                            </div>
+                            <div id="collection-games" class="settabcntnt{{if eq .ActiveTab "games"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h1 class="setttl">My Games</h1>
+                                    <span class="setinf">Update your games, icons and thumbnails</span>
+                                    {{template "components/create/collections/games" .}}
+                                </div>
+                            </div>
+                            <div id="collection-clans" class="settabcntnt{{if eq .ActiveTab "clans"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h1 class="setttl">My Clans</h1>
+                                    <span class="setinf">Manage the clans you own and keep up with the crews you belong to</span>
+                                    {{template "components/create/collections/clans" .}}
+                                </div>
+                            </div>
                         </div>
-                        <div class="avtitmmeta">
-                            <span class="avtitmnm">{{.Name}}</span>
-                            <span class="avtitmcr">{{.TypeName}} {{.CreatedAt.Format "Jan 02, 2006"}}</span>
-                        </div>
-                        {{if .ReviewNote}}
-                        <span class="avtitmnote">{{.ReviewNote}}</span>
-                        {{end}}
                     </div>
-                    {{else}}
-                    <div class="feedemt" style="grid-column: 1 / -1;">You haven't uploaded any assets yet.</div>
-                    {{end}}
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <script src="/static/js/elements/modal.js?v={{.AssetV}}"></script>
 <script src="/static/js/assets/assets.js?v={{.AssetV}}"></script>
+<script src="/static/js/games/mygames.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/clanapi.js?v={{.AssetV}}"></script>
+<script src="/static/js/clans/myclans.js?v={{.AssetV}}"></script>
+<script src="/static/js/assets/collections.js?v={{.AssetV}}"></script>

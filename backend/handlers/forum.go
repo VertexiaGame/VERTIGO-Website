@@ -50,7 +50,7 @@ func ForumIndexGet(c fiber.Ctx) error {
 	boards, err := service.Forum.GetBoards()
 	if err != nil {
 		log.Printf("VERTEXIA DB Error: Failed to fetch forum boards: %v", err)
-		boards = []*models.ForumBoard{}
+		return serveErrorPage(c, fiber.StatusInternalServerError)
 	}
 	if boards == nil {
 		boards = []*models.ForumBoard{}
@@ -59,6 +59,32 @@ func ForumIndexGet(c fiber.Ctx) error {
 	return Render(c, "pages/forum", fiber.Map{
 		"Title":  "Forum - VERTEXIA",
 		"Boards": boards,
+	})
+}
+
+func ForumMyThreadsGet(c fiber.Ctx) error {
+	user, err := clanViewer(c)
+	if err != nil || user == nil || user.ID <= 0 {
+		return c.Redirect().To("/login?next=" + url.QueryEscape("/forum/mine"))
+	}
+	if service.Forum == nil {
+		return serveErrorPage(c, fiber.StatusInternalServerError)
+	}
+	total, err := service.Forum.CountThreadsByUser(user.ID)
+	if err != nil {
+		log.Printf("Forum user thread count failed: %v", err)
+		return serveErrorPage(c, fiber.StatusInternalServerError)
+	}
+	page, pages := forumPage(c.Query("page"), total)
+	threads, err := service.Forum.GetThreadsByUser(user.ID, forumPageSize, (page-1)*forumPageSize)
+	if err != nil {
+		log.Printf("Forum user threads failed: %v", err)
+		return serveErrorPage(c, fiber.StatusInternalServerError)
+	}
+	enrichForumThreadTags(threads)
+	return Render(c, "pages/forum_my_threads", fiber.Map{
+		"Title": "My Threads - Forum - VERTEXIA", "Threads": threads, "ThreadCount": total,
+		"Page": page, "Pages": pages, "PrevPage": page - 1, "NextPage": page + 1,
 	})
 }
 
@@ -85,10 +111,16 @@ func ForumBoardGet(c fiber.Ctx) error {
 	}
 
 	sortBy := normalizeForumSort(c.Query("sort"))
-	threads, err := service.Forum.GetThreadsByBoard(board.ID, sortBy, 50, 0)
+	total, err := service.Forum.CountThreads(board.ID)
+	if err != nil {
+		log.Printf("Forum thread count failed: %v", err)
+		return serveErrorPage(c, fiber.StatusInternalServerError)
+	}
+	page, pages := forumPage(c.Query("page"), total)
+	threads, err := service.Forum.GetThreadsByBoard(board.ID, sortBy, forumPageSize, (page-1)*forumPageSize)
 	if err != nil {
 		log.Printf("VERTEXIA DB Error: Failed to fetch threads for board %d: %v", board.ID, err)
-		threads = []*models.ForumThread{}
+		return serveErrorPage(c, fiber.StatusInternalServerError)
 	}
 	enrichForumThreadTags(threads)
 
@@ -99,10 +131,11 @@ func ForumBoardGet(c fiber.Ctx) error {
 	flashError := strings.TrimSpace(c.Query("error"))
 
 	return Render(c, "pages/forum_board", fiber.Map{
-		"Title":        board.Name + " - Forum - VERTEXIA",
-		"Board":        board,
-		"Threads":      threads,
-		"ThreadCount":  len(threads),
+		"Title":       board.Name + " - Forum - VERTEXIA",
+		"Board":       board,
+		"Threads":     threads,
+		"ThreadCount": total,
+		"Page":        page, "Pages": pages, "PrevPage": page - 1, "NextPage": page + 1,
 		"Sort":         sortBy,
 		"FlashSuccess": flashSuccess,
 		"FlashError":   flashError,
@@ -130,10 +163,14 @@ func ForumThreadCreatePost(c fiber.Ctx) error {
 		return clanActionError(c, errors.New("forum service unavailable"), boardPath)
 	}
 
+	images, err := forumImageUploads(c)
+	if err != nil {
+		return clanActionError(c, err, boardPath)
+	}
 	title := c.FormValue("title")
 	body := c.FormValue("body")
 
-	created, err := service.Forum.CreateThread(user, boardID, title, body)
+	created, err := service.Forum.CreateThread(user, boardID, title, body, images...)
 	if err != nil {
 		if errors.Is(err, service.ErrForumBoardNotFound) {
 			return clanActionError(c, err, "/forum")
@@ -144,13 +181,108 @@ func ForumThreadCreatePost(c fiber.Ctx) error {
 		return c.Redirect().To(boardPath + "?error=" + url.QueryEscape(err.Error()))
 	}
 
+	path := created.Path()
+	if len(images) > 0 {
+		path += "?images=pending"
+	}
 	if wantsAssetJSON(c) {
 		return c.JSON(fiber.Map{
 			"success": true,
 			"id":      created.ID,
-			"path":    boardPath + "?created=1",
+			"path":    path,
 		})
 	}
 
-	return c.Redirect().To(boardPath + "?created=1")
+	return c.Redirect().To(path)
+}
+
+const forumPageSize = 50
+
+func forumPage(raw string, total int) (int, int) {
+	pages := (total + forumPageSize - 1) / forumPageSize
+	if pages < 1 {
+		pages = 1
+	}
+	page, err := strconv.Atoi(raw)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	if page > pages {
+		page = pages
+	}
+	return page, pages
+}
+func ForumThreadGet(c fiber.Ctx) error {
+	if service.Forum == nil {
+		return serveErrorPage(c, fiber.StatusServiceUnavailable)
+	}
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
+		return serveErrorPage(c, fiber.StatusNotFound)
+	}
+	thread, err := service.Forum.GetThread(id)
+	if errors.Is(err, service.ErrForumThreadNotFound) {
+		return serveErrorPage(c, fiber.StatusNotFound)
+	}
+	if err != nil {
+		return serveErrorPage(c, fiber.StatusInternalServerError)
+	}
+	board, err := service.Forum.GetBoardByID(thread.BoardID)
+	if err != nil {
+		return serveErrorPage(c, fiber.StatusNotFound)
+	}
+	page, pages := forumPage(c.Query("page"), thread.RepliesCount)
+	replies, err := service.Forum.GetReplies(id, forumPageSize, (page-1)*forumPageSize)
+	if err != nil {
+		return serveErrorPage(c, fiber.StatusInternalServerError)
+	}
+	if err := service.Forum.LoadApprovedImages(thread, replies); err != nil {
+		log.Printf("Forum images failed for thread %d: %v", id, err)
+	}
+	enrichForumThreadTags([]*models.ForumThread{thread})
+	if service.Clan != nil {
+		for _, reply := range replies {
+			reply.Tag = wornClanTag(reply.UserID)
+		}
+	}
+	return Render(c, "pages/forum_thread", fiber.Map{"Title": thread.Title + " - Forum - VERTEXIA", "Board": board, "Thread": thread, "Replies": replies, "Page": page, "Pages": pages, "PrevPage": page - 1, "NextPage": page + 1, "FlashError": strings.TrimSpace(c.Query("error")), "ImagesPending": c.Query("images") == "pending"})
+}
+func ForumReplyCreatePost(c fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil || id <= 0 {
+		return serveErrorPage(c, fiber.StatusNotFound)
+	}
+	path := "/forum/t/" + strconv.Itoa(id)
+	user, err := clanViewer(c)
+	if err != nil {
+		return clanActionError(c, err, path)
+	}
+	if err := clanCheckCSRF(c); err != nil {
+		return clanActionError(c, err, path)
+	}
+	if service.Forum == nil {
+		return clanActionError(c, errors.New("forum service unavailable"), path)
+	}
+	images, err := forumImageUploads(c)
+	if err != nil {
+		return clanActionError(c, err, path)
+	}
+	replyID, err := service.Forum.CreateReply(user, id, c.FormValue("body"), images...)
+	if err != nil {
+		return clanActionError(c, err, path)
+	}
+	params := url.Values{}
+	if len(images) > 0 {
+		params.Set("images", "pending")
+	}
+	thread, err := service.Forum.GetThread(id)
+	if err == nil {
+		_, pages := forumPage("1", thread.RepliesCount)
+		params.Set("page", strconv.Itoa(pages))
+	}
+	if len(params) > 0 {
+		path += "?" + params.Encode()
+	}
+	path += "#reply-" + strconv.Itoa(replyID)
+	return clanActionSucceed(c, path, fiber.Map{"id": replyID, "path": path})
 }

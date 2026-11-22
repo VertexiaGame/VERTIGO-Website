@@ -1,3 +1,5 @@
+import { initImageGalleries, initImageUploads } from '../image-attachments.js';
+
 let feedSocket = null;
 let feedOffset = 10;
 let loadingFeed = false;
@@ -483,6 +485,8 @@ const toggleInlineReplyInput = targetEl => {
     input.focus();
 };
 
+const feedPostPath = (id, feedType) => `/feed/${id}${feedType === 'friends' ? '?type=friends' : ''}`;
+
 const focusSinglePost = (postItem, opts) => {
     const postsList = document.querySelector('.pstlst');
     if (!postsList || !postItem) return;
@@ -492,8 +496,8 @@ const focusSinglePost = (postItem, opts) => {
     const push = !opts || opts.push !== false;
     if (push) {
         try {
-            const target = `/feed/${activeFocusedPostId}`;
-            if (window.location.pathname !== target) {
+            const target = feedPostPath(activeFocusedPostId, postItem.dataset.feedType);
+            if (window.location.pathname + window.location.search !== target) {
                 history.pushState({ feedPostId: activeFocusedPostId }, '', target);
             }
         } catch {}
@@ -626,6 +630,25 @@ const createPost = post => {
     postBody.textContent = content;
     postCard.appendChild(postBody);
 
+    const images = post.images ?? [];
+    const template = document.getElementById('feedImageGallery');
+    if (images.length && template) {
+        const gallery = template.content.cloneNode(true);
+        const track = gallery.querySelector('[data-forum-track]');
+        const slide = track.firstElementChild;
+        slide.remove();
+        for (const id of images) {
+            const link = slide.cloneNode(true);
+            const source = '/feed/images/' + id;
+            link.href = source;
+            link.firstElementChild.src = source;
+            track.appendChild(link);
+        }
+        if (images.length === 1) gallery.querySelector('.forum-gallery-controls').remove();
+        initImageGalleries(gallery);
+        postCard.appendChild(gallery);
+    }
+
     const { bdg: reactBdg } = buildReactionBadge(hasReacted, reactions, false);
 
     const cmtList = document.createElement('div');
@@ -660,7 +683,6 @@ const fetchFeedPosts = (tabName, offset = 0, limit = 10) => {
 
             if (data && data.length > 0) {
                 data.forEach(post => {
-                    post.feed_type = tabName;
                     const wrapper = createPost(post);
                     postsList.appendChild(wrapper);
                     if (postObserver) {
@@ -718,27 +740,69 @@ const switchFeedTab = (clickedTab, tabName) => {
 
 const showFeedError = message => {
     const tabContainer = document.querySelector('.tabcnt');
-    const feedForm = document.querySelector('.feedinbox');
-    const postsList = document.querySelector('.pstlst');
+    const feedForm = tabContainer?.querySelector('.feed-composer .feedinbox');
+    const postsList = tabContainer?.querySelector('.pstlst');
     if (!tabContainer || !feedForm || !postsList) return;
 
     let errDiv = tabContainer.querySelector('.feederr');
     if (!errDiv) {
         errDiv = document.createElement('span');
         errDiv.className = 'feederr';
+        errDiv.setAttribute('role', 'status');
         tabContainer.insertBefore(errDiv, postsList);
     }
+    clearTimeout(errDiv.dismissTimer);
     errDiv.textContent = message;
     tabContainer.classList.add('haserr');
     feedForm.classList.add('inerr');
 
     requestAnimationFrame(() => errDiv.classList.add('visible'));
 
-    setTimeout(() => {
+    errDiv.dismissTimer = setTimeout(() => {
         errDiv.classList.remove('visible');
         tabContainer.classList.remove('haserr');
         feedForm.classList.remove('inerr');
     }, 4000);
+};
+
+const insertNewFeedPost = post => {
+    if (post.feed_type !== currentTab || activeFocusedPostId) return;
+    const postsList = document.querySelector('.pstlst');
+    if (!postsList || postsList.querySelector(`.pstitm[data-id="${Number(post.id)}"][data-feed-type="${post.feed_type}"]`)) return;
+
+    feedOffset++;
+    postsList.querySelector('#friends-feed-empty')?.remove();
+    const wrapper = createPost(post);
+    postsList.prepend(wrapper);
+    postObserver?.observe(wrapper);
+    animateReactionCounter(wrapper.querySelector('.rctcnt'), post.reactions ?? 0);
+    requestAnimationFrame(() => updateSeeMoreForPost(wrapper));
+};
+
+const submitFeedImages = async form => {
+    if (form.dataset.submitting) return;
+    const body = new FormData(form);
+    const controls = form.querySelectorAll('button, .feedin, [data-forum-upload]');
+    const notice = form.querySelector('.feed-upload-success');
+    notice.textContent = '';
+    form.dataset.submitting = '1';
+    controls.forEach(control => control.disabled = true);
+    try {
+        const response = await fetch(form.action, { method: 'POST', body, headers: { Accept: 'application/json' } });
+        const post = await response.json().catch(() => ({}));
+        if (!response.ok || !post.id) throw new Error(post.error || 'Could not post your images. Please try again.');
+        if (form.isConnected) {
+            form.reset();
+            form.elements.feed_type.value = currentTab;
+            if (post.content) insertNewFeedPost(post);
+            notice.textContent = 'Your images are awaiting admin approval.';
+        }
+    } catch (error) {
+        if (form.isConnected) showFeedError(error.message);
+    } finally {
+        delete form.dataset.submitting;
+        controls.forEach(control => control.disabled = false);
+    }
 };
 
 const setupGlobalDelegation = () => {
@@ -752,8 +816,9 @@ const setupGlobalDelegation = () => {
         const m = window.location.pathname.match(/^\/feed\/(\d+)/);
         if (m) {
             const id = m[1];
-            if (activeFocusedPostId === String(id)) return;
-            const wrapper = document.querySelector(`.pstitm[data-id="${id}"]`);
+            const feedType = new URLSearchParams(location.search).get('type') === 'friends' ? 'friends' : 'worldwide';
+            if (activeFocusedPostId === String(id) && currentTab === feedType) return;
+            const wrapper = document.querySelector(`.pstitm[data-id="${id}"][data-feed-type="${feedType}"]`);
             if (wrapper) {
                 focusSinglePost(wrapper, { push: false });
             }
@@ -809,20 +874,23 @@ const setupGlobalDelegation = () => {
 
     document.addEventListener('submit', e => {
         if (!feedActive) return;
-        const feedForm = e.target.closest('.feedinbox');
-        if (feedForm && !feedForm.classList.contains('cmtinbox')) {
-            e.preventDefault();
-            const input = feedForm.querySelector('.feedin');
-            const content = input ? input.value.trim() : '';
-            if (content) {
-                if (feedSocket && feedSocket.readyState === WebSocket.OPEN) {
-                    lastSubmittedText = content;
-                    feedSocket.send(JSON.stringify({ type: 'post', content, feed_type: currentTab }));
-                    input.value = '';
-                } else {
-                    showFeedError('WebSocket connection is closed. Please refresh the page.');
-                }
-            }
+        const feedForm = e.target.closest('.feed-composer');
+        if (!feedForm) return;
+        e.preventDefault();
+
+        if (feedForm.querySelector('[data-forum-upload]').files.length) {
+            submitFeedImages(feedForm);
+            return;
+        }
+        const input = feedForm.elements.content;
+        const content = input.value.trim();
+        if (!content) return;
+        if (feedSocket && feedSocket.readyState === WebSocket.OPEN) {
+            lastSubmittedText = content;
+            feedSocket.send(JSON.stringify({ type: 'post', content, feed_type: currentTab }));
+            input.value = '';
+        } else {
+            showFeedError('WebSocket connection is closed. Please refresh the page.');
         }
     });
 
@@ -897,6 +965,8 @@ const initFeed = () => {
     noMorePosts = false;
 
     setupGlobalDelegation();
+    initImageUploads(tabContainer);
+    initImageGalleries(postsList);
 
     const initialPosts = document.querySelectorAll('.pstitm');
     initialPosts.forEach(item => {
@@ -929,7 +999,7 @@ const initFeed = () => {
             if (entry.isIntersecting) {
                 entry.target.classList.remove('offscreen');
                 requestAnimationFrame(() => updateSeeMoreForPost(entry.target));
-            } else {
+            } else if (!entry.target.querySelector('.feed-gallery')) {
                 entry.target.classList.add('offscreen');
             }
         });
@@ -948,17 +1018,18 @@ const initFeed = () => {
         if (m) focusedId = m[1];
     }
     if (focusedId) {
-        const wrapper = document.querySelector(`.pstitm[data-id="${focusedId}"]`);
+        const feedType = tabContainer.dataset.focusedType === 'friends' ? 'friends' : 'worldwide';
+        const wrapper = postsList.querySelector(`.pstitm[data-id="${focusedId}"][data-feed-type="${feedType}"]`);
         if (wrapper) {
             try {
                 if (history.state == null) {
                     history.replaceState({ feed: true }, '', '/');
-                    history.pushState({ feedPostId: String(focusedId) }, '', `/feed/${focusedId}`);
+                    history.pushState({ feedPostId: String(focusedId) }, '', feedPostPath(focusedId, feedType));
                 }
             } catch {}
             focusSinglePost(wrapper, { push: false });
         } else {
-            fetch(`/api/v1/feed/${focusedId}`)
+            fetch(`/api/v1/feed/${focusedId}?type=${encodeURIComponent(feedType)}`)
                 .then(res => {
                     if (!res.ok) throw new Error('not found');
                     return res.json();
@@ -974,7 +1045,7 @@ const initFeed = () => {
                     try {
                         if (history.state == null) {
                             history.replaceState({ feed: true }, '', '/');
-                            history.pushState({ feedPostId: String(data.id) }, '', `/feed/${data.id}`);
+                            history.pushState({ feedPostId: String(data.id) }, '', feedPostPath(data.id, data.feed_type));
                         }
                     } catch {}
                     focusSinglePost(created, { push: false });
@@ -1035,24 +1106,7 @@ const connectFeedSocket = () => {
 
         switch (data.type) {
         case 'new_post':
-            if (data.feed_type === currentTab && !activeFocusedPostId) {
-                feedOffset++;
-                if (postsList) {
-                    const emptyMsg = document.getElementById('friends-feed-empty');
-                    if (emptyMsg) {
-                        emptyMsg.remove();
-                    }
-                    const wrapper = createPost(data);
-                    postsList.insertBefore(wrapper, postsList.firstChild);
-                    if (postObserver) {
-                        postObserver.observe(wrapper);
-                    }
-
-                    const countSpan = wrapper.querySelector('.rctcnt');
-                    animateReactionCounter(countSpan, data.reactions ?? 0);
-                    requestAnimationFrame(() => updateSeeMoreForPost(wrapper));
-                }
-            }
+            insertNewFeedPost(data);
             break;
 
         case 'new_comment': {
@@ -1120,7 +1174,7 @@ const connectFeedSocket = () => {
         case 'error': {
             showFeedError(data.content);
             const input = document.querySelector('.feedin');
-            if (input && lastSubmittedText) {
+            if (input && !input.disabled && !input.value && lastSubmittedText) {
                 input.value = lastSubmittedText;
             }
             break;

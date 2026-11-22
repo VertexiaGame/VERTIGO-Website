@@ -1,0 +1,127 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/shop.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/prof.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/create.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/forum.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/forum-thread.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Forum</span>
+            <div class="barbtns">
+                <a href="{{.Board.Path}}" hx-get="{{.Board.Path}}" hx-target="body" hx-push-url="true" class="button barbtn">Back to board</a>
+            </div>
+        </div>
+        <div class="pane" id="forumThreadPane"{{if .ViewerDisableAutoplay}} data-forum-autoplay="off"{{end}}>
+            <div class="shp-lay fbd-lay">
+                <nav class="fbd-dir" aria-label="Forum directory">
+                    <a class="fbd-dir-link" href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true"><i class="fa-solid fa-house fbd-dir-ico" aria-hidden="true"></i> <span>Home</span></a>
+                    <span class="fbd-dir-sep" aria-hidden="true">/</span>
+                    <a class="fbd-dir-link" href="{{.Board.Path}}" hx-get="{{.Board.Path}}" hx-target="body" hx-push-url="true">{{.Board.Name}}</a>
+                    <span class="fbd-dir-sep" aria-hidden="true">/</span>
+                    <strong class="fbd-dir-cur">{{.Thread.Title}}</strong>
+                </nav>
+
+                {{if .FlashError}}<span class="frminerr visible fbd-flash" role="alert">{{.FlashError}}</span>{{end}}
+
+                <span class="frminsuc fbd-flash{{if and .IsLoggedIn .ImagesPending}} visible{{end}}" id="forumImageStatus" role="status">{{if and .IsLoggedIn .ImagesPending}}Your images are awaiting admin approval.{{end}}</span>
+
+                <article class="forum-post forum-post-original" id="thread">
+                    <a href="/user/{{.Thread.UserID}}" hx-get="/user/{{.Thread.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-avatar" aria-label="View {{.Thread.Author}}'s profile">
+                        <img src="/avatar/{{.Thread.UserID}}.png" alt="" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
+                    </a>
+                    <div class="forum-post-main">
+                        <div class="forum-post-head">
+                            <div class="forum-post-meta">
+                                <span class="forum-post-author">{{template "components/clan/tag" .Thread.Tag}}<a href="/user/{{.Thread.UserID}}" hx-get="/user/{{.Thread.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-author-name">{{.Thread.Author}}</a></span>
+                                <span class="ttpcnt forum-post-time" tabindex="0" aria-label="Posted {{.Thread.FullDate}}"><span>Posted {{.Thread.TimeAgo}}</span><span class="ttptxt" aria-hidden="true">{{.Thread.FullDate}}</span></span>
+                            </div>
+                            <a class="forum-post-permalink" hx-boost="false" href="#thread" aria-label="Link to original post">#1</a>
+                        </div>
+                        <h1 class="forum-post-title">{{.Thread.Title}}</h1>
+                        <p class="forum-post-body">{{.Thread.Body}}</p>
+                        {{template "components/forum/image_gallery" .Thread.Images}}
+                        <div class="forum-thread-meta forum-post-footer">
+                            <span><i class="fa-solid fa-reply" aria-hidden="true"></i> {{.Thread.RepliesLabel}}</span>
+                            {{if .Thread.Pinned}}<span><i class="fa-solid fa-thumbtack" aria-hidden="true"></i> Pinned</span>{{end}}
+                            {{if .Thread.Locked}}<span><i class="fa-solid fa-lock" aria-hidden="true"></i> Locked</span>{{end}}
+                        </div>
+                    </div>
+                </article>
+
+                {{if .Thread.Locked}}
+                <div class="feedemt fbd-empty"><i class="fa-solid fa-lock" aria-hidden="true"></i> This thread is locked.</div>
+                {{else if .IsLoggedIn}}
+                <details class="cln-compose forum-reply-compose"{{if .FlashError}} open{{end}}>
+                    <summary class="cln-compose-sum">
+                        <i class="fa-solid fa-reply cln-compose-ico" aria-hidden="true"></i>
+                        <span class="cln-compose-txt">Post a reply</span>
+                        <i class="fa-solid fa-chevron-down cln-compose-arrow" aria-hidden="true"></i>
+                    </summary>
+                    <form class="cln-compose-form" id="ftdReplyForm" action="{{.Thread.Path}}/replies" method="post" enctype="multipart/form-data" hx-boost="false">
+                        <input type="hidden" name="csrf" value="{{.CSRF}}">
+                        <div class="crtfld">
+                            <label class="crtlbl" for="forumReplyBody">Message</label>
+                            <div class="setareabox"><textarea class="setarea" id="forumReplyBody" name="body" minlength="3" maxlength="4000" placeholder="Write a reply..." required></textarea></div>
+                            <span class="shp-subheading">Maximum of 4000 characters</span>
+                        </div>
+                        {{template "components/forum/image_upload" .}}
+                        <div id="forumReplyStatus" class="frminerr" role="status" aria-live="polite" hidden></div>
+                        <div class="cln-compose-act"><button class="primary hpyprim hpyinl hpysm" type="submit"><span>Post reply</span></button></div>
+                    </form>
+                </details>
+                {{else}}
+                <a href="/login?next={{.Thread.Path}}" class="cln-compose fbd-compose-login forum-reply-compose">
+                    <span class="cln-compose-sum">
+                        <i class="fa-solid fa-reply cln-compose-ico" aria-hidden="true"></i>
+                        <span class="cln-compose-txt">Log in to reply</span>
+                        <i class="fa-solid fa-chevron-right cln-compose-arrow" aria-hidden="true"></i>
+                    </span>
+                </a>
+                {{end}}
+
+                <section class="forum-discussion" id="forumDiscussion" aria-labelledby="replies">
+                    <div class="shpitm-relatedhdr forum-section-heading">
+                        <h2 class="forum-section-title" id="replies">Replies</h2>
+                        <span class="shp-subheading">{{.Thread.RepliesLabel}}</span>
+                    </div>
+                    <div class="cln-announce-list forum-replies">
+                        {{range .Replies}}
+                        <article class="forum-post" id="reply-{{.ID}}">
+                            <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-avatar" aria-label="View {{.Author}}'s profile">
+                                <img src="/avatar/{{.UserID}}.png" alt="" loading="lazy" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
+                            </a>
+                            <div class="forum-post-main">
+                                <div class="forum-post-head">
+                                    <div class="forum-post-meta">
+                                        <span class="forum-post-author">{{template "components/clan/tag" .Tag}}<a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-author-name">{{.Author}}</a></span>
+                                        <span class="ttpcnt forum-post-time" tabindex="0" aria-label="Replied {{.FullDate}}"><span>Replied {{.TimeAgo}}</span><span class="ttptxt" aria-hidden="true">{{.FullDate}}</span></span>
+                                    </div>
+                                    <a class="forum-post-permalink" hx-boost="false" href="#reply-{{.ID}}" aria-label="Link to reply by {{.Author}}">#</a>
+                                </div>
+                                <p class="forum-post-body">{{.Body}}</p>
+                                {{template "components/forum/image_gallery" .Images}}
+                            </div>
+                        </article>
+                        {{else}}
+                        <div class="feedemt fbd-empty">No replies yet.</div>
+                        {{end}}
+                    </div>
+                    {{if gt .Pages 1}}
+                    <nav class="fbd-pagination" aria-label="Reply pages">
+                        {{if gt .Page 1}}<a class="primary hpyprim hpyinl hpysm" href="{{.Thread.Path}}?page={{.PrevPage}}#replies"><span>Previous</span></a>{{end}}
+                        <span>Page {{.Page}} of {{.Pages}}</span>
+                        {{if lt .Page .Pages}}<a class="primary hpyprim hpyinl hpysm" href="{{.Thread.Path}}?page={{.NextPage}}#replies"><span>Next</span></a>{{end}}
+                    </nav>
+                    {{end}}
+                </section>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script type="module" src="/static/js/forum/forum.js?v={{.AssetV}}"></script>

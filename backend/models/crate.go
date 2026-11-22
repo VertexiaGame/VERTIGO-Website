@@ -19,13 +19,14 @@ var ValidBoughtVia = map[string]bool{
 }
 
 type Crate struct {
-	ID    int       `json:"id"`
-	IID   int       `json:"iid"`
-	UID   int       `json:"uid"`
-	BV    string    `json:"bv"`
-	AID   int       `json:"aid"`
-	Price int       `json:"price"`
-	Date  time.Time `json:"date"`
+	ID     int       `json:"id"`
+	IID    int       `json:"iid"`
+	UID    int       `json:"uid"`
+	BV     string    `json:"bv"`
+	AID    int       `json:"aid"`
+	Price  int       `json:"price"`
+	Date   time.Time `json:"date"`
+	Serial int       `json:"serial,omitempty"`
 }
 
 type PurchaseRequest struct {

@@ -682,3 +682,38 @@
 #triggerWarningsModal .mcard {
     animation: shpCardIn 0.3s var(--ease-pop) backwards;
 }
+
+.gam-launch-game {
+    flex-direction: row !important;
+    align-items: center !important;
+}
+.gam-launch-icon {
+    width: 72px;
+    height: 72px;
+    flex: 0 0 72px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+.gam-launch-game .shpitm-title {
+    font-size: 18px;
+}
+.gam-launch-status:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 500;
+}
+.gam-launch-status .dmspn { flex: 0 0 32px; }
+.gam-launch-message, .gam-launch-note {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 10px 0 14px;
+}
+.gam-launch-note { color: var(--muted); font-size: 12px; margin-bottom: 0; }
+@media (prefers-reduced-motion: reduce) {
+    #gamLaunchOverlay .dmspn .sq { animation: none !important; opacity: .6; }
+}

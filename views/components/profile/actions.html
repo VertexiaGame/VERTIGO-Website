@@ -1,10 +1,11 @@
-<div class="prfact" id="profileActions">
+<div class="prfact" id="profileActions" hx-sync="#profileActions:drop">
     {{if .IsOwnProfile}}
     <a href="/settings" hx-get="/settings" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration: none;">
         <img src="/static/useful/icons/pen.png" class="hpyico" alt="">
         <span>Edit Profile</span>
     </a>
     {{else}}
+    <div class="prffriendstack">
     {{if eq .FriendStatus "pending_sent"}}
     <button type="button" class="primary hpydng hpyinl hpysm" hx-post="/friends/cancel/{{.ProfileUser.ID}}" hx-target="#profileActions" hx-swap="outerHTML">
         <img src="/static/useful/icons/friends.png" class="hpyico" alt="">
@@ -26,6 +27,8 @@
         <span>Add Friend</span>
     </button>
     {{end}}
+    {{template "components/profile/follow_button" .}}
+    </div>
     <button type="button" class="primary hpywrn hpyinl hpysm"{{if .ProfileUser.HideInventory}} disabled title="Trading is disabled while this user's inventory is private."{{end}}>
         <img src="/static/useful/icons/trade.png" class="hpyico" alt="">
         <span>Trade</span>

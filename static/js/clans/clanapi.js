@@ -234,7 +234,7 @@
 
     window.clanAnimateMembership = function(mode, btn) {
         var card = btn && btn.closest ? btn.closest('.cln-card') : null;
-        var path = window.location.pathname;
+        var path = document.getElementById('myClansPage') ? window.location.pathname + window.location.search : window.location.pathname;
         if (mode === 'left' && card) {
             card.classList.add('is-leaving');
             setTimeout(function() { window.clanRefresh(path); }, 300);
@@ -357,7 +357,7 @@
         (async function() {
             try {
                 await window.clanPost('/clans/' + clanID + '/tag', { button: btn });
-                window.clanRefresh(window.location.pathname);
+                window.clanRefresh(document.getElementById('myClansPage') ? window.location.pathname + window.location.search : window.location.pathname);
             } catch (err) {
                 window.clanHandleError(err, "Couldn't update your clan tag");
             }

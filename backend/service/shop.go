@@ -34,12 +34,18 @@ func (s *ShopService) GetShopItems(filter *models.ShopFilter) ([]*models.ShopIte
 	return s.shopRepo.GetItems(filter)
 }
 
-func (s *ShopService) CreateItem(uid int, name, description, category string, bucks, bits int, transform string) (int, string, error) {
+func (s *ShopService) CreateItem(creator *models.User, name, description, category string, bucks, bits int, transform string, stock int) (int, string, error) {
 	if s.shopRepo == nil {
 		return 0, "", errors.New("shop repository uninitialized")
 	}
-	if uid <= 0 {
+	if creator == nil || creator.ID <= 0 {
 		return 0, "", errors.New("invalid user")
+	}
+	if stock < 0 || stock > models.MaxShopSpecialStock {
+		return 0, "", errors.New("invalid stock")
+	}
+	if stock > 0 && !creator.HasAdminAccess() {
+		return 0, "", errors.New("only admins can create special items")
 	}
 
 	name = strings.TrimSpace(name)
@@ -67,11 +73,31 @@ func (s *ShopService) CreateItem(uid int, name, description, category string, bu
 		return 0, "", err
 	}
 
-	id, err := s.shopRepo.Create(uid, name, description, normType, bucks, bits, transform)
+	id, err := s.shopRepo.Create(creator.ID, name, description, normType, bucks, bits, transform, stock)
 	if err != nil {
 		return 0, "", err
 	}
 	return id, normType, nil
+}
+
+func (s *ShopService) GetSpecialCopy(itemID, userID int) (*models.SpecialCopy, error) {
+	return s.shopRepo.GetSpecialCopy(itemID, userID)
+}
+
+func (s *ShopService) GetSpecialOwners(itemID, limit, offset int) ([]models.SpecialOwner, error) {
+	return s.shopRepo.GetSpecialOwners(itemID, limit, offset)
+}
+
+func (s *ShopService) GetSpecialListings(itemID, limit, offset int) ([]models.SpecialListing, error) {
+	return s.shopRepo.GetSpecialListings(itemID, limit, offset)
+}
+
+func (s *ShopService) SetSpecialListing(userID, itemID, serial, price int, version int64) error {
+	return s.shopRepo.SetSpecialListing(userID, itemID, serial, price, version)
+}
+
+func (s *ShopService) BuySpecialListing(buyerID, itemID, serial int, version int64) (int, error) {
+	return s.shopRepo.BuySpecialListing(buyerID, itemID, serial, version)
 }
 
 func (s *ShopService) GetUserItems(uid int) ([]*models.ShopItem, error) {

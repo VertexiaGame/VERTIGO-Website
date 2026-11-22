@@ -43,6 +43,13 @@ func ProfileGet(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("User not found")
 	}
 
+	isFollowing := false
+	if activeUsername != "" && !isOwnProfile {
+		if activeUser, _ := service.User.GetUserByUsername(activeUsername); activeUser != nil {
+			isFollowing, _ = service.User.IsFollowing(activeUser.ID, targetUser.ID)
+		}
+	}
+
 	friendStatus := "none"
 	if activeUsername != "" && !isOwnProfile && service.Friend != nil {
 		activeUser, _ := service.User.GetUserByUsername(activeUsername)
@@ -118,6 +125,18 @@ func ProfileGet(c fiber.Ctx) error {
 		wornClan, _ = service.Clan.WornClan(targetUser.ID)
 	}
 
+	var profileClans []*models.Clan
+	clansError := false
+	if service.Clan != nil {
+		profileClans, err = service.Clan.GetJoinedClans(targetUser.ID)
+		if err != nil {
+			log.Printf("ProfileGet clans error: %v", err)
+			clansError = true
+		}
+	} else {
+		clansError = true
+	}
+
 	var wearing []*models.ShopItem
 	avatarBody := models.DefaultAvatar(targetUser.ID)
 	if service.Avatar != nil {
@@ -150,11 +169,14 @@ func ProfileGet(c fiber.Ctx) error {
 		"FollowersCount":   followers,
 		"FollowingCount":   following,
 		"FriendStatus":     friendStatus,
+		"IsFollowing":      isFollowing,
 		"ProfileMusicID":   profileMusicID,
 		"Banner":           profileBanner,
 		"BannerFilter":     models.BannerEffectFilter(targetUser.BannerEffect),
 		"BannerTextBg":     targetUser.BannerTextBg,
 		"WornClan":         wornClan,
+		"ProfileClans":     profileClans,
+		"ClansError":       clansError,
 		"Wearing":          wearing,
 		"ProfileGames":     profileGames,
 		"UserShopItems":    profileShopItems,

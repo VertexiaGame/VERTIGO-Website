@@ -787,12 +787,14 @@ export class AvatarViewer {
 let activeAvatarViewer = null;
 
 window.init3DAvatar = function(userId) {
+    const container = document.getElementById('avatar3d');
+    if (activeAvatarViewer && activeAvatarViewer.container === container && activeAvatarViewer.userId === userId) return;
+
     if (activeAvatarViewer) {
         activeAvatarViewer.destroy();
         activeAvatarViewer = null;
     }
 
-    const container = document.getElementById('avatar3d');
     if (!container) return;
 
     activeAvatarViewer = new AvatarViewer(container, userId);
@@ -981,6 +983,9 @@ const initProfile = () => {
     const userId = container ? container.dataset.userid : null;
     if (userId) {
         window.init3DAvatar(userId);
+    } else if (activeAvatarViewer && !activeAvatarViewer.container.isConnected) {
+        activeAvatarViewer.destroy();
+        activeAvatarViewer = null;
     }
 };
 
@@ -1007,8 +1012,9 @@ if (!window.__prfCardNavBound) {
 }
 
 document.addEventListener('htmx:afterSettle', initProfile);
-document.addEventListener('htmx:beforeTransition', () => {
-    if (activeAvatarViewer) {
+document.addEventListener('htmx:beforeTransition', event => {
+    const target = event.detail.target;
+    if (activeAvatarViewer && target && target.contains(activeAvatarViewer.container)) {
         activeAvatarViewer.destroy();
         activeAvatarViewer = null;
     }

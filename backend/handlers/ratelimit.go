@@ -198,7 +198,11 @@ func RequestBodyLimit() fiber.Handler {
 			return c.Next()
 		}
 		limit := int64(smallBodyMax)
-		if largeBodyAllowed(c.Path()) {
+		path := strings.ToLower(strings.TrimRight(c.Path(), "/"))
+		if c.Method() == fiber.MethodPost && ((strings.HasPrefix(path, "/forum/s/") && strings.HasSuffix(path, "/threads")) ||
+			(strings.HasPrefix(path, "/forum/t/") && strings.HasSuffix(path, "/replies")) || path == "/api/v1/feed" || path == "/feed") {
+			limit = forumImageRequestLimit
+		} else if largeBodyAllowed(c.Path()) {
 			limit = int64(largeBodyMax)
 		}
 		if int64(length) > limit {

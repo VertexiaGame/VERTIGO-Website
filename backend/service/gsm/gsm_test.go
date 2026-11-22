@@ -571,3 +571,22 @@ func TestLockedGameStaysClosedForOwner(t *testing.T) {
 		t.Fatalf("expected ErrGameClosed for locked game, got %v", err)
 	}
 }
+func TestJoinProgressOnlyReportsStartingForNewServer(t *testing.T) {
+	m, _ := testManager()
+	var stages []string
+	_, redirected, err := m.JoinWithProgress(42, "alice", func(stage string) { stages = append(stages, stage) })
+	if err != nil || redirected {
+		t.Fatalf("first join: redirected=%v err=%v", redirected, err)
+	}
+	if len(stages) != 1 || stages[0] != "starting" {
+		t.Fatalf("new server stages: %v", stages)
+	}
+	stages = nil
+	_, redirected, err = m.JoinWithProgress(42, "bob", func(stage string) { stages = append(stages, stage) })
+	if err != nil || !redirected {
+		t.Fatalf("existing server join: redirected=%v err=%v", redirected, err)
+	}
+	if len(stages) != 0 {
+		t.Fatalf("existing server reported startup: %v", stages)
+	}
+}

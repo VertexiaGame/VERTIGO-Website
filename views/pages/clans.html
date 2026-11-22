@@ -89,7 +89,7 @@
                     <div class="carsec">
                         <div class="gam-shelf-hdr">
                             <h2 class="carttl">Joined Clans</h2>
-                            {{if .IsLoggedIn}}<a href="/create/clans" hx-get="/create/clans" hx-target="body" hx-push-url="true" class="gam-seeall" style="text-decoration: none;">Manage ›</a>{{end}}
+                            {{if .IsLoggedIn}}<a href="/create/assets?tab=clans" hx-get="/create/assets?tab=clans" hx-target="body" hx-push-url="true" class="gam-seeall" style="text-decoration: none;">Manage ›</a>{{end}}
                         </div>
                         {{if .JoinedClans}}
                         <div class="cln-grid">

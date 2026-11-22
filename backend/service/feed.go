@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -70,29 +71,33 @@ func (s *FeedService) GetRecentFeedPaginated(limit, offset, currentUserID int, f
 	return s.feedRepo.GetRecentFeedPostsPaginated(limit, offset, currentUserID)
 }
 
-func (s *FeedService) GetSinglePost(id, currentUserID int) (*models.FeedPost, string) {
+func (s *FeedService) GetSinglePost(id, currentUserID int, feedType string) (*models.FeedPost, string) {
 	if id <= 0 {
 		return nil, ""
 	}
 	if s.feedRepo == nil {
 		return nil, ""
 	}
-	if post, _ := s.feedRepo.GetFeedPostByID(id, currentUserID); post != nil {
-		return post, "worldwide"
+	if feedType != "friends" {
+		if post, _ := s.feedRepo.GetFeedPostByID(id, currentUserID); post != nil {
+			return post, "worldwide"
+		}
 	}
-	if post, _ := s.feedRepo.GetFriendsFeedPostByID(id, currentUserID); post != nil {
-		return post, "friends"
+	if feedType != "worldwide" {
+		if post, _ := s.feedRepo.GetFriendsFeedPostByID(id, currentUserID); post != nil {
+			return post, "friends"
+		}
 	}
 	return nil, ""
 }
 
-func (s *FeedService) PostToFeed(username, content, feedType string) (int, int, string, error) {
+func (s *FeedService) PostToFeed(username, content, feedType string, images ...models.ForumImageUpload) (int, int, string, error) {
 	if username == "" {
 		return 0, 0, "", errors.New("Unauthorized")
 	}
 
 	content = strings.TrimSpace(content)
-	if content == "" {
+	if content == "" && len(images) == 0 {
 		return 0, 0, "", errors.New("Content cannot be empty")
 	}
 
@@ -115,18 +120,29 @@ func (s *FeedService) PostToFeed(username, content, feedType string) (int, int, 
 		}
 	}
 
-	var postID int
-	if feedType == "friends" {
-		postID, err = s.feedRepo.CreateFriendsPost(user.ID, content)
-	} else {
-		postID, err = s.feedRepo.CreatePost(user.ID, content)
-	}
-
+	postID, err := s.feedRepo.CreatePost(user.ID, content, feedType, images)
 	if err != nil {
-		return 0, user.ID, "", err
+		log.Printf("Feed post creation failed: %v", err)
+		return 0, user.ID, "", errors.New("Could not post to the feed. Please try again.")
 	}
 
 	return postID, user.ID, content, nil
+}
+
+func (s *FeedService) GetImage(id, currentUserID int) (models.ForumImageUpload, error) {
+	return s.feedRepo.GetImage(id, currentUserID)
+}
+
+func (s *FeedService) GetPendingImage(id int) (models.ForumImageUpload, error) {
+	return s.feedRepo.GetPendingImage(id)
+}
+
+func (s *FeedService) PendingImages(after, limit int) ([]models.PendingFeedImage, error) {
+	return s.feedRepo.PendingImages(after, limit)
+}
+
+func (s *FeedService) ReviewImage(id int, approve bool) (bool, error) {
+	return s.feedRepo.ReviewImage(id, approve)
 }
 
 func (s *FeedService) ToggleReaction(username string, feedID int, feedType string) (int, bool, error) {

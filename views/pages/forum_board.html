@@ -12,10 +12,10 @@
             <span class="title">Forum</span>
             <div class="pill">
                 <img src="/static/useful/icons/search.png" class="icon" alt="Search">
-                <input type="text" class="input" placeholder="search ..." id="forumBarSearch" autocomplete="off">
+                <input type="text" class="input" placeholder="search shown threads" id="forumBarSearch" autocomplete="off">
             </div>
             <div class="barbtns">
-                <button hx-get="/forum" hx-target="body" hx-push-url="true" class="button barbtn">Go back</button>
+                <a href="/forum" hx-get="/forum" hx-target="body" hx-push-url="true" class="button barbtn">Back to forum</a>
             </div>
         </div>
         <div class="pane" id="forumBoardPane">
@@ -31,8 +31,7 @@
 
                 <div class="fbd-card fbd-sub-hero" style="{{.Board.ToneStyle}}">
                     <div class="fbd-banner">
-                        <span class="fbd-grain" aria-hidden="true"></span>
-                        <span class="fbd-art" aria-hidden="true">{{.Board.Letter}}</span>
+                        <span class="fbd-img" style="{{.Board.ImageStyle}}" aria-hidden="true"></span>
                         <h1 class="fbd-name">{{.Board.Name}}</h1>
                     </div>
                     <div class="fbd-info">
@@ -54,16 +53,16 @@
 
                 <div class="fbd-rules" id="fbdRules">
                     <div class="fbd-toolbar fbd-sub-toolbar">
-                        <div class="fbd-sort-group" role="group" aria-label="Sort threads">
-                            <a href="{{.Board.Path}}?sort=newest" hx-get="{{.Board.Path}}?sort=newest" hx-target="body" hx-push-url="true" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "newest"}} is-active{{end}}">
+                        <div class="fbd-sort-group" role="group" aria-label="Sort threads" hx-boost="false">
+                            <a href="{{.Board.Path}}?sort=newest" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "newest"}} is-active{{end}}"{{if eq .Sort "newest"}} aria-current="true"{{end}}>
                                 <i class="fa-solid fa-clock fbd-tool-ico" aria-hidden="true"></i>
-                                <span>Newest</span>
+                                <span>Recent Activity</span>
                             </a>
-                            <a href="{{.Board.Path}}?sort=replies" hx-get="{{.Board.Path}}?sort=replies" hx-target="body" hx-push-url="true" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "replies"}} is-active{{end}}">
+                            <a href="{{.Board.Path}}?sort=replies" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "replies"}} is-active{{end}}"{{if eq .Sort "replies"}} aria-current="true"{{end}}>
                                 <i class="fa-solid fa-fire fbd-tool-ico" aria-hidden="true"></i>
                                 <span>Most Replies</span>
                             </a>
-                            <a href="{{.Board.Path}}?sort=oldest" hx-get="{{.Board.Path}}?sort=oldest" hx-target="body" hx-push-url="true" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "oldest"}} is-active{{end}}">
+                            <a href="{{.Board.Path}}?sort=oldest" class="fbd-tool-btn fbd-sort-btn{{if eq .Sort "oldest"}} is-active{{end}}"{{if eq .Sort "oldest"}} aria-current="true"{{end}}>
                                 <i class="fa-solid fa-hourglass-start fbd-tool-ico" aria-hidden="true"></i>
                                 <span>Oldest</span>
                             </a>
@@ -76,7 +75,7 @@
                         </button>
 
                         <div class="setinbox fbd-search">
-                            <input type="search" class="setin" id="fthSearchInput" name="q" placeholder="Search threads in {{.Board.Name}}" autocomplete="off" maxlength="80" aria-label="Search threads in {{.Board.Name}}">
+                            <input type="search" class="setin" id="fthSearchInput" name="q" placeholder="Search shown threads" autocomplete="off" maxlength="80" aria-label="Search threads in {{.Board.Name}}">
                         </div>
                     </div>
 
@@ -103,65 +102,60 @@
                                 <span class="cln-compose-txt">Create a thread</span>
                                 <i class="fa-solid fa-chevron-down cln-compose-arrow" aria-hidden="true"></i>
                             </summary>
-                            <form class="cln-compose-form" id="fbdComposeForm" action="{{.Board.Path}}/threads" method="POST" hx-boost="false">
-                                <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+                            <form class="cln-compose-form" id="fbdComposeForm" action="{{.Board.Path}}/threads" method="POST" enctype="multipart/form-data" hx-boost="false">
+                                <input type="hidden" name="csrf" value="{{.CSRF}}">
                                 <div class="crtfld">
                                     <label class="crtlbl" for="fthTitleInput">Title</label>
-                                    <div class="instk">
-                                        <div class="instkrw">
-                                            <div class="ttpcnt">
-                                                <div class="setinbox"><input type="text" class="setin" id="fthTitleInput" name="title" minlength="3" maxlength="100" placeholder="Thread title" required autocomplete="off"></div>
-                                                <span class="ttptxt">Maximum of 100 characters</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div class="setinbox"><input type="text" class="setin" id="fthTitleInput" name="title" minlength="3" maxlength="100" placeholder="Thread title" required autocomplete="off"></div>
+                                    <span class="shp-subheading">Maximum of 100 characters</span>
                                 </div>
                                 <div class="crtfld">
                                     <label class="crtlbl" for="fthBodyInput">Message</label>
-                                    <div class="instk">
-                                        <div class="instkrw">
-                                            <div class="ttpcnt">
-                                                <div class="setareabox"><textarea class="setarea" id="fthBodyInput" name="body" minlength="3" maxlength="4000" placeholder="What's on your mind?" required></textarea></div>
-                                                <span class="ttptxt">Maximum of 4000 characters</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div class="setareabox"><textarea class="setarea" id="fthBodyInput" name="body" minlength="3" maxlength="4000" placeholder="What's on your mind?" required></textarea></div>
+                                    <span class="shp-subheading">Maximum of 4000 characters</span>
                                 </div>
+                                {{template "components/forum/image_upload" .}}
                                 <div class="cln-compose-act">
                                     <button type="submit" class="primary hpyprim hpyinl hpysm" id="fbdSubmitBtn"><span>Post thread</span></button>
                                 </div>
                             </form>
                         </details>
                         {{else}}
-                        <a href="/login" hx-get="/login" hx-target="body" hx-push-url="true" class="cln-compose fbd-compose fbd-compose-login">
+                        <a href="/login?next={{.Board.Path}}" class="cln-compose fbd-compose fbd-compose-login">
                             <span class="cln-compose-sum">
                                 <i class="fa-solid fa-plus cln-compose-ico" aria-hidden="true"></i>
-                                <span class="cln-compose-txt">Create a thread</span>
+                                <span class="cln-compose-txt">Log in to create a thread</span>
                                 <i class="fa-solid fa-chevron-right cln-compose-arrow" aria-hidden="true"></i>
                             </span>
                         </a>
                         {{end}}
 
+                        <div class="shpitm-relatedhdr forum-section-heading">
+                            <h2 class="forum-section-title">Threads</h2>
+                            <span class="shp-subheading">{{.ThreadCount}} {{if eq .ThreadCount 1}}thread{{else}}threads{{end}}</span>
+                        </div>
+                        <div id="fthResults" aria-busy="false">
                         {{if .Threads}}
-                        <div class="fth-table" id="fthTable">
-                            <div class="fth-head" aria-hidden="true">
-                                <span class="fth-col-main">Thread</span>
-                                <span class="fth-col-creator">Creator</span>
-                                <span class="fth-col-date">Date Posted</span>
-                                <span class="fth-col-replies">Replies</span>
-                            </div>
-                            <div class="fth-list" id="fthList">
+                        <div id="fthTable">
+                            <div class="cln-announce-list" id="fthList">
                                 {{range .Threads}}{{template "components/forum/thread" .}}{{end}}
                             </div>
                         </div>
-                        <div class="feedemt fbd-empty" id="fthSearchEmpty" hidden>No threads match that search. Try a different keyword.</div>
+                        <div class="feedemt fbd-empty" id="fthSearchEmpty" hidden>No shown threads match that search. Try a different keyword.</div>
+                        {{if gt .Pages 1}}<nav class="fbd-pagination" aria-label="Thread pages">
+                            {{if gt .Page 1}}<a class="primary hpyprim hpyinl hpysm" href="{{.Board.Path}}?sort={{.Sort}}&amp;page={{.PrevPage}}"><span>Previous</span></a>{{end}}
+                            <span>Page {{.Page}} of {{.Pages}}</span>
+                            {{if lt .Page .Pages}}<a class="primary hpyprim hpyinl hpysm" href="{{.Board.Path}}?sort={{.Sort}}&amp;page={{.NextPage}}"><span>Next</span></a>{{end}}
+                        </nav>{{end}}
                         {{else}}
                         <div class="feedemt fbd-empty">No threads in <strong>{{.Board.Name}}</strong> yet. Be the first to start a conversation!</div>
                         {{end}}
+                        </div>
+                        <div id="fthSortError" class="frminerr" role="alert" hidden></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<script src="/static/js/forum/forum.js?v={{.AssetV}}"></script>
+<script type="module" src="/static/js/forum/forum.js?v={{.AssetV}}"></script>

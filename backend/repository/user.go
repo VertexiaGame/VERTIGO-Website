@@ -439,9 +439,67 @@ func (r *UserRepository) GetUserSocialCounts(userID int) (int, int, int) {
 	}
 	var friends, followers, following int
 	_ = r.db.QueryRow("SELECT COUNT(*) FROM friends WHERE (uid = ? OR fid = ?) AND state = 'accepted'", userID, userID).Scan(&friends)
-	_ = r.db.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&followers)
+	followers, _ = r.GetFollowersCount(userID)
 	_ = r.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&following)
 	return friends, followers, following
+}
+
+func (r *UserRepository) GetFollowersCount(userID int) (int, error) {
+	if r.db == nil {
+		return 0, errors.New("database connection is offline")
+	}
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&count)
+	return count, err
+}
+
+func (r *UserRepository) IsFollowing(userID, targetID int) (bool, error) {
+	if r.db == nil {
+		return false, errors.New("database connection is offline")
+	}
+	var following bool
+	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM followers WHERE follower_id = ? AND following_id = ?)", userID, targetID).Scan(&following)
+	return following, err
+}
+
+func (r *UserRepository) SetFollowing(userID, targetID int, follow bool) error {
+	if r.db == nil {
+		return errors.New("database connection is offline")
+	}
+	if follow {
+		_, err := r.db.Exec("INSERT INTO followers (follower_id, following_id) SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM followers WHERE follower_id = ? AND following_id = ?) ON DUPLICATE KEY UPDATE follower_id = follower_id", userID, targetID, userID, targetID)
+		return err
+	}
+	_, err := r.db.Exec("DELETE FROM followers WHERE follower_id = ? AND following_id = ?", userID, targetID)
+	return err
+}
+
+func (r *UserRepository) GetFollowList(userID int, followers bool) ([]*models.FriendUserInfo, error) {
+	if r.db == nil {
+		return nil, errors.New("database connection is offline")
+	}
+	query := `SELECT u.id, u.username, COALESCE(NULLIF(u.displayname, ''), u.username)
+		FROM followers f JOIN users u ON u.id = f.following_id
+		WHERE f.follower_id = ? ORDER BY u.username ASC, u.id ASC`
+	if followers {
+		query = `SELECT u.id, u.username, COALESCE(NULLIF(u.displayname, ''), u.username)
+			FROM followers f JOIN users u ON u.id = f.follower_id
+			WHERE f.following_id = ? ORDER BY u.username ASC, u.id ASC`
+	}
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	users := make([]*models.FriendUserInfo, 0)
+	for rows.Next() {
+		var user models.FriendUserInfo
+		if err := rows.Scan(&user.UserID, &user.Username, &user.DisplayName); err != nil {
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	return users, rows.Err()
 }
 
 func (r *UserRepository) ChangeDisplayName(userID int, newDisplayName, oldDisplayName string) error {

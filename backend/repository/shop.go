@@ -13,11 +13,19 @@ import (
 )
 
 type ShopRepository struct {
-	db *sql.DB
+	db              *sql.DB
+	specialSetupErr error
 }
 
 func NewShopRepository(db *sql.DB) *ShopRepository {
-	return &ShopRepository{db: db}
+	r := &ShopRepository{db: db}
+	if db != nil {
+		r.specialSetupErr = r.backfillMissingSpecialCopies()
+		if r.specialSetupErr != nil {
+			log.Printf("Special item backfill failed: %v", r.specialSetupErr)
+		}
+	}
+	return r
 }
 
 func (r *ShopRepository) scanShopItem(scanner interface{ Scan(dest ...any) error }) (*models.ShopItem, error) {
@@ -90,7 +98,8 @@ func shopTypeCondition(cat string) string {
 }
 
 func (r *ShopRepository) buildWhereClause(filter *models.ShopFilter) (string, []any) {
-	whereClauses := []string{"s.deleted = 0", "s.onsale != 'false'", "s.offsale != 'true'"}
+	whereClauses := []string{"s.deleted = 0", "s.offsale != 'true'",
+		"(s.onsale != 'false' OR (s.special = 'true' AND s.original_stock > 0 AND s.stock <= 0 AND s.approval_state = 'approved'))"}
 	var args []any
 
 	if filter.Search != "" {
@@ -100,7 +109,9 @@ func (r *ShopRepository) buildWhereClause(filter *models.ShopFilter) (string, []
 	}
 
 	cat, _ := models.NormalizeShopCategory(filter.Category)
-	if cond := shopTypeCondition(cat); cond != "" {
+	if strings.EqualFold(filter.Category, "special") {
+		whereClauses = append(whereClauses, "s.special = 'true' AND s.approval_state = 'approved'")
+	} else if cond := shopTypeCondition(cat); cond != "" {
 		whereClauses = append(whereClauses, cond)
 	}
 
@@ -213,6 +224,9 @@ func (r *ShopRepository) GetItems(filter *models.ShopFilter) ([]*models.ShopItem
 }
 
 func (r *ShopRepository) fallbackGetItemsFromShopTable(filter *models.ShopFilter) ([]*models.ShopItem, int, error) {
+	if strings.EqualFold(filter.Category, "special") {
+		return []*models.ShopItem{}, 0, nil
+	}
 	whereClauses := []string{"1=1"}
 	var args []any
 
@@ -270,9 +284,16 @@ func (r *ShopRepository) fallbackGetItemsFromShopTable(filter *models.ShopFilter
 	return items, total, nil
 }
 
-func (r *ShopRepository) Create(cid int, name, description, itemType string, bucks, bits int, transform string) (int, error) {
+func (r *ShopRepository) Create(cid int, name, description, itemType string, bucks, bits int, transform string, stock int) (int, error) {
 	if r.db == nil {
 		return 0, errors.New("database connection is offline")
+	}
+	special := "false"
+	if stock > 0 {
+		if err := r.specialAvailable(); err != nil {
+			return 0, err
+		}
+		special = "true"
 	}
 
 	tx, err := r.db.Begin()
@@ -297,8 +318,8 @@ func (r *ShopRepository) Create(cid int, name, description, itemType string, buc
 	}
 	now := time.Now()
 	_, err = tx.Exec(
-		`INSERT INTO shopitem (id, cid, creator_type, name, description, type, bucks, bits, special, stock, deleted, ugc, approval_state, onsale, createdat, updatedat, original_stock, rap, offsale, transform) VALUES (?, ?, 'user', ?, ?, ?, ?, ?, 'false', 0, 0, 'true', 'pending', 'false', ?, ?, 0, 0, 'false', ?)`,
-		maxID+1, cid, name, description, itemType, bucks, bits, now, now, transformArg,
+		`INSERT INTO shopitem (id, cid, creator_type, name, description, type, bucks, bits, special, stock, deleted, ugc, approval_state, onsale, createdat, updatedat, original_stock, rap, offsale, transform) VALUES (?, ?, 'user', ?, ?, ?, ?, ?, ?, ?, 0, 'true', 'pending', 'false', ?, ?, ?, 0, 'false', ?)`,
+		maxID+1, cid, name, description, itemType, bucks, bits, special, stock, now, now, stock, transformArg,
 	)
 	if err != nil {
 		return 0, err
@@ -573,8 +594,15 @@ func (r *ShopRepository) GrantItem(userID, itemID int, bv string, aid int, price
 	if _, ok := map[string]bool{"trade": true, "free": true, "vertices": true, "tickets": true, "awarded": true}[bv]; !ok {
 		bv = "awarded"
 	}
-	_, err := r.db.Exec(`INSERT INTO crate (iid, uid, bv, aid, price, date) VALUES (?, ?, ?, ?, ?, NOW())`, itemID, userID, bv, aid, price)
-	return err
+	res, err := r.db.Exec(`INSERT INTO crate (iid, uid, bv, aid, price, date)
+		SELECT id, ?, ?, ?, ?, NOW() FROM shopitem WHERE id = ? AND special != 'true'`, userID, bv, aid, price, itemID)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
+		return errors.New("item cannot be granted")
+	}
+	return nil
 }
 
 func (r *ShopRepository) PurchaseItem(userID, itemID int, currency string) (*models.Crate, error) {
@@ -605,12 +633,12 @@ func (r *ShopRepository) PurchaseItem(userID, itemID int, currency string) (*mod
 
 	var bucksPrice, bitsPrice int
 	var deleted int
-	var onsale, offsale string
+	var onsale, offsale, special string
 	var approval string
 	var stock, originalStock int
 	var creatorID int
 	var creatorType string
-	err = tx.QueryRow(`SELECT bucks, bits, deleted, onsale, offsale, approval_state, stock, original_stock, cid, creator_type FROM shopitem WHERE id = ? FOR UPDATE`, itemID).Scan(&bucksPrice, &bitsPrice, &deleted, &onsale, &offsale, &approval, &stock, &originalStock, &creatorID, &creatorType)
+	err = tx.QueryRow(`SELECT bucks, bits, deleted, onsale, offsale, approval_state, stock, original_stock, cid, creator_type, special FROM shopitem WHERE id = ? FOR UPDATE`, itemID).Scan(&bucksPrice, &bitsPrice, &deleted, &onsale, &offsale, &approval, &stock, &originalStock, &creatorID, &creatorType, &special)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("item not found")
@@ -626,7 +654,12 @@ func (r *ShopRepository) PurchaseItem(userID, itemID int, currency string) (*mod
 	if approval != "approved" {
 		return nil, errors.New("item is not approved for sale")
 	}
-	if originalStock > 0 && stock <= 0 {
+	if special == "true" {
+		if err := r.specialAvailable(); err != nil {
+			return nil, err
+		}
+	}
+	if (originalStock > 0 && stock <= 0) || (special == "true" && originalStock <= 0) {
 		return nil, errors.New("item is out of stock")
 	}
 
@@ -728,15 +761,11 @@ func (r *ShopRepository) PurchaseItem(userID, itemID int, currency string) (*mod
 	}
 
 	if originalStock > 0 {
-		res, e := tx.Exec(`UPDATE shopitem SET stock = stock - 1 WHERE id = ? AND stock > 0 LIMIT 1`, itemID)
-		if e != nil {
-			res2, e2 := tx.Exec(`UPDATE shopitem SET stock = stock - 1 WHERE id = ? AND stock > 0`, itemID)
-			if e2 != nil {
-				return nil, e
-			}
-			res = res2
+		res, err := tx.Exec(`UPDATE shopitem SET stock = stock - 1 WHERE id = ? AND stock > 0`, itemID)
+		if err != nil {
+			return nil, err
 		}
-		if n, _ := res.RowsAffected(); n == 0 {
+		if n, err := res.RowsAffected(); err != nil || n != 1 {
 			return nil, errors.New("item is out of stock")
 		}
 	}
@@ -748,25 +777,27 @@ func (r *ShopRepository) PurchaseItem(userID, itemID int, currency string) (*mod
 		}
 		return nil, err
 	}
-	lastID, _ := res.LastInsertId()
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	serial := 0
+	if special == "true" {
+		serial = originalStock - stock + 1
+		if _, err := tx.Exec(`INSERT INTO shop_special_copies (crate_id, item_id, serial) VALUES (?, ?, ?)`, lastID, itemID, serial); err != nil {
+			return nil, err
+		}
+	}
+
+	crate := &models.Crate{Serial: serial}
+	if err := tx.QueryRow(`SELECT id, iid, uid, bv, aid, price, date FROM crate WHERE id = ?`, lastID).
+		Scan(&crate.ID, &crate.IID, &crate.UID, &crate.BV, &crate.AID, &crate.Price, &crate.Date); err != nil {
+		return nil, err
+	}
 
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	committed = true
-	err = nil
-
-	crateID := int(lastID)
-	cDate := time.Now()
-	var dbAID int
-	_ = r.db.QueryRow(`SELECT id, iid, uid, bv, aid, price, date FROM crate WHERE id = ?`, crateID).Scan(&crateID, &itemID, &userID, &bv, &dbAID, &price, &cDate)
-	return &models.Crate{
-		ID:    crateID,
-		IID:   itemID,
-		UID:   userID,
-		BV:    bv,
-		AID:   dbAID,
-		Price: price,
-		Date:  cDate,
-	}, nil
+	return crate, nil
 }

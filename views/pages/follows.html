@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="/static/css/forms.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/inputs.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/set.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/dash.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/frn.css?v={{.AssetV}}">
+<div class="wrap">
+    <div class="cont">
+        <div class="studs"></div>
+        <div class="bar">
+            <span class="title">Followers</span>
+            <div class="pill">
+                <img src="/static/useful/icons/search.png" class="icon" alt="">
+                <input type="search" class="input" placeholder="Search users" aria-label="Search users" oninput="window.filterFollowUsers(this)">
+            </div>
+            <div class="barbtns">
+                <a href="/user/{{.TargetUser.ID}}" hx-get="/user/{{.TargetUser.ID}}" hx-target="body" hx-push-url="true" class="button barbtn">Go back</a>
+            </div>
+        </div>
+        <div class="pane">
+            <div class="frmlay">
+                <div class="frmmain" style="padding-top: 24px !important;">
+                    <div class="tabcnt settabcnt" style="max-width: 100% !important;">
+                        <div class="tablst follow-tabs">
+                            <div class="tabind"></div>
+                            <a class="tabbtn{{if eq .ActiveTab "followers"}} active{{end}}" href="/follows/{{.TargetUser.ID}}?tab=followers" hx-boost="false" onclick="return window.switchFollowTab(event, 'followers')">Followers</a>
+                            <a class="tabbtn{{if eq .ActiveTab "following"}} active{{end}}" href="/follows/{{.TargetUser.ID}}?tab=following" hx-boost="false" onclick="return window.switchFollowTab(event, 'following')">Following</a>
+                        </div>
+                        <div class="settabvwp">
+                            <div id="follow-tab-followers" class="settabcntnt{{if eq .ActiveTab "followers"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Followers</h3>
+                                    {{if .Followers}}
+                                    <div class="frngrd">
+                                        {{range .Followers}}
+                                        <div class="frncrd" data-follow-user>
+                                            <div class="frntop">
+                                                <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frnavt">
+                                                    <img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.Username}}">
+                                                </a>
+                                                <div class="frndtl">
+                                                    <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frndn">{{.DisplayName}}</a>
+                                                    <span class="frnun">@{{.Username}}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {{end}}
+                                    </div>
+                                    <div class="frnemt" data-follow-search-empty hidden>No users match your search.</div>
+                                    {{else}}
+                                    <div class="frnemt">No followers to display.</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div id="follow-tab-following" class="settabcntnt{{if eq .ActiveTab "following"}} active{{end}}">
+                                <div class="setcrd">
+                                    <h3 class="setttl">Following</h3>
+                                    {{if .Following}}
+                                    <div class="frngrd">
+                                        {{range .Following}}
+                                        <div class="frncrd" data-follow-user>
+                                            <div class="frntop">
+                                                <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frnavt">
+                                                    <img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.Username}}">
+                                                </a>
+                                                <div class="frndtl">
+                                                    <a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="frndn">{{.DisplayName}}</a>
+                                                    <span class="frnun">@{{.Username}}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {{end}}
+                                    </div>
+                                    <div class="frnemt" data-follow-search-empty hidden>No users match your search.</div>
+                                    {{else}}
+                                    <div class="frnemt">Not following anyone yet.</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/js/friends/friends.js?v={{.AssetV}}"></script>
+<script src="/static/js/friends/follows.js?v={{.AssetV}}"></script>

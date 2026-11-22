@@ -173,6 +173,79 @@
 .carcnt:hover .cardsc {
     font-size: 14px !important;
 }
+.forum-gallery.carcnt {
+    max-width: 420px !important;
+    height: auto !important;
+    margin-block: 10px;
+    background: var(--ink-strong);
+}
+
+.forum-gallery:not(.is-carousel) .cartrk {
+    display: block !important;
+    height: auto !important;
+}
+
+.forum-gallery .carsld,
+.forum-gallery .carimg {
+    display: block;
+}
+
+.forum-gallery .carimg {
+    object-fit: scale-down !important;
+}
+
+.forum-gallery:not(.is-carousel) .carimg {
+    height: auto !important;
+    max-height: 220px;
+}
+
+.forum-gallery.is-carousel {
+    aspect-ratio: 530 / 260;
+}
+
+.forum-gallery.is-carousel .cartrk {
+    position: absolute;
+    inset: 0;
+}
+
+.forum-gallery .carovl {
+    opacity: .45;
+}
+
+.forum-gallery:focus-within .cararr,
+.forum-gallery .cararr:focus-visible {
+    opacity: 1 !important;
+}
+
+.forum-gallery .carsld:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
+.forum-gallery-position {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.forum-gallery .forum-gallery-toggle {
+    top: auto !important;
+    right: 12px;
+    bottom: 8px;
+    transform: none !important;
+    font-size: 16px !important;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .forum-gallery .cararr {
+        opacity: .8 !important;
+        min-width: 36px;
+        min-height: 36px;
+    }
+}
+
 .feedinbox {
     box-sizing: border-box !important;
     position: absolute !important;
@@ -1028,4 +1101,69 @@
         margin-left: -20px !important;
         max-width: 350px !important;
     }
+}
+.feed-composer {
+    padding-top: 34px;
+}
+.feed-composer .feedinbox {
+    position: relative !important;
+    top: 0 !important;
+}
+.feed-composer .feedin {
+    padding-right: 96px !important;
+}
+.feed-composer .feed-attach-button {
+    right: 48px !important;
+    font-size: 18px;
+}
+.feed-composer .feedsnd:focus-visible {
+    outline: 2px solid var(--accent) !important;
+    outline-offset: -4px;
+    opacity: 1 !important;
+}
+.feed-attachments:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 0;
+    font-size: 13px;
+    color: var(--muted);
+}
+.feed-attachments .crtthumbcount {
+    font-weight: 600;
+}
+.feed-attachments .crtthumbcount,
+.feed-attachments button {
+    flex-shrink: 0;
+}
+.feed-attachments .crtupname {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.feed-upload-error:not(:empty),
+.feed-composer ~ .feederr.visible {
+    display: block;
+    padding: 4px 12px;
+    color: var(--danger);
+    font-size: 13px;
+}
+.feed-upload-success:not(:empty) {
+    display: block;
+    padding: 4px 12px;
+    color: var(--success-ink);
+    font-size: 13px;
+}
+.feed-upload-error:empty,
+.feed-composer ~ .feederr:not(.visible) {
+    display: none;
+}
+.feed-composer ~ .feederr {
+    position: static !important;
+}
+.tabcnt .feed-composer ~ .pstlst {
+    margin-top: 8px !important;
+}
+.pstcrd .feed-gallery.carcnt {
+    width: auto !important;
+    margin: 8px 16px 12px 99px;
 }

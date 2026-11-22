@@ -304,6 +304,10 @@
     align-items: flex-start;
 }
 
+#crtShopStockField[hidden] {
+    display: none;
+}
+
 .crtfld {
     display: flex;
     flex-direction: column;

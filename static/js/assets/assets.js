@@ -1,5 +1,6 @@
+(function() {
 const initAssetsPage = () => {
-    document.querySelectorAll('#assetGrid img.avtldimg').forEach(img => {
+    document.querySelectorAll('#assetGrid img.avtldimg, #itemGrid img.avtldimg').forEach(img => {
         if (img.complete && img.naturalWidth > 0) {
             img.classList.add('ld');
         } else {
@@ -7,17 +8,18 @@ const initAssetsPage = () => {
         }
     });
 
-    const searchInput = document.getElementById('assetSearch');
-    if (searchInput) {
+    [['assetSearch', 'assetGrid'], ['itemSearch', 'itemGrid']].forEach(function(pair) {
+        const searchInput = document.getElementById(pair[0]);
+        if (!searchInput) return;
         searchInput.oninput = function() {
             const q = this.value.trim().toLowerCase();
-            document.querySelectorAll('#assetGrid .shp-card, #assetGrid .avtitm').forEach(item => {
+            document.querySelectorAll('#' + pair[1] + ' .shp-card, #' + pair[1] + ' .avtitm').forEach(item => {
                 const nameEl = item.querySelector('.avtitmnm');
                 const match = !q || (nameEl && nameEl.textContent.toLowerCase().indexOf(q) !== -1);
-                item.style.display = match ? '' : 'none';
+                item.style.setProperty('display', match ? '' : 'none', match ? '' : 'important');
             });
         };
-    }
+    });
 };
 
 function assetEsc(s) {
@@ -205,9 +207,13 @@ if (!window.__assetNavBound) {
     });
 }
 
-window.addEventListener('pagehide', stopAssetAudioOnNavigation);
-window.addEventListener('beforeunload', stopAssetAudioOnNavigation);
-document.addEventListener('htmx:beforeSwap', stopAssetAudioOnNavigation);
-
 initAssetsPage();
-document.addEventListener('htmx:afterSettle', initAssetsPage);
+if (!window.__assetsPageWired) {
+    window.__assetsPageWired = true;
+    window.addEventListener('pagehide', stopAssetAudioOnNavigation);
+    window.addEventListener('beforeunload', stopAssetAudioOnNavigation);
+    document.addEventListener('htmx:beforeSwap', stopAssetAudioOnNavigation);
+    document.addEventListener('htmx:afterSettle', initAssetsPage);
+}
+
+})();

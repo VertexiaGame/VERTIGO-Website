@@ -439,7 +439,8 @@
 }
 
 .adm-clnmedia-banner,
-.adm-clnmedia-icon {
+.adm-clnmedia-icon,
+.adm-forum-preview {
     border: 1px solid var(--line) !important;
     border-radius: 8px !important;
     background: var(--surface) !important;
@@ -458,11 +459,67 @@
 }
 
 .adm-clnmedia-banner img,
-.adm-clnmedia-icon img {
+.adm-clnmedia-icon img,
+.adm-forum-preview img {
     display: block !important;
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
+}
+
+.adm-main-tab-list {
+    right: 0;
+    gap: 4px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.adm-main-tab-list .tabbtn {
+    flex-shrink: 0;
+    padding-inline: 11px !important;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.adm-main-tab-list .tabbtn:focus-visible {
+    outline: 2px solid #fff !important;
+    outline-offset: -3px;
+}
+
+.adm-tab-link {
+    text-decoration: none;
+}
+
+.adm-image-queue-status:empty {
+    display: none;
+}
+
+.adm-forum-queue .adm-cardttl,
+.adm-forum-post {
+    overflow-wrap: anywhere;
+}
+
+.adm-forum-preview {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+}
+
+.adm-forum-preview img {
+    object-fit: contain !important;
+}
+
+.adm-forum-post {
+    white-space: pre-wrap;
+    margin: 0 !important;
+}
+
+.adm-forum-queue .adm-modbtns {
+    margin-top: auto;
+}
+
+.adm-forum-queue a.primary {
+    text-decoration: none;
 }
 
 .adm-tblcnt {

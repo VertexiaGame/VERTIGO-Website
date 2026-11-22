@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -125,6 +128,57 @@ func GameJoinPost(c fiber.Ctx) error {
 		"ukey":        user.Unikey,
 		"client_args": "--ip " + server.Host + " --port " + strconv.Itoa(server.Port) + " --ukey " + user.Unikey,
 		"client_uri":  "vertexia-client://play?ip=" + url.QueryEscape(server.Host) + "&port=" + strconv.Itoa(server.Port) + "&ukey=" + url.QueryEscape(user.Unikey),
+	})
+}
+
+func GameJoinProgressPost(c fiber.Ctx) error {
+	username := GetActiveUser(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Please log in to play"})
+	}
+	gameID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || gameID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid game ID"})
+	}
+	if service.User == nil || service.Game == nil || service.GSM == nil {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Gameservers are currently unavailable"})
+	}
+	user, err := service.User.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Please log in to play"})
+	}
+	manager, ukey := service.GSM, user.Unikey
+	c.Set("Content-Type", "application/x-ndjson")
+	c.Set("Cache-Control", "no-store, no-transform")
+	c.Set("X-Accel-Buffering", "no")
+	return c.SendStreamWriter(func(w *bufio.Writer) {
+		send := func(value fiber.Map) {
+			data, e := json.Marshal(value)
+			if e == nil {
+				_, _ = fmt.Fprintf(w, "%s\n", data)
+				_ = w.Flush()
+			}
+		}
+		send(fiber.Map{"stage": "looking"})
+		server, _, err := manager.JoinWithProgress(gameID, username, func(stage string) { send(fiber.Map{"stage": stage}) })
+		if err != nil {
+			msg := "Could not join game. Please try again."
+			switch {
+			case errors.Is(err, gsm.ErrGameMissing), errors.Is(err, gsm.ErrGameClosed):
+				msg = "Game not found"
+			case errors.Is(err, gsm.ErrNoCapacity):
+				msg = "All gameservers are full right now. Please try again shortly."
+			case errors.Is(err, gsm.ErrLaunch):
+				msg = "Could not launch a gameserver. Please try again shortly."
+			case errors.Is(err, gsm.ErrUnavailable):
+				msg = "Gameservers are currently unavailable"
+			}
+			log.Printf("GSM join game %d by %s failed: %v", gameID, username, err)
+			send(fiber.Map{"error": msg})
+			return
+		}
+		syncGamePlaying(gameID, "", -1)
+		send(fiber.Map{"stage": "joining", "client_uri": "vertexia-client://play?ip=" + url.QueryEscape(server.Host) + "&port=" + strconv.Itoa(server.Port) + "&ukey=" + url.QueryEscape(ukey)})
 	})
 }
 
