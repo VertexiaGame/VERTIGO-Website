@@ -1,4 +1,5 @@
-.collection-tabs a.tabbtn {
+.collection-tabs a.tabbtn,
+.barbtns [data-collection-create] {
     text-decoration: none;
 }
 

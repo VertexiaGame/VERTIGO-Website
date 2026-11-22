@@ -49,10 +49,7 @@
                     </div>
                     {{end}}
                     {{if and (not .Owned) (not .Joined)}}
-                    <div class="cln-empty">
-                        <div class="feedemt">You aren't part of a clan yet. Build a crew around the way you play.</div>
-                        <a href="/create?type=clan" hx-get="/create?type=clan" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration: none;"><span>Create a Clan</span></a>
-                    </div>
+                    <div class="feedemt" style="grid-column: 1 / -1;">You don't have any clans yet.</div>
                     {{end}}
                 </div>
 
