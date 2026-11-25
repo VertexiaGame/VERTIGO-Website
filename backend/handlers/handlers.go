@@ -40,6 +40,7 @@ type wsMessage struct {
 	FullDate  string          `json:"full_date"`
 	Reactions int             `json:"reactions"`
 	FeedType  string          `json:"feed_type"`
+	Images    []int           `json:"images,omitempty"`
 	Tag       *models.ClanTag `json:"tag,omitempty"`
 }
 
@@ -430,7 +431,7 @@ func PostFeed(c fiber.Ctx) error {
 	}
 
 	feedType := feedTypeOrDefault(c.FormValue("feed_type"))
-	postID, userID, content, err := service.Feed.PostToFeed(username, c.FormValue("content"), feedType, images...)
+	created, err := service.Feed.PostToFeed(username, c.FormValue("content"), feedType, images...)
 	if err != nil {
 		if !jsonResponse && mediaType != "multipart/form-data" {
 			return c.Redirect().To("/")
@@ -438,7 +439,7 @@ func PostFeed(c fiber.Ctx) error {
 		return fail(fiber.StatusBadRequest, err.Error())
 	}
 
-	post := BroadcastFeedPost(postID, username, userID, content, feedType)
+	post := BroadcastFeedPost(created, feedType)
 	if jsonResponse {
 		return c.Status(fiber.StatusCreated).JSON(post)
 	}
@@ -576,14 +577,14 @@ func FeedWS(c *websocket.Conn) {
 
 				default:
 					if service.Feed != nil {
-						postID, userID, storedContent, err := service.Feed.PostToFeed(username, clientMsg.Content, feedType)
+						post, err := service.Feed.PostToFeed(username, clientMsg.Content, feedType)
 						if err != nil {
 							sendFeedError(client, err)
 							continue
 						}
 
-						if postID > 0 {
-							BroadcastFeedPost(postID, username, userID, storedContent, feedType)
+						if post.ID > 0 {
+							BroadcastFeedPost(post, feedType)
 						}
 					}
 				}
@@ -601,20 +602,21 @@ func (ws *WSClient) Write(messageType int, data []byte) error {
 	return ws.conn.WriteMessage(messageType, data)
 }
 
-func BroadcastFeedPost(id int, username string, userID int, content, feedType string) wsMessage {
+func BroadcastFeedPost(post *models.FeedPost, feedType string) wsMessage {
 	msg := wsMessage{
 		Type:      "new_post",
-		ID:        id,
-		Username:  username,
-		UserID:    userID,
-		Content:   content,
+		ID:        post.ID,
+		Username:  post.Username,
+		UserID:    post.UserID,
+		Content:   post.Content,
 		TimeAgo:   "Just now",
 		FullDate:  time.Now().Format("January 02, 2006 at 03:04 PM"),
 		Reactions: 0,
 		FeedType:  feedType,
-		Tag:       wornClanTag(userID),
+		Images:    post.Images,
+		Tag:       wornClanTag(post.UserID),
 	}
-	if content == "" {
+	if post.Content == "" && len(post.Images) == 0 {
 		return msg
 	}
 	data, err := json.Marshal(msg)
@@ -623,12 +625,12 @@ func BroadcastFeedPost(id int, username string, userID int, content, feedType st
 	}
 
 	for _, item := range getFeedClientsSnapshot() {
-		if feedType == "friends" && item.username != username {
+		if feedType == "friends" && item.username != post.Username {
 			recipient, err := service.User.GetUserByUsername(item.username)
 			if err != nil || recipient == nil || service.Friend == nil {
 				continue
 			}
-			status, _ := service.Friend.GetFriendStatus(recipient.ID, userID)
+			status, _ := service.Friend.GetFriendStatus(recipient.ID, post.UserID)
 			if status != "friends" {
 				continue
 			}

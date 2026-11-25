@@ -8,6 +8,11 @@ GO is very fast, and it is also very easy. Not only is GO very easy, but Fiber (
 
 ## How to run
 
+For an existing database, stop the website and apply
+`backend/database/migrations/001_community_images.sql` once before running this
+version. It moves existing forum and feed image data into the shared library
+while preserving attachment IDs and approval states.
+
 Just two commands will get you set up and running:
 
 ```bash

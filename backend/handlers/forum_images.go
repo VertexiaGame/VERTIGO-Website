@@ -10,7 +10,9 @@ import (
 	"io"
 	"log"
 	"mime"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/models"
@@ -36,11 +38,21 @@ func forumImageUploads(c fiber.Ctx) ([]models.ForumImageUpload, error) {
 		return nil, errors.New("could not read image attachments")
 	}
 	files := form.File["images"]
-	if len(files) > models.ForumImageMaxCount {
+	saved := form.Value["saved_images"]
+	if len(files)+len(saved) > models.ForumImageMaxCount {
 		return nil, errors.New("attach up to 3 images")
 	}
 
 	var images []models.ForumImageUpload
+	var savedIDs []int64
+	for _, value := range saved {
+		id, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || id <= 0 || slices.Contains(savedIDs, id) {
+			return nil, errors.New("invalid saved image selection")
+		}
+		savedIDs = append(savedIDs, id)
+		images = append(images, models.ForumImageUpload{SavedID: id})
+	}
 	for _, file := range files {
 		if file.Size > models.ForumImageMaxBytes {
 			return nil, errors.New("each image must be 2 MB or smaller")
@@ -66,9 +78,66 @@ func forumImageUploads(c fiber.Ctx) ([]models.ForumImageUpload, error) {
 		if _, _, err := image.Decode(bytes.NewReader(content)); err != nil {
 			return nil, errors.New("attach valid PNG or JPEG images")
 		}
-		images = append(images, models.ForumImageUpload{ContentType: "image/" + format, Content: content})
+		name := []rune(strings.ToValidUTF8(file.Filename, "�"))
+		images = append(images, models.ForumImageUpload{
+			Name: string(name[:min(len(name), 255)]), ContentType: "image/" + format, Content: content,
+		})
 	}
 	return images, nil
+}
+
+func hasNewImages(images []models.ForumImageUpload) bool {
+	return slices.ContainsFunc(images, func(image models.ForumImageUpload) bool { return image.SavedID == 0 })
+}
+
+func SavedImagesGet(c fiber.Ctx) error {
+	c.Set(fiber.HeaderCacheControl, "no-store")
+	ownerID := activeUserID(c)
+	if ownerID == 0 {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if service.Forum == nil {
+		return c.SendStatus(fiber.StatusServiceUnavailable)
+	}
+	before, _ := strconv.ParseInt(c.Query("before"), 10, 64)
+	const pageSize = 12
+	images, err := service.Forum.SavedImages(ownerID, before, pageSize+1)
+	if err != nil {
+		log.Printf("Saved image list failed: %v", err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	next := ""
+	if len(images) > pageSize {
+		images = images[:pageSize]
+		next = strconv.FormatInt(images[pageSize-1].ID, 10)
+	}
+	return c.JSON(fiber.Map{"images": images, "next": next})
+}
+
+func SavedImageGet(c fiber.Ctx) error {
+	c.Set(fiber.HeaderCacheControl, "no-store")
+	c.Set("X-Content-Type-Options", "nosniff")
+	ownerID := activeUserID(c)
+	if ownerID == 0 {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+	if service.Forum == nil {
+		return c.SendStatus(fiber.StatusServiceUnavailable)
+	}
+	image, err := service.Forum.SavedImage(ownerID, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+	if err != nil {
+		log.Printf("Saved image %d failed: %v", id, err)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	c.Set(fiber.HeaderContentType, image.ContentType)
+	return c.Send(image.Content)
 }
 
 func serveForumImage(c fiber.Ctx, approved bool) error {

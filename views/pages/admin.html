@@ -456,7 +456,7 @@
                                                     </h3>
                                                     <span class="adm-badge adm-badge-image">{{.TypeName}}</span>
                                                 </div>
-                                                <div style="width:100%;aspect-ratio:16/5;border-radius:8px;border:1px solid #D4D4D4;background:#D4D4D4;box-sizing:border-box;{{.Style}}"></div>
+                                                <div style="width:100%;aspect-ratio:16/5;border-radius:var(--radius-md);border:var(--bd-hair);background:var(--surface);box-sizing:border-box;{{.Style}}"></div>
                                                 <div class="adm-rowlst">
                                                     <div class="adm-row"><span class="adm-lbl">Owner</span><span class="adm-val"><a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="adm-owner-link">@{{.Username}}</a></span></div>
                                                     <div class="adm-row"><span class="adm-lbl">Submitted</span><span class="adm-val">{{.CreatedAt.Format "Jan 02, 2006 15:04"}}</span></div>

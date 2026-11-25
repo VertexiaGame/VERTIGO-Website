@@ -137,6 +137,13 @@ func (t *ForumThread) RepliesLabel() string {
 	return strconv.Itoa(t.RepliesCount) + " replies"
 }
 
+func (t *ForumThread) QuoteExcerpt() string {
+	if t == nil {
+		return ""
+	}
+	return forumExcerpt(t.Body, ForumQuoteExcerptMax)
+}
+
 func (t *ForumThread) Excerpt() string {
 	if t == nil {
 		return ""
@@ -155,7 +162,66 @@ type ForumReply struct {
 	CreatedAt                               time.Time
 	Tag                                     *ClanTag
 	Images                                  []int
+	Quote                                   *ForumQuote
 }
+
+const ForumQuoteExcerptMax = 280
+
+type ForumQuote struct {
+	ReplyID                                 int
+	UserID                                  int
+	AuthorUsername, AuthorDisplayName, Body string
+	Position int
+	Missing bool
+	Href string
+}
+
+func (q *ForumQuote) IsOriginal() bool { return q != nil && q.ReplyID == 0 }
+
+func (q *ForumQuote) Anchor() string {
+	if q == nil || q.ReplyID == 0 {
+		return "thread"
+	}
+	return "reply-" + strconv.Itoa(q.ReplyID)
+}
+
+func (q *ForumQuote) Author() string {
+	if q == nil {
+		return "Player"
+	}
+	if strings.TrimSpace(q.AuthorDisplayName) != "" {
+		return q.AuthorDisplayName
+	}
+	if strings.TrimSpace(q.AuthorUsername) != "" {
+		return q.AuthorUsername
+	}
+	return "Player"
+}
+
+func (q *ForumQuote) Excerpt() string {
+	if q == nil {
+		return ""
+	}
+	return forumExcerpt(q.Body, ForumQuoteExcerptMax)
+}
+
+func forumExcerpt(s string, max int) string {
+	lines := strings.Split(strings.ReplaceAll(strings.TrimSpace(s), "\r\n", "\n"), "\n")
+	kept := lines[:0]
+	for _, line := range lines {
+		if line = strings.TrimRightFunc(line, unicode.IsSpace); line != "" {
+			kept = append(kept, line)
+		}
+	}
+	clean := strings.Join(kept, "\n")
+	if utf8.RuneCountInString(clean) <= max {
+		return clean
+	}
+	runes := []rune(clean)
+	return strings.TrimRightFunc(string(runes[:max]), unicode.IsSpace) + "…"
+}
+
+func (r *ForumReply) Excerpt() string { return forumExcerpt(r.Body, ForumQuoteExcerptMax) }
 
 func (r *ForumReply) Author() string {
 	if strings.TrimSpace(r.AuthorDisplayName) != "" {

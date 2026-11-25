@@ -444,6 +444,17 @@ func (r *UserRepository) GetUserSocialCounts(userID int) (int, int, int) {
 	return friends, followers, following
 }
 
+func (r *UserRepository) GetForumActivityCounts(userID int) (threads, replies int, err error) {
+	if r.db == nil || userID <= 0 {
+		return 0, 0, errors.New("database connection or user unavailable")
+	}
+	err = r.db.QueryRow(`SELECT
+		(SELECT COUNT(*) FROM forum_threads WHERE user_id = ?),
+		(SELECT COUNT(*) FROM forum_replies WHERE user_id = ?)`,
+		userID, userID).Scan(&threads, &replies)
+	return threads, replies, err
+}
+
 func (r *UserRepository) GetFollowersCount(userID int) (int, error) {
 	if r.db == nil {
 		return 0, errors.New("database connection is offline")

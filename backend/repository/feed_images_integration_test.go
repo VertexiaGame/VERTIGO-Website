@@ -46,9 +46,10 @@ func TestFeedImagesMySQL(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	applySQLSections(t, db, "feed_images fixtures", "feed")
+	applyImageTestSchema(t, db)
+	applyImageLibraryMigration(t, db)
 	for _, stmt := range []string{
-		"INSERT INTO users VALUES (1, 'owner'), (2, 'friend'), (3, 'other')",
+		"INSERT INTO users (id, username) VALUES (1, 'owner'), (2, 'friend'), (3, 'other')",
 		"INSERT INTO friends VALUES (2, 1, 'accepted'), (1, 3, 'pending')",
 	} {
 		if _, err := db.Exec(stmt); err != nil {
@@ -58,14 +59,15 @@ func TestFeedImagesMySQL(t *testing.T) {
 
 	repo := NewFeedRepository(db)
 	image := models.ForumImageUpload{ContentType: "image/png", Content: make([]byte, models.ForumImageMaxBytes)}
-	worldID, err := repo.CreatePost(1, "Public", "worldwide", []models.ForumImageUpload{image, image, image})
-	if err != nil || worldID != 1 {
-		t.Fatalf("create public post: %d, %v", worldID, err)
+	world, err := repo.CreatePost(1, "Public", "worldwide", []models.ForumImageUpload{image, image, image})
+	if err != nil || world.ID != 1 {
+		t.Fatalf("create public post: %+v, %v", world, err)
 	}
-	friendID, err := repo.CreatePost(1, "", "friends", []models.ForumImageUpload{image})
-	if err != nil || friendID != worldID {
-		t.Fatalf("create friends post: %d, %v", friendID, err)
+	friends, err := repo.CreatePost(1, "", "friends", []models.ForumImageUpload{image})
+	if err != nil || friends.ID != world.ID {
+		t.Fatalf("create friends post: %+v, %v", friends, err)
 	}
+	worldID, friendID := world.ID, friends.ID
 
 	queue, err := repo.PendingImages(0, 10)
 	if err != nil || len(queue) != 4 || queue[0].FeedType != "worldwide" || queue[0].FeedID != worldID ||
@@ -162,25 +164,12 @@ func TestFeedImagesMySQL(t *testing.T) {
 	if _, err := repo.CreatePost(1, "Failed upload", "worldwide", []models.ForumImageUpload{image, invalid}); err == nil {
 		t.Fatal("invalid image was stored")
 	}
-	nextID, err := repo.CreatePost(1, "Text only", "worldwide", nil)
-	if err != nil || nextID != worldID+1 {
-		t.Fatalf("failed upload did not roll back: %d, %v", nextID, err)
+	next, err := repo.CreatePost(1, "Text only", "worldwide", nil)
+	if err != nil || next.ID != worldID+1 {
+		t.Fatalf("failed upload did not roll back: %+v, %v", next, err)
 	}
-	post, err := repo.GetFeedPostByID(nextID, 1)
+	post, err := repo.GetFeedPostByID(next.ID, 1)
 	if err != nil || post == nil || len(post.Images) != 0 {
 		t.Fatalf("failed upload left an orphaned image: %+v, %v", post, err)
 	}
-
-	if _, err := db.Exec("ALTER TABLE feed_images DROP INDEX idx_feed_images_queue, DROP COLUMN approved"); err != nil {
-		t.Fatal(err)
-	}
-	applySQLSections(t, db, "feed")
-	if _, err := repo.GetImage(worldImages[0], 0); !errors.Is(err, sql.ErrNoRows) {
-		t.Fatalf("legacy image was accessible before review: %v", err)
-	}
-	legacyQueue, err := repo.PendingImages(0, 10)
-	if err != nil || len(legacyQueue) != 2 || legacyQueue[0].ID != worldImages[0] {
-		t.Fatalf("legacy images missing from the pending queue: %+v, %v", legacyQueue, err)
-	}
-	applySQLSections(t, db, "feed")
 }

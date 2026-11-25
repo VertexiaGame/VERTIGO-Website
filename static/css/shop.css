@@ -18,7 +18,7 @@
 }
 
 .shp-heading {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 28px;
     font-weight: 700;
     color: var(--ink-soft);
@@ -27,7 +27,7 @@
 }
 
 .shp-subheading {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 400;
     color: var(--muted);
@@ -49,23 +49,23 @@
     background: transparent;
     border: none;
     border-radius: var(--radius-md);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
     cursor: pointer;
     text-align: left;
-    transition: background 0.3s ease, color 0.15s ease;
+    transition: background var(--dur-slow) ease, color var(--dur-fast) ease;
 }
 
 .shp-cat-item:hover {
     background: var(--surface);
-    transition-duration: 0.15s;
+    transition-duration: var(--dur-fast);
 }
 
 .shp-cat-item.active {
     background: var(--grad-accent);
-    color: #FFFFFF;
+    color: var(--on-accent);
 }
 
 .shp-cat-item i {
@@ -104,7 +104,7 @@
     flex-direction: column;
     gap: 12px;
     box-sizing: border-box;
-    transition: width 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    transition: width var(--dur-med) var(--ease-pop-soft);
 }
 
 .shp-sidebar.collapsed {
@@ -158,13 +158,13 @@
 .shp-main-search,
 .shp-fltrbox {
     background: var(--surface) !important;
-    border: 2px solid rgba(61, 61, 61, 0.25) !important;
-    border-radius: 6px !important;
+    border: var(--bd-soft) !important;
+    border-radius: var(--radius-sm) !important;
 }
 
 .shp-main-search:focus-within,
 .shp-fltrbox:focus-within {
-    border-color: rgba(61, 61, 61, 0.25) !important;
+    border-color: var(--line-soft) !important;
     outline: none !important;
     box-shadow: none !important;
 }
@@ -176,8 +176,8 @@
 
 .shp-create-tabbtn:hover {
     color: var(--ink) !important;
-    background: #FFFFFF !important;
-    border-color: rgba(61, 61, 61, 0.25) !important;
+    background: var(--white) !important;
+    border-color: var(--line-soft) !important;
     transform: scale(1.03) !important;
 }
 
@@ -187,7 +187,7 @@
 
 .shp-fltrcard {
     background: rgba(250, 250, 250, 0.75) !important;
-    border: 1px solid var(--border) !important;
+    border: var(--bd-hair) !important;
     border-radius: var(--radius-lg) !important;
     padding: 12px !important;
     display: flex !important;
@@ -200,18 +200,18 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 500;
     color: var(--accent);
     background: transparent;
     border: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: var(--bd-hair);
     padding: 0 0 8px 0;
     width: 100%;
     cursor: pointer;
     text-align: left;
-    transition: opacity 0.15s ease, color 0.15s ease;
+    transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
 .shp-fltrhdr:hover {
@@ -243,7 +243,7 @@
 }
 
 .shp-fltrlbl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     font-weight: 500;
     color: var(--muted);
@@ -281,7 +281,7 @@
 }
 
 .shp-price-sep {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     color: var(--muted);
 }
@@ -297,7 +297,7 @@
 .shp-card {
     text-decoration: none;
     background: var(--surface-raised) !important;
-    border: 1px solid var(--border) !important;
+    border: var(--bd-hair) !important;
     border-radius: var(--radius-lg) !important;
     padding: 10px !important;
     position: relative;
@@ -307,7 +307,7 @@
     box-sizing: border-box !important;
     cursor: pointer !important;
     transform: scale(1) !important;
-    transition: transform 0.3s var(--ease-pop), border-color 0.2s ease !important;
+    transition: transform var(--dur-slow) var(--ease-pop), border-color var(--dur-base) ease !important;
     animation: shpCardIn 0.22s var(--ease-pop) backwards;
 }
 
@@ -338,15 +338,15 @@
 
 .shp-card:active {
     transform: scale(0.98) !important;
-    transition: transform 0.08s ease !important;
+    transition: transform var(--dur-press) ease !important;
 }
 
 .shp-card .avtitmimg {
-    transition: border-color 0.2s ease;
+    transition: border-color var(--dur-base) ease;
 }
 
 .shp-card .avtitmimg img {
-    transition: transform 0.3s var(--ease-smooth), opacity 0.25s ease;
+    transition: transform var(--dur-slow) var(--ease-smooth), opacity var(--dur-med) ease;
 }
 
 .shp-card:hover .avtitmimg img {
@@ -354,7 +354,7 @@
 }
 
 .shp-card .avtitmnm {
-    transition: color 0.2s ease;
+    transition: color var(--dur-base) ease;
 }
 
 .shp-card:hover .avtitmnm {
@@ -374,7 +374,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 500;
     color: var(--ink);
@@ -388,7 +388,7 @@
 }
 
 .shp-price-free {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 500;
     color: var(--success);
@@ -420,7 +420,7 @@
     height: 100%;
     z-index: -1;
     background: var(--ribbon-bg-grad);
-    border-radius: 4px 0 0 4px;
+    border-radius: var(--radius-xs) 0 0 var(--radius-xs);
     clip-path: polygon(0 0, calc(100% - 13.27px) 0, 100% 100%, 0 100%);
 }
 
@@ -462,12 +462,12 @@
 }
 
 .shp-ribtext {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-style: normal;
     font-weight: 700;
     font-size: 11.5px;
     line-height: 1;
-    color: #FFFFFF;
+    color: var(--on-accent);
     white-space: nowrap;
     letter-spacing: 0.1px;
 }
@@ -485,7 +485,7 @@
 }
 
 .shp-price-off {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--muted);
@@ -505,7 +505,7 @@
     width: 200px;
     height: 200px;
     background: var(--surface);
-    border: 2px solid var(--line);
+    border: var(--bd-thick);
     border-radius: var(--radius-lg);
     overflow: hidden;
     display: flex;
@@ -527,9 +527,9 @@
 }
 
 .shp-modal-desc {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
-    color: #555555;
+    color: var(--ink-muted);
     line-height: 1.5;
     word-break: break-word;
 }
@@ -558,12 +558,12 @@
     height: 340px !important;
     overflow: visible !important;
     border: none !important;
-    border-radius: 12px !important;
+    border-radius: var(--radius-lg) !important;
     box-shadow: 4px 0 1px 0 var(--line), -4px 0 1px 0 var(--line), 0 4px 1px 0 var(--line), 0 -4px 1px 0 var(--line) !important;
 }
 
 .shpitm-rendcrd .adm-rendimg {
-    border-radius: 12px !important;
+    border-radius: var(--radius-lg) !important;
 }
 
 .shpitm-rendcrd .shp-ribbon {
@@ -591,7 +591,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     padding-top: 12px;
-    border-top: 1px solid var(--border);
+    border-top: var(--bd-hair);
     width: 100%;
     box-sizing: border-box;
 }
@@ -604,7 +604,7 @@
 }
 
 .shpitm-metalbl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     font-weight: 500;
     color: var(--muted);
@@ -613,7 +613,7 @@
 }
 
 .shpitm-metaval {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
@@ -660,7 +660,7 @@
 }
 
 .shpitm-title {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 24px;
     font-weight: 700;
     color: var(--ink-strong);
@@ -670,7 +670,7 @@
 }
 
 .shpitm-creator {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 400;
     color: var(--muted);
@@ -686,7 +686,7 @@
 .shpitm-creator-pfp {
     width: 18px;
     height: 18px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     object-fit: cover;
     flex-shrink: 0;
 }
@@ -711,7 +711,7 @@
     flex-direction: column;
     gap: 10px;
     padding-top: 10px;
-    border-top: 1px solid var(--border);
+    border-top: var(--bd-hair);
 }
 
 .shpitm-pricevals {
@@ -722,7 +722,7 @@
 }
 
 .shpitm-price-note {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
     color: var(--muted);
 }
@@ -735,7 +735,7 @@
 }
 
 .shpitm-wearmsg {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
     min-height: 16px;
     line-height: 1.4;
@@ -882,7 +882,7 @@
 }
 
 .shpitm-relatedttl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 18px;
     font-weight: 700;
     color: var(--ink-soft);

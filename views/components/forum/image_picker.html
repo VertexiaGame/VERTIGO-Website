@@ -1,0 +1,32 @@
+<section class="image-picker-panel" id="{{.}}" aria-labelledby="{{.}}Title" data-image-library popover="manual" hidden>
+    <div class="image-picker-heading">
+        <h3 id="{{.}}Title">Your images</h3>
+        <button type="button" class="primary hpyprim hpyinl hpysm image-picker-upload" data-image-upload-new>
+            <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
+            <span>Upload new</span>
+        </button>
+    </div>
+    <div class="image-picker-scroll" role="group" aria-label="Saved images" tabindex="0" data-image-library-scroll>
+        <div class="image-picker-grid" data-image-library-list></div>
+        <div class="image-picker-loading">
+            <span data-image-library-status role="status"></span>
+            <button type="button" class="image-picker-retry" data-image-library-retry hidden>Retry</button>
+        </div>
+        <div data-image-library-end aria-hidden="true"></div>
+    </div>
+    <div class="image-picker-footer">
+        <span data-image-library-count>0 of 3 attached</span>
+        <span class="image-picker-error" data-image-library-error role="status"></span>
+    </div>
+    <template data-image-library-card>
+        <button type="button" class="image-picker-card">
+            <span class="image-picker-preview">
+                <i class="fa-regular fa-image" aria-hidden="true"></i>
+                <img alt="" loading="lazy" decoding="async">
+                <span class="image-picker-check" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+                <span class="image-picker-pending" hidden>Awaiting approval</span>
+            </span>
+            <span class="image-picker-name"></span>
+        </button>
+    </template>
+</section>

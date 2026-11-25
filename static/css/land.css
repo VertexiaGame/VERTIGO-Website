@@ -49,7 +49,7 @@
     margin-bottom: 20px;
     line-height: 1.2;
     color: var(--ink-soft);
-    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation: landentrysubtlebounce 0.68s var(--ease-out) backwards;
     animation-delay: 0.08s;
 }
 .hroprg {
@@ -57,19 +57,19 @@
     margin-top: 0;
     margin-bottom: 30px;
     line-height: 1.5;
-    color: #555555;
-    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    color: var(--ink-muted);
+    animation: landentrysubtlebounce 0.68s var(--ease-out) backwards;
     animation-delay: 0.18s;
 }
 .hroprg strong {
-    color: var(--accent, var(--accent));
+    color: var(--accent);
     font-weight: bold;
 }
 .hrobtns {
     display: flex;
     gap: 14px;
     flex-wrap: wrap;
-    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation: landentrysubtlebounce 0.68s var(--ease-out) backwards;
     animation-delay: 0.30s;
 }
 .hrobtns .primary {
@@ -83,7 +83,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation: landentrysubtlebounce 0.68s var(--ease-out) backwards;
     animation-delay: 0.20s;
 }
 .hroimg {
@@ -93,14 +93,14 @@
     height: auto;
     object-fit: contain;
     transform: scale(1);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform var(--dur-slow) var(--ease-pop);
 }
 .hroimg:hover {
     transform: scale(1.04);
 }
 .hroimg:active {
     transform: scale(0.98) rotateX(-15deg);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 .g21wrap {
     cursor: pointer;
@@ -110,8 +110,8 @@
     position: absolute;
     transform: translate(-50%, -50%) scale(0.4) rotate(var(--r, -8deg));
     background: none;
-    color: #fff;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--on-accent);
+    font-family: var(--font);
     font-size: 1.25rem;
     font-weight: 900;
     letter-spacing: 0.03em;
@@ -121,8 +121,8 @@
     z-index: 5;
     white-space: nowrap;
     text-shadow: 0 1px 0 rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.32);
-    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
-    animation: squishPop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    filter: drop-shadow(0 1px 1px var(--shade));
+    animation: squishPop 1s var(--ease-pop) forwards;
 }
 @keyframes squishPop {
     0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(var(--r, -10deg)); }
@@ -136,7 +136,7 @@
     width: 100%;
     display: block;
     box-sizing: border-box;
-    animation: storyFadeIn 0.85s cubic-bezier(0.22,1,0.36,1) forwards;
+    animation: storyFadeIn 0.85s var(--ease-out) forwards;
     overflow: visible;
 }
 .storyart {
@@ -157,8 +157,8 @@
     position: absolute;
     left: 12px;
     bottom: 14px;
-    color: #FFFFFF;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--on-accent);
+    font-family: var(--font);
     font-size: 2.35rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -177,7 +177,7 @@
     grid-area: 1 / 1;
     display: block;
     will-change: transform, opacity;
-    transition: transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.45s ease;
+    transition: transform 0.7s var(--ease-pop), opacity 0.45s ease;
 }
 .storytxt-create {
     transform: translateY(0);
@@ -212,7 +212,7 @@
     gap: 4px;
     padding: 0 0 36px 0;
     box-sizing: border-box;
-    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation: landentrysubtlebounce 0.68s var(--ease-out) backwards;
     animation-delay: 0.48s;
     overflow: visible;
 }
@@ -226,7 +226,7 @@
 }
 .vrvttl {
     margin: 0;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 1.85rem;
     font-weight: 800;
     letter-spacing: 0.05em;
@@ -239,11 +239,11 @@
 }
 .vrvprg {
     margin: 0;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 1rem;
     font-weight: 400;
     line-height: 1.5;
-    color: #4A5568;
+    color: var(--ink-muted);
     width: 100%;
     text-align: left;
     padding: 0 0 0 12px;
@@ -280,10 +280,10 @@
 .crlsec {
     padding: 20px 40px 40px 40px;
     background: transparent;
-    border-radius: 0 0 6px 6px;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     width: 100%;
     box-sizing: border-box;
-    animation: landentrysubtlebounce 0.68s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation: landentrysubtlebounce 0.68s var(--ease-out) backwards;
     animation-delay: 0.42s;
 }
 .crlttl {
@@ -292,7 +292,7 @@
     color: var(--ink-soft);
     margin-top: 0;
     margin-bottom: 20px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
 }
 .crlwrp {
     position: relative;
@@ -317,17 +317,17 @@
     max-width: 180px;
     height: 148px;
     background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     padding: 8px;
     box-sizing: border-box;
     text-decoration: none;
     transform: scale(1);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+    transition: transform var(--dur-slow) var(--ease-pop), box-shadow var(--dur-base) ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
-    animation: cardPop 0.55s cubic-bezier(0.22,1,0.36,1) backwards;
+    animation: cardPop 0.55s var(--ease-out) backwards;
 }
 .gmcrd:nth-child(1) { animation-delay: 0.50s; }
 .gmcrd:nth-child(2) { animation-delay: 0.56s; }
@@ -342,12 +342,12 @@
 }
 .gmcrd:active {
     transform: scale(0.98) rotateX(-15deg);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 .gmthmwrp {
     width: 100%;
     height: 92px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--surface);
     flex-shrink: 0;
@@ -371,7 +371,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     width: 100%;
 }
 .gmply {
@@ -380,11 +380,11 @@
     gap: 5px;
     font-size: 11px;
     color: var(--muted);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
 }
 .gmply i {
     font-size: 10px;
-    color: var(--accent, var(--accent));
+    color: var(--accent);
 }
 
 html.notreq .hrohdg,

@@ -2,6 +2,7 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+import { parseSolidOBJ } from '/static/js/three/objsolid.js';
 
 const THREE = window.THREE;
 
@@ -46,7 +47,7 @@ function loadModelFile(file) {
     if (ext === 'glb') {
         promise = new GLTFLoader().loadAsync(url).then(gltf => gltf.scene);
     } else {
-        promise = new OBJLoader().loadAsync(url);
+        promise = fetch(url).then(r => r.text()).then(text => parseSolidOBJ(OBJLoader, text));
     }
     return promise.finally(() => URL.revokeObjectURL(url));
 }

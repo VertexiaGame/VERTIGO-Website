@@ -182,7 +182,7 @@ func ForumThreadCreatePost(c fiber.Ctx) error {
 	}
 
 	path := created.Path()
-	if len(images) > 0 {
+	if hasNewImages(images) {
 		path += "?images=pending"
 	}
 	if wantsAssetJSON(c) {
@@ -239,6 +239,7 @@ func ForumThreadGet(c fiber.Ctx) error {
 	if err := service.Forum.LoadApprovedImages(thread, replies); err != nil {
 		log.Printf("Forum images failed for thread %d: %v", id, err)
 	}
+	attachForumQuotes(thread, replies, page)
 	enrichForumThreadTags([]*models.ForumThread{thread})
 	if service.Clan != nil {
 		for _, reply := range replies {
@@ -267,12 +268,16 @@ func ForumReplyCreatePost(c fiber.Ctx) error {
 	if err != nil {
 		return clanActionError(c, err, path)
 	}
-	replyID, err := service.Forum.CreateReply(user, id, c.FormValue("body"), images...)
+	quoteID, err := forumQuoteID(c.FormValue("quote_id"))
+	if err != nil {
+		return clanActionError(c, err, path)
+	}
+	replyID, err := service.Forum.CreateQuotedReply(user, id, c.FormValue("body"), quoteID, images...)
 	if err != nil {
 		return clanActionError(c, err, path)
 	}
 	params := url.Values{}
-	if len(images) > 0 {
+	if hasNewImages(images) {
 		params.Set("images", "pending")
 	}
 	thread, err := service.Forum.GetThread(id)
@@ -285,4 +290,38 @@ func ForumReplyCreatePost(c fiber.Ctx) error {
 	}
 	path += "#reply-" + strconv.Itoa(replyID)
 	return clanActionSucceed(c, path, fiber.Map{"id": replyID, "path": path})
+}
+
+func forumQuoteID(raw string) (*int, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	id, err := strconv.Atoi(raw)
+	if err != nil || id < 0 {
+		return nil, service.ErrForumQuoteNotFound
+	}
+	return &id, nil
+}
+
+func attachForumQuotes(thread *models.ForumThread, replies []*models.ForumReply, page int) {
+	for _, reply := range replies {
+		q := reply.Quote
+		if q == nil || q.Missing {
+			continue
+		}
+		if q.IsOriginal() {
+			q.UserID = thread.UserID
+			q.AuthorUsername = thread.AuthorUsername
+			q.AuthorDisplayName = thread.AuthorDisplayName
+			q.Body = thread.Body
+			q.Href = "#thread"
+			continue
+		}
+		quotePage := q.Position/forumPageSize + 1
+		q.Href = "#" + q.Anchor()
+		if quotePage != page {
+			q.Href = thread.Path() + "?page=" + strconv.Itoa(quotePage) + "#" + q.Anchor()
+		}
+	}
 }

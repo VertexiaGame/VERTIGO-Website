@@ -63,6 +63,8 @@ class AdminMeshViewer {
         const THREE = window.THREE || (await import('three'));
         const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
         const { OBJLoader } = await import('three/addons/loaders/OBJLoader.js');
+        const { parseSolidOBJ } = await import('/static/js/three/objsolid.js');
+        this.parseSolidOBJ = parseSolidOBJ;
 
         if (this.isDestroyed) return;
 
@@ -180,8 +182,7 @@ class AdminMeshViewer {
             model = gltf.scene;
         } else {
             const text = new TextDecoder().decode(arrayBuffer);
-            const objLoader = new this.OBJLoader();
-            model = objLoader.parse(text);
+            model = this.parseSolidOBJ(this.OBJLoader, text);
         }
 
         const THREE = this.THREE;

@@ -154,6 +154,21 @@ func ProfileGet(c fiber.Ctx) error {
 	if wearing == nil {
 		wearing = []*models.ShopItem{}
 	}
+	stats := models.ProfileStats{
+		JoinedLabel: targetUser.JoinedLabel(),
+		IsOnline:    targetUser.IsOnline(),
+		Status:      targetUser.Status(),
+		Games:       len(profileGames),
+	}
+	for _, game := range profileGames {
+		stats.GameVisits += game.Visits
+	}
+	if threads, replies, err := service.User.GetForumActivityCounts(targetUser.ID); err != nil {
+		log.Printf("ProfileGet forum activity counts error: %v", err)
+	} else {
+		stats.ForumThreads, stats.ForumReplies = threads, replies
+	}
+
 	cssHex := func(hex string) string {
 		if !strings.HasPrefix(hex, "#") {
 			return "#" + hex
@@ -182,6 +197,7 @@ func ProfileGet(c fiber.Ctx) error {
 		"UserShopItems":    profileShopItems,
 		"ProfileInventory": profileInventory,
 		"InventoryPrivate": inventoryPrivate,
+		"ProfileStats":     stats,
 		"BodyHead":         cssHex(avatarBody.HeadColor),
 		"BodyTorso":        cssHex(avatarBody.TorsoColor),
 		"BodyLArm":         cssHex(avatarBody.LArmColor),

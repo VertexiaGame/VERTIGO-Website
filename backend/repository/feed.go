@@ -89,12 +89,13 @@ func (r *FeedRepository) GetRecentFeedPostsPaginated(limit, offset, currentUserI
 	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
 	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
 	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
-	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
-	                           WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE), '') AS images
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i JOIN community_images a ON a.id = i.image_id
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND a.approved = TRUE), '') AS images
               FROM feed f 
               INNER JOIN users u ON f.user_id = u.id 
               WHERE f.removed = 'false'
-                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE))
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i JOIN community_images a ON a.id = i.image_id
+                     WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND a.approved = TRUE))
               ORDER BY f.creation_date DESC, f.id DESC LIMIT ? OFFSET ?`
 	return r.queryFeedPosts(query, currentUserID, limit, offset)
 }
@@ -106,12 +107,13 @@ func (r *FeedRepository) GetFeedPostByID(id, currentUserID int) (*models.FeedPos
 	query := `SELECT f.id, f.user_id, u.username, f.status, f.removed, f.edited, f.edit_date, f.creation_date,
 	                 (SELECT COUNT(*) FROM freact r WHERE r.fid = f.id) AS reactions,
 	                 EXISTS(SELECT 1 FROM freact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
-	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
-	                           WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE), '') AS images
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i JOIN community_images a ON a.id = i.image_id
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND a.approved = TRUE), '') AS images
               FROM feed f
               INNER JOIN users u ON f.user_id = u.id
               WHERE f.id = ? AND f.removed = 'false'
-                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND i.approved = TRUE))`
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i JOIN community_images a ON a.id = i.image_id
+                     WHERE i.feed_id = f.id AND i.feed_type = 'worldwide' AND a.approved = TRUE))`
 	post, err := scanFeedPost(r.db.QueryRow(query, currentUserID, id))
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -126,12 +128,13 @@ func (r *FeedRepository) GetFriendsFeedPostByID(id, currentUserID int) (*models.
 	query := `SELECT f.id, f.userid, u.username, f.status, f.removed, f.edited, f.editdate, f.creationdate,
 	                 (SELECT COUNT(*) FROM ffreact r WHERE r.fid = f.id) AS reactions,
 	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
-	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
-	                           WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE), '') AS images
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i JOIN community_images a ON a.id = i.image_id
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND a.approved = TRUE), '') AS images
               FROM ffeed f
               INNER JOIN users u ON f.userid = u.id
               WHERE f.id = ? AND f.removed = 'false'
-                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE))
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i JOIN community_images a ON a.id = i.image_id
+                     WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND a.approved = TRUE))
                 AND (f.userid = ? OR EXISTS (
                     SELECT 1 FROM friends WHERE state = 'accepted'
                     AND ((uid = ? AND fid = f.userid) OR (fid = ? AND uid = f.userid))
@@ -167,12 +170,13 @@ func (r *FeedRepository) GetRecentFriendsFeedPostsPaginated(limit, offset, curre
 	query := `SELECT f.id, f.userid, u.username, f.status, f.removed, f.edited, f.editdate, f.creationdate,
 	                 (SELECT COUNT(*) FROM ffreact r WHERE r.fid = f.id) AS reactions,
 	                 EXISTS(SELECT 1 FROM ffreact r WHERE r.fid = f.id AND r.uid = ?) AS has_reacted,
-	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i
-	                           WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE), '') AS images
+	                 COALESCE((SELECT GROUP_CONCAT(i.id ORDER BY i.id) FROM feed_images i JOIN community_images a ON a.id = i.image_id
+	                           WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND a.approved = TRUE), '') AS images
               FROM ffeed f 
               INNER JOIN users u ON f.userid = u.id 
               WHERE f.removed = 'false'
-                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND i.approved = TRUE))
+                AND (f.status <> '' OR EXISTS(SELECT 1 FROM feed_images i JOIN community_images a ON a.id = i.image_id
+                     WHERE i.feed_id = f.id AND i.feed_type = 'friends' AND a.approved = TRUE))
                 AND (f.userid = ? OR f.userid IN (
                     SELECT CASE WHEN uid = ? THEN fid ELSE uid END 
                     FROM friends 

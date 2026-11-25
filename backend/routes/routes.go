@@ -243,6 +243,8 @@ func Setup(app *fiber.App) {
 	api.Post("/feed", handlers.PostFeed)
 	api.Get("/feed/comments", handlers.GetFeedCommentsHandler)
 	api.Get("/feed/:id", handlers.GetFeedSingle)
+	api.Get("/images", handlers.SavedImagesGet)
+	api.Get("/images/:id", handlers.SavedImageGet)
 
 	api.Get("/user/:id", handlers.ProfileGet)
 	api.Get("/u/:id", handlers.ProfileGet)

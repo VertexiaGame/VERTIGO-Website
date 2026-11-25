@@ -9,9 +9,9 @@
 }
 
 .cln-card {
-    background: var(--surface-raised, var(--surface-raised));
-    border: 1px solid var(--border, var(--surface));
-    border-radius: var(--radius-lg, 12px);
+    background: var(--surface-raised);
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -21,7 +21,7 @@
     text-decoration: none;
     color: inherit;
     transform: scale(1);
-    transition: transform 0.3s var(--ease-pop), border-color 0.2s ease;
+    transition: transform var(--dur-slow) var(--ease-pop), border-color var(--dur-base) ease;
     animation: shpCardIn 0.22s var(--ease-pop) backwards;
 }
 
@@ -40,7 +40,7 @@
 
 .cln-card:active {
     transform: scale(0.985);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .cln-card[hidden] {
@@ -103,14 +103,14 @@
     width: 100%;
     aspect-ratio: 1 / 1;
     border: 1px solid var(--line);
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     flex-shrink: 0;
     box-sizing: border-box;
-    background: var(--surface, var(--surface));
+    background: var(--surface);
     user-select: none;
 }
 
@@ -125,12 +125,12 @@
 }
 
 .cln-crtltr {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 40px;
     font-weight: 700;
     line-height: 1;
     color: var(--ink);
-    transition: transform 0.3s var(--ease-smooth);
+    transition: transform var(--dur-slow) var(--ease-smooth);
 }
 
 .cln-card:hover .cln-crtltr {
@@ -158,8 +158,8 @@
     align-items: center;
     justify-content: center;
     background: rgba(61, 61, 61, 0.62);
-    border-radius: var(--radius-sm, 6px);
-    color: #FFFFFF;
+    border-radius: var(--radius-sm);
+    color: var(--on-accent);
     font-size: 10px;
     pointer-events: none;
 }
@@ -169,14 +169,14 @@
 }
 
 .cln-nm {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 500;
     color: var(--ink-strong);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: color 0.2s ease;
+    transition: color var(--dur-base) ease;
 }
 
 .cln-nm .cln-tag:not([hidden]) {
@@ -184,7 +184,7 @@
 }
 
 .cln-card:hover .cln-nm {
-    color: var(--accent, var(--accent));
+    color: var(--accent);
 }
 
 .cln-mb {
@@ -195,7 +195,7 @@
     gap: 6px;
     flex-shrink: 0;
     margin-top: auto;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
@@ -213,9 +213,9 @@
 
 .cln-state {
     padding: 2px 7px;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--radius-sm);
     border: 1px solid transparent;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 10px;
     font-weight: 500;
     line-height: 1.4;
@@ -253,7 +253,7 @@
 }
 
 .cln-slide {
-    box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.25);
+    box-shadow: var(--inset-sheen);
 }
 
 .cln-slide::before {
@@ -271,12 +271,12 @@
     position: absolute;
     right: 16px;
     bottom: -60px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: clamp(150px, 24vw, 260px);
     font-weight: 500;
     line-height: 1;
     color: rgba(255, 255, 255, 0.14);
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    text-shadow: 0px 0px 4px var(--shade);
     user-select: none;
     pointer-events: none;
 }
@@ -306,10 +306,10 @@
     align-items: center;
     gap: 5px;
     padding: 3px 8px;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--radius-sm);
     background: rgba(61, 61, 61, 0.5);
-    color: #FFFFFF;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--on-accent);
+    font-family: var(--font);
     font-size: 11px;
     font-weight: 500;
     line-height: 1.4;
@@ -383,9 +383,9 @@
 }
 
 .cln-hdr-crest {
-    border-radius: var(--radius-xl, 16px);
+    border-radius: var(--radius-xl);
     border: 2px solid rgba(0, 0, 0, 0.12);
-    background: var(--surface, var(--surface));
+    background: var(--surface);
 }
 
 .cln-hdr-crest .cln-crtltr {
@@ -429,8 +429,8 @@
     padding: 4px 8px;
     color: var(--ink);
     background: var(--surface-raised);
-    border: 1px solid var(--surface);
-    border-radius: var(--radius-md, 8px);
+    border: var(--bd-hair);
+    border-radius: var(--radius-md);
 }
 
 .cln-hdract .frminsuc.visible,
@@ -519,14 +519,14 @@
     width: 100%;
     box-sizing: border-box;
     padding: 16px;
-    background: var(--surface-raised, var(--surface-raised));
-    border: 1px solid var(--border, var(--surface));
-    border-radius: var(--radius-lg, 12px);
-    transition: border-color 0.2s ease;
+    background: var(--surface-raised);
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--dur-base) ease;
 }
 
 .cln-announce:hover {
-    border-color: var(--line, var(--line));
+    border-color: var(--line);
 }
 
 .cln-announce-head {
@@ -541,9 +541,9 @@
     width: 38px;
     height: 38px;
     flex: 0 0 38px;
-    border: 1px solid var(--border, var(--surface));
+    border: var(--bd-hair);
     border-radius: 50%;
-    background: var(--surface, var(--surface));
+    background: var(--surface);
     overflow: hidden;
 }
 
@@ -552,7 +552,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.3s var(--ease-smooth);
+    transition: transform var(--dur-slow) var(--ease-smooth);
 }
 
 .cln-announce-avt:hover img {
@@ -573,29 +573,29 @@
 }
 
 .cln-announce-author {
-    color: var(--ink-strong, var(--ink-strong));
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-strong);
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
-    transition: color 0.15s ease;
+    transition: color var(--dur-fast) ease;
 }
 
 .cln-announce-author:hover {
-    color: var(--accent, var(--accent));
+    color: var(--accent);
 }
 
 .cln-announce-time {
-    color: var(--muted, var(--muted));
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--muted);
+    font-family: var(--font);
     font-size: 12px;
     white-space: nowrap;
 }
 
 .cln-announce-ttl {
     margin: 5px 0 0;
-    color: var(--ink-strong, var(--ink-strong));
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-strong);
+    font-family: var(--font);
     font-size: 16px;
     font-weight: 700;
     line-height: 1.3;
@@ -604,8 +604,8 @@
 
 .cln-announce-txt {
     margin: 0;
-    color: #4A5568;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-muted);
+    font-family: var(--font);
     font-size: 14px;
     line-height: 1.6;
     white-space: pre-wrap;
@@ -619,8 +619,8 @@
 .cln-compose {
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid var(--border, var(--surface));
-    border-radius: var(--radius-lg, 12px);
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     background: var(--surface-raised);
     overflow: hidden;
 }
@@ -632,11 +632,11 @@
     padding: 12px 14px;
     list-style: none;
     cursor: pointer;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 500;
-    color: var(--accent, var(--accent));
-    transition: background 0.18s ease;
+    color: var(--accent);
+    transition: background var(--dur-base) ease;
 }
 
 .cln-compose-sum::-webkit-details-marker {
@@ -659,7 +659,7 @@
 .cln-compose-arrow {
     color: var(--muted);
     font-size: 12px;
-    transition: transform 0.25s var(--ease-smooth);
+    transition: transform var(--dur-med) var(--ease-smooth);
 }
 
 .cln-compose[open]:not(.is-closing) .cln-compose-arrow {
@@ -671,8 +671,8 @@
     flex-direction: column;
     gap: 12px;
     padding: 14px;
-    border-top: 1px solid var(--surface);
-    background: #FFFFFF;
+    border-top: var(--bd-hair);
+    background: var(--white);
 }
 
 .cln-compose[open]:not(.is-closing) .cln-compose-form {
@@ -700,7 +700,7 @@
 .cln-mcard {
     color: inherit;
     text-decoration: none;
-    transition: border-color 0.18s ease;
+    transition: border-color var(--dur-base) ease;
 }
 
 .cln-mcard[hidden] {
@@ -708,11 +708,11 @@
 }
 
 .cln-mcard:hover {
-    border-color: var(--line, var(--line));
+    border-color: var(--line);
 }
 
 .cln-mcard:hover .frndn {
-    color: var(--accent, var(--accent));
+    color: var(--accent);
 }
 
 .cln-mcard-avatar {
@@ -734,7 +734,7 @@
     width: 11px;
     height: 11px;
     background: var(--success);
-    border: 2px solid var(--surface-raised, var(--surface-raised));
+    border: 2px solid var(--surface-raised);
     border-radius: 50%;
     box-sizing: border-box;
 }
@@ -783,11 +783,11 @@
     width: 100%;
     box-sizing: border-box;
     padding: 12px 14px;
-    border: 1px solid var(--border, var(--surface));
-    border-radius: var(--radius-lg, 12px);
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     background: var(--surface-raised);
     color: var(--muted);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
 }
 
@@ -808,7 +808,7 @@
     color: var(--ink);
     font-size: 15px;
     opacity: 0.25;
-    transition: transform 0.2s ease, opacity 0.2s ease, color 0.2s ease;
+    transition: transform var(--dur-base) ease, opacity var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .cln-wall .pstrdel:hover {
@@ -832,7 +832,7 @@
 .pstitm.is-removing {
     opacity: 0;
     transform: translateY(-4px) scale(0.985);
-    transition: opacity 0.18s ease, transform 0.18s ease;
+    transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
 }
 
 .cln-gate {
@@ -852,8 +852,8 @@
 .cln-gate-txt {
     margin: 0;
     max-width: 480px;
-    color: #4A5568;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-muted);
+    font-family: var(--font);
     font-size: 15px;
     line-height: 1.6;
 }
@@ -884,15 +884,15 @@
     display: inline-flex;
     align-items: center;
     padding: 4px 10px;
-    border-radius: var(--radius-sm, 6px);
-    font-family: 'Ubuntu', sans-serif;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
     font-size: 12px;
     font-weight: 500;
     line-height: 1;
     white-space: nowrap;
-    color: #FFFFFF;
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
-    box-shadow: inset 0px 0px 4px rgba(255, 255, 255, 0.25);
+    color: var(--on-accent);
+    text-shadow: 0px 0px 4px var(--shade);
+    box-shadow: var(--inset-sheen);
     background: var(--grad-sheen), var(--cln-role-color, var(--accent));
 }
 
@@ -907,7 +907,7 @@
 }
 
 .cln-mine-crestlink .cln-crest {
-    transition: transform 0.3s var(--ease-pop), border-color 0.2s ease;
+    transition: transform var(--dur-slow) var(--ease-pop), border-color var(--dur-base) ease;
 }
 
 .cln-mine-card:hover .cln-mine-crestlink .cln-crest {
@@ -985,14 +985,14 @@
     box-sizing: border-box;
     padding: 12px 14px 12px 18px;
     background: var(--surface-raised);
-    border: 1px solid var(--surface);
-    border-radius: 12px;
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     color: var(--ink);
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
+    transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
     animation: shpCardIn 0.24s var(--ease-pop) backwards;
 }
 
@@ -1011,7 +1011,7 @@
     top: 0;
     bottom: 0;
     width: 5px;
-    border-radius: 12px 0 0 12px;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
     background: var(--cln-role-color, var(--accent));
 }
 
@@ -1025,7 +1025,7 @@
 }
 
 .cln-rolecard.is-selected {
-    background: #FFFFFF;
+    background: var(--white);
     border-color: var(--accent);
 }
 
@@ -1067,7 +1067,7 @@
     flex: 0 0 auto;
     font-size: 10px;
     color: var(--muted);
-    transition: color 0.15s ease;
+    transition: color var(--dur-fast) ease;
 }
 
 .cln-rolecard:hover .cln-rolecard-go {
@@ -1089,13 +1089,13 @@
     padding: 10px 12px;
     background: var(--surface-raised);
     border: 2px dashed var(--line);
-    border-radius: 12px;
-    font-family: 'Ubuntu', sans-serif;
+    border-radius: var(--radius-lg);
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
-    color: #666666;
+    color: var(--ink-muted);
     cursor: pointer;
-    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    transition: border-color var(--dur-base) ease, background var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .cln-roleadd i {
@@ -1105,7 +1105,7 @@
 .cln-roleadd:hover {
     border-color: var(--accent);
     color: var(--accent);
-    background: #FFFFFF;
+    background: var(--white);
 }
 
 .cln-role-empty {
@@ -1157,7 +1157,7 @@
     width: 100%;
     box-sizing: border-box;
     padding-bottom: 14px;
-    border-bottom: 1px solid var(--surface);
+    border-bottom: var(--bd-hair);
 }
 
 .cln-editor-headtxt {
@@ -1174,12 +1174,12 @@
     width: 44px;
     height: 44px;
     flex: 0 0 44px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: var(--cln-role-color, var(--accent));
-    color: #FFFFFF;
+    color: var(--on-accent);
     font-size: 18px;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-    transition: background 0.25s var(--ease-smooth);
+    box-shadow: inset 0 0 0 1px var(--sheen-25);
+    transition: background var(--dur-med) var(--ease-smooth);
 }
 
 .cln-rolehint {
@@ -1214,12 +1214,12 @@
     height: 44px;
     flex: 0 0 44px;
     padding: 0;
-    border: 2px solid var(--line);
-    border-radius: 12px;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
     background: var(--accent);
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-    transition: border-color 0.15s ease;
+    box-shadow: inset 0 0 0 1px var(--sheen-25);
+    transition: border-color var(--dur-fast) ease;
 }
 
 .cln-role-sw:hover {
@@ -1232,7 +1232,7 @@
 }
 
 .cln-role-swval {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--muted);
@@ -1269,10 +1269,10 @@
 
 .cln-roleperms-count {
     color: var(--muted);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
-    transition: color 0.18s ease;
+    transition: color var(--dur-base) ease;
 }
 
 .cln-roleperms-count.has-perms {
@@ -1297,12 +1297,12 @@
     margin: 0;
     padding: 12px 14px;
     background: var(--surface-raised);
-    border: 1px solid var(--surface);
-    border-radius: 12px;
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     user-select: none;
     transform: scale(1);
-    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s var(--ease-pop);
+    transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-pop);
 }
 
 .cln-perm:not(.is-locked):hover {
@@ -1311,7 +1311,7 @@
 
 .cln-perm:not(.is-locked):active {
     transform: scale(0.995);
-    transition-duration: 0.08s;
+    transition-duration: var(--dur-press);
 }
 
 .cln-perm:has(input:focus-visible) {
@@ -1330,11 +1330,11 @@
     width: 34px;
     height: 34px;
     flex: 0 0 34px;
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     background: var(--surface);
     color: var(--muted);
     font-size: 14px;
-    transition: background 0.18s ease, color 0.18s ease;
+    transition: background var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .cln-perm-txt {
@@ -1347,7 +1347,7 @@
 
 .cln-perm-txt strong {
     color: var(--ink);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.4;
@@ -1355,7 +1355,7 @@
 
 .cln-perm-txt span {
     color: var(--muted);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
     line-height: 1.4;
 }
@@ -1370,9 +1370,9 @@
     height: 22px;
     flex: 0 0 38px;
     margin-top: 6px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--line);
-    transition: background 0.18s ease;
+    transition: background var(--dur-base) ease;
 }
 
 .cln-perm-swknob {
@@ -1381,15 +1381,15 @@
     left: 3px;
     width: 16px;
     height: 16px;
-    border-radius: 999px;
-    background: #FFFFFF;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    transition: transform 0.22s var(--ease-pop);
+    border-radius: var(--radius-pill);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--dur-base) var(--ease-pop);
 }
 
 .cln-perm.is-on .cln-perm-ico {
     background: var(--grad-accent);
-    color: #FFFFFF;
+    color: var(--on-accent);
 }
 
 .cln-perm.is-on .cln-perm-sw {
@@ -1429,15 +1429,15 @@
 
 .cln-msg {
     margin: 0;
-    color: #4A5568;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-muted);
+    font-family: var(--font);
     font-size: 13px;
     line-height: 1.5;
     overflow-wrap: anywhere;
 }
 
 .cln-msg.is-muted {
-    color: #A0AEC0;
+    color: var(--ink-faint);
 }
 
 .cln-req-row[hidden],
@@ -1451,7 +1451,7 @@
     aspect-ratio: 3 / 1;
     margin-top: 12px;
     border: 1px solid var(--line);
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-md);
     background: var(--surface);
     overflow: hidden;
     pointer-events: none;
@@ -1476,7 +1476,7 @@
 }
 
 .cln-crt-prev .cln-crest {
-    transition: background-color 0.3s var(--ease-smooth);
+    transition: background-color var(--dur-slow) var(--ease-smooth);
 }
 
 .cln-prev-meta {
@@ -1490,8 +1490,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #4A5568;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-muted);
+    font-family: var(--font);
     font-size: 13px;
 }
 
@@ -1507,7 +1507,7 @@
     gap: 6px;
     margin-top: 6px;
     color: var(--warning-ink);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
     line-height: 1.5;
 }
@@ -1554,8 +1554,8 @@
 
 .cln-modal-msg {
     margin: 0;
-    color: #4A5568;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-muted);
+    font-family: var(--font);
     font-size: 14px;
     line-height: 1.6;
 }
@@ -1575,11 +1575,11 @@
     width: 100%;
     box-sizing: border-box;
     padding: 12px 14px;
-    background: var(--surface-raised, var(--surface-raised));
-    border: 1px solid var(--border, var(--surface));
-    border-radius: var(--radius-lg, 12px);
-    color: var(--muted, var(--muted));
-    font-family: 'Ubuntu', sans-serif;
+    background: var(--surface-raised);
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
+    color: var(--muted);
+    font-family: var(--font);
     font-size: 13px;
     line-height: 1.5;
 }
@@ -1602,9 +1602,9 @@
     justify-content: space-between;
     gap: 8px;
     width: 100%;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
-    color: var(--muted, var(--muted));
+    color: var(--muted);
 }
 
 .cln-select {
@@ -1612,16 +1612,16 @@
     min-width: 150px;
     box-sizing: border-box;
     background-color: var(--surface);
-    border: 2px solid rgba(61, 61, 61, 0.25);
-    border-radius: var(--radius-sm, 6px);
+    border: var(--bd-soft);
+    border-radius: var(--radius-sm);
     padding: 0 28px 0 10px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
     outline: none;
     cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    transition: border-color var(--dur-base) ease, background-color var(--dur-base) ease;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -1632,7 +1632,7 @@
 }
 
 .cln-select:focus {
-    border-color: rgba(61, 61, 61, 0.25);
+    border-color: var(--line-soft);
 }
 
 .cln-select option {
@@ -1681,14 +1681,14 @@
     width: 100%;
     box-sizing: border-box;
     padding: 12px 14px;
-    background: var(--surface-raised, var(--surface-raised));
-    border: 1px solid var(--border, var(--surface));
-    border-radius: var(--radius-lg, 12px);
-    transition: border-color 0.2s ease;
+    background: var(--surface-raised);
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--dur-base) ease;
 }
 
 .cln-listrow:hover {
-    border-color: var(--line, var(--line));
+    border-color: var(--line);
 }
 
 .cln-listmain {
@@ -1699,8 +1699,8 @@
 }
 
 .cln-listmain strong {
-    color: var(--ink-strong, var(--ink-strong));
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-strong);
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
@@ -1709,8 +1709,8 @@
 }
 
 .cln-listmain span {
-    color: var(--muted, var(--muted));
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--muted);
+    font-family: var(--font);
     font-size: 12px;
 }
 
@@ -1724,12 +1724,12 @@
 
 .cln-mgmt-row,
 .cln-req-row {
-    transition: border-color 0.18s ease;
+    transition: border-color var(--dur-base) ease;
 }
 
 .cln-mgmt-row:hover,
 .cln-req-row:hover {
-    border-color: var(--line, var(--line));
+    border-color: var(--line);
 }
 
 .cln-req-row .frnact,

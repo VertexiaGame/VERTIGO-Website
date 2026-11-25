@@ -171,7 +171,7 @@ func (r *ForumRepository) GetThreadByID(id int) (*models.ForumThread, error) {
 }
 
 func (r *ForumRepository) CreateThread(boardID, userID int, title, body string, images ...models.ForumImageUpload) (int, error) {
-	return r.createForumPost("INSERT INTO forum_threads (board_id, user_id, title, body) VALUES (?, ?, ?, ?)", []any{boardID, userID, title, body}, 0, images)
+	return r.createForumPost("INSERT INTO forum_threads (board_id, user_id, title, body) VALUES (?, ?, ?, ?)", []any{boardID, userID, title, body}, 0, userID, images)
 }
 
 func (r *ForumRepository) CountThreads(boardID int) (int, error) {
@@ -183,12 +183,24 @@ func (r *ForumRepository) CountThreads(boardID int) (int, error) {
 	return count, err
 }
 
+const forumReplySelect = `
+	SELECT r.id, r.thread_id, r.user_id, COALESCE(u.username, 'Player'), COALESCE(u.displayname, ''), r.body, r.created_at,
+	       r.quote = 'true', r.quote_id,
+	       q.id IS NOT NULL, COALESCE(q.user_id, 0), COALESCE(qu.username, ''), COALESCE(qu.displayname, ''), COALESCE(q.body, ''),
+	       CASE WHEN q.id IS NULL THEN 0 ELSE (
+	           SELECT COUNT(*) FROM forum_replies x
+	           WHERE x.thread_id = q.thread_id AND (x.created_at < q.created_at OR (x.created_at = q.created_at AND x.id < q.id))
+	       ) END
+	FROM forum_replies r
+	LEFT JOIN users u ON u.id = r.user_id
+	LEFT JOIN forum_replies q ON r.quote = 'true' AND r.quote_id > 0 AND q.id = r.quote_id AND q.thread_id = r.thread_id
+	LEFT JOIN users qu ON qu.id = q.user_id`
+
 func (r *ForumRepository) GetReplies(threadID, limit, offset int) ([]*models.ForumReply, error) {
 	if r.db == nil {
 		return nil, errors.New("database connection is offline")
 	}
-	rows, err := r.db.Query(`SELECT r.id, r.thread_id, r.user_id, COALESCE(u.username, 'Player'), COALESCE(u.displayname, ''), r.body, r.created_at
- FROM forum_replies r LEFT JOIN users u ON u.id = r.user_id WHERE r.thread_id = ? ORDER BY r.created_at ASC, r.id ASC LIMIT ? OFFSET ?`, threadID, limit, offset)
+	rows, err := r.db.Query(forumReplySelect+` WHERE r.thread_id = ? ORDER BY r.created_at ASC, r.id ASC LIMIT ? OFFSET ?`, threadID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -196,15 +208,40 @@ func (r *ForumRepository) GetReplies(threadID, limit, offset int) ([]*models.For
 	replies := []*models.ForumReply{}
 	for rows.Next() {
 		var reply models.ForumReply
-		if err := rows.Scan(&reply.ID, &reply.ThreadID, &reply.UserID, &reply.AuthorUsername, &reply.AuthorDisplayName, &reply.Body, &reply.CreatedAt); err != nil {
+		var quoted, quoteFound bool
+		var quote models.ForumQuote
+		if err := rows.Scan(&reply.ID, &reply.ThreadID, &reply.UserID, &reply.AuthorUsername, &reply.AuthorDisplayName, &reply.Body, &reply.CreatedAt,
+			&quoted, &quote.ReplyID,
+			&quoteFound, &quote.UserID, &quote.AuthorUsername, &quote.AuthorDisplayName, &quote.Body, &quote.Position); err != nil {
 			return nil, err
+		}
+		if quoted {
+			quote.Missing = quote.ReplyID > 0 && !quoteFound
+			reply.Quote = &quote
 		}
 		replies = append(replies, &reply)
 	}
 	return replies, rows.Err()
 }
 
+func (r *ForumRepository) ReplyInThread(replyID, threadID int) (bool, error) {
+	if r.db == nil {
+		return false, errors.New("database connection is offline")
+	}
+	var exists bool
+	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM forum_replies WHERE id = ? AND thread_id = ?)", replyID, threadID).Scan(&exists)
+	return exists, err
+}
+
 func (r *ForumRepository) CreateReply(threadID, userID int, body string, images ...models.ForumImageUpload) (int, error) {
-	return r.createForumPost(`INSERT INTO forum_replies (thread_id, user_id, body)
-		SELECT id, ?, ? FROM forum_threads WHERE id = ? AND locked = 0`, []any{userID, body, threadID}, threadID, images)
+	return r.CreateQuotedReply(threadID, userID, body, nil, images...)
+}
+
+func (r *ForumRepository) CreateQuotedReply(threadID, userID int, body string, quoteID *int, images ...models.ForumImageUpload) (int, error) {
+	quote, quotedID := "false", 0
+	if quoteID != nil {
+		quote, quotedID = "true", *quoteID
+	}
+	return r.createForumPost(`INSERT INTO forum_replies (thread_id, user_id, body, quote, quote_id)
+		SELECT id, ?, ?, ?, ? FROM forum_threads WHERE id = ? AND locked = 0`, []any{userID, body, quote, quotedID, threadID}, threadID, userID, images)
 }

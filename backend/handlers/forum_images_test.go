@@ -33,6 +33,9 @@ func TestForumImageUploads(t *testing.T) {
 			return c.Status(400).SendString(err.Error())
 		}
 		for _, image := range images {
+			if image.SavedID != 0 {
+				continue
+			}
 			if image.ContentType != "image/png" || (!bytes.Equal(image.Content, pngBytes) && !bytes.Equal(image.Content, largePNG)) {
 				t.Error("validated image did not retain its actual MIME type or content")
 			}
@@ -42,19 +45,29 @@ func TestForumImageUploads(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		files  [][]byte
+		saved  []string
 		status int
 	}{
-		{"text only", nil, 200},
-		{"three images", [][]byte{pngBytes, pngBytes, pngBytes}, 200},
-		{"three 2 MB images", [][]byte{largePNG, largePNG, largePNG}, 200},
-		{"four images", [][]byte{pngBytes, pngBytes, pngBytes, pngBytes}, 400},
-		{"invalid content", [][]byte{[]byte("<svg/>")}, 400},
-		{"truncated png", [][]byte{pngBytes[:40]}, 400},
-		{"oversized", [][]byte{make([]byte, (2<<20)+1)}, 400},
+		{"text only", nil, nil, 200},
+		{"three images", [][]byte{pngBytes, pngBytes, pngBytes}, nil, 200},
+		{"three 2 MB images", [][]byte{largePNG, largePNG, largePNG}, nil, 200},
+		{"four images", [][]byte{pngBytes, pngBytes, pngBytes, pngBytes}, nil, 400},
+		{"invalid content", [][]byte{[]byte("<svg/>")}, nil, 400},
+		{"truncated png", [][]byte{pngBytes[:40]}, nil, 400},
+		{"oversized", [][]byte{make([]byte, (2<<20)+1)}, nil, 400},
+		{"mixed uploads and saved images", [][]byte{pngBytes}, []string{"5", "6"}, 200},
+		{"combined attachment limit", [][]byte{pngBytes, pngBytes}, []string{"5", "6"}, 400},
+		{"duplicate saved image", nil, []string{"5", "5"}, 400},
+		{"invalid saved image", nil, []string{"-5"}, 400},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var body bytes.Buffer
 			form := multipart.NewWriter(&body)
+			for _, id := range tc.saved {
+				if err := form.WriteField("saved_images", id); err != nil {
+					t.Fatal(err)
+				}
+			}
 			for _, content := range tc.files {
 				file, err := form.CreateFormFile("images", "upload.png")
 				if err != nil {
@@ -79,7 +92,7 @@ func TestForumImageUploads(t *testing.T) {
 			}
 			if tc.status == http.StatusOK {
 				result, err := io.ReadAll(resp.Body)
-				if err != nil || string(result) != strconv.Itoa(len(tc.files)) {
+				if err != nil || string(result) != strconv.Itoa(len(tc.files)+len(tc.saved)) {
 					t.Fatalf("upload count: %q, %v", result, err)
 				}
 			}

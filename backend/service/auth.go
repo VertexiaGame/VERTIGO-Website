@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/repository"
@@ -144,7 +143,7 @@ func (s *AuthService) AuthenticateUser(identifier, password string) (*models.Use
 		return nil, errors.New("invalid username/email or password")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = VerifyPassword(user.Password, password)
 	if err != nil {
 		return nil, errors.New("invalid username/email or password")
 	}
@@ -191,7 +190,7 @@ func (s *AuthService) RegisterUser(username, displayname, email, password, passw
 		return nil, errors.New("email is already registered")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +208,7 @@ func (s *AuthService) RegisterUser(username, displayname, email, password, passw
 		Username:     username,
 		DisplayName:  displayname,
 		Mail:         email,
-		Password:     string(hashedPassword),
+		Password:     hashedPassword,
 		Description:  "I am new to VERTEXIA!",
 		Unikey:       unikey,
 		Power:        0,

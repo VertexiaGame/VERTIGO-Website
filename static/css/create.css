@@ -16,11 +16,11 @@
     flex: 0 0 auto;
     height: 34px;
     padding: 0 14px;
-    background: #FFFFFF;
-    color: #666666;
-    border: 2px solid rgba(61, 61, 61, 0.25);
-    border-radius: var(--radius-lg, 12px);
-    font-family: 'Ubuntu', sans-serif;
+    background: var(--white);
+    color: var(--ink-muted);
+    border: var(--bd-soft);
+    border-radius: var(--radius-lg);
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 500;
     text-align: left;
@@ -28,7 +28,7 @@
     white-space: nowrap;
     cursor: pointer;
     transform: scale(1);
-    transition: transform 0.2s var(--ease-pop), background-color 0.2s ease, color 0.2s ease;
+    transition: transform var(--dur-base) var(--ease-pop), background-color var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .crttypebtn:hover {
@@ -38,7 +38,7 @@
 
 .crttypebtn:active {
     transform: scale(0.96);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .crttypebtn:focus-visible {
@@ -56,7 +56,7 @@
     font-size: 13px;
     color: var(--accent);
     transform: rotate(0deg) scale(1);
-    transition: transform 0.24s var(--ease-pop);
+    transition: transform var(--dur-med) var(--ease-pop);
 }
 
 .crttypebtn:hover i {
@@ -70,7 +70,7 @@
     flex-shrink: 0;
     filter: brightness(0) saturate(100%) invert(26%) sepia(79%) saturate(3825%) hue-rotate(266deg) brightness(91%) contrast(94%);
     transform: rotate(0deg) scale(1);
-    transition: transform 0.24s var(--ease-pop), filter 0.2s ease;
+    transition: transform var(--dur-med) var(--ease-pop), filter var(--dur-base) ease;
 }
 
 .crttypebtn:hover img {
@@ -105,7 +105,7 @@
 }
 
 .crtthumbcount {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     font-weight: 400;
     color: var(--muted);
@@ -131,24 +131,24 @@
 }
 
 #crtGameThumbPreview {
-    transition: opacity 0.25s ease;
+    transition: opacity var(--dur-med) ease;
 }
 
 .crtthumbs img {
     width: 96px;
     aspect-ratio: 16 / 10;
     object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid var(--surface);
+    border-radius: var(--radius-md);
+    border: var(--bd-hair);
     background: var(--surface);
     display: block;
 }
 
 .crtthumbs-pick {
     position: relative;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     cursor: grab;
-    transition: opacity 0.15s ease, box-shadow 0.15s ease, transform 0.2s var(--ease-pop);
+    transition: opacity var(--dur-fast) ease, box-shadow var(--dur-fast) ease, transform var(--dur-base) var(--ease-pop);
 }
 
 .crtthumbs-pick:active {
@@ -171,18 +171,18 @@
 }
 
 .crtthumbs-pick:first-child img {
-    border-color: rgba(145, 42, 223, 0.45);
+    border-color: var(--accent-glow);
 }
 
 .crtthumbs-pick.crt-dragging {
     opacity: 0.45;
     transform: scale(1.06);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
     z-index: 2;
 }
 
 .crtthumbs-pick.crt-droptarget {
-    box-shadow: 0 0 0 3px rgba(145, 42, 223, 0.35);
+    box-shadow: var(--focus-ring);
 }
 
 .crtthumbs-x,
@@ -192,7 +192,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 1px solid var(--border);
+    border: var(--bd-hair);
     background: var(--surface-raised);
     color: var(--ink);
     font-size: 11px;
@@ -201,7 +201,7 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
 }
 
 .crtthumbs-x:focus-visible,
@@ -219,7 +219,7 @@
 .crtthumbs-x:hover {
     background: var(--danger);
     border-color: var(--danger);
-    color: #FFFFFF;
+    color: var(--on-accent);
 }
 
 .crtthumbs-mv {
@@ -259,7 +259,7 @@
 .crtthumbs-pick:first-child .crtthumbs-ord {
     background: var(--grad-accent);
     border: none;
-    color: #FFFFFF;
+    color: var(--on-accent);
 }
 
 #crtGameGenreDropdown .glb-dropdown-menu,
@@ -316,7 +316,7 @@
 }
 
 .crtlbl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
@@ -357,11 +357,11 @@
     min-height: 96px;
     background: var(--surface-raised);
     border: 2px dashed var(--line);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-family: 'Ubuntu', sans-serif;
-    color: #666666;
-    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    font-family: var(--font);
+    color: var(--ink-muted);
+    transition: border-color var(--dur-base) ease, background var(--dur-base) ease, color var(--dur-base) ease;
     text-align: center;
     padding: 12px;
     box-sizing: border-box;
@@ -370,7 +370,7 @@
 .crtupload:hover {
     border-color: var(--accent);
     color: var(--accent);
-    background: #FFFFFF;
+    background: var(--white);
 }
 
 .crtupload i {
@@ -417,8 +417,8 @@
     width: 100%;
     height: 420px;
     background: var(--surface-raised);
-    border: 2px solid var(--line);
-    border-radius: 12px;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     box-sizing: border-box;
     touch-action: none;
@@ -436,7 +436,7 @@
     justify-content: center;
     gap: 6px;
     margin-top: 8px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     color: var(--muted);
 }
@@ -451,8 +451,8 @@
     gap: 10px;
     margin-top: 10px;
     background: var(--surface-raised);
-    border: 2px solid var(--line);
-    border-radius: 12px;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
     padding: 12px;
     box-sizing: border-box;
 }
@@ -466,7 +466,7 @@
 .crt3dtflbl {
     width: 44px;
     flex-shrink: 0;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     font-weight: 500;
     color: var(--ink);
@@ -480,7 +480,7 @@
 }
 
 .crt3daxlbl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 10px;
     font-weight: 500;
     color: var(--muted);
@@ -489,7 +489,7 @@
 .crt3daxbox {
     width: 62px !important;
     height: 28px !important;
-    border-radius: 6px !important;
+    border-radius: var(--radius-sm) !important;
 }
 
 .crt3dax {
@@ -509,10 +509,10 @@
 .crt3dsnap {
     height: 32px;
     padding: 0 24px 0 8px;
-    background: #FFFFFF;
-    border: 2px solid rgba(61, 61, 61, 0.25);
-    border-radius: 6px;
-    font-family: 'Ubuntu', sans-serif;
+    background: var(--white);
+    border: var(--bd-soft);
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
     font-size: 12px;
     font-weight: 500;
     color: var(--ink);
@@ -522,7 +522,7 @@
 }
 
 .crt3dsnap:focus {
-    border-color: rgba(61, 61, 61, 0.25);
+    border-color: var(--line-soft);
 }
 
 .crt3dreset {
@@ -541,9 +541,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
-    color: #666666;
+    color: var(--ink-muted);
 }
 
 .crtassetrow strong {
@@ -566,7 +566,7 @@
     width: 100%;
     height: 8px;
     background: var(--surface-raised);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     box-sizing: border-box;
 }
@@ -575,15 +575,15 @@
     height: 100%;
     width: 0%;
     background: var(--grad-accent);
-    border-radius: 8px;
-    transition: width 0.15s ease;
+    border-radius: var(--radius-md);
+    transition: width var(--dur-fast) ease;
 }
 
 .crtprogtxt {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
     font-weight: 500;
-    color: #666666;
+    color: var(--ink-muted);
 }
 
 @media (max-width: 996px) {

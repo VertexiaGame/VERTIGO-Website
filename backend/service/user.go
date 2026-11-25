@@ -10,7 +10,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"golang.org/x/crypto/bcrypt"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/repository"
 )
@@ -223,17 +222,17 @@ func (s *UserService) ChangePassword(userID int, currentPassword, newPassword, r
 		return errors.New("User not found")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword))
+	err = VerifyPassword(user.Password, currentPassword)
 	if err != nil {
 		return errors.New("Current password is incorrect")
 	}
 
-	newHashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	newHashed, err := HashPassword(newPassword)
 	if err != nil {
 		return errors.New("Hashing error")
 	}
 
-	return s.userRepo.UpdatePassword(userID, string(newHashed))
+	return s.userRepo.UpdatePassword(userID, newHashed)
 }
 
 func (s *UserService) UpdateBio(userID int, bio string) error {
@@ -375,6 +374,10 @@ func (s *UserService) SetCertifiedCreator(admin *models.User, targetID int, cert
 
 func (s *UserService) SetContributorBadge(admin *models.User, targetID int, granted bool) error {
 	return s.setBadge(admin, targetID, s.userRepo.SetContributorBadge, granted)
+}
+
+func (s *UserService) GetForumActivityCounts(userID int) (threads, replies int, err error) {
+	return s.userRepo.GetForumActivityCounts(userID)
 }
 
 func (s *UserService) GetProfileData(userID int, activeUsername string) (*models.User, bool, int, int, int, error) {

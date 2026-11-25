@@ -8,7 +8,7 @@ import (
 	"vertexia-frontend/backend/models"
 )
 
-func (r *ForumRepository) createForumPost(query string, args []any, threadID int, images []models.ForumImageUpload) (int, error) {
+func (r *ForumRepository) createForumPost(query string, args []any, threadID, userID int, images []models.ForumImageUpload) (int, error) {
 	if r.db == nil {
 		return 0, errors.New("database connection is offline")
 	}
@@ -42,8 +42,12 @@ func (r *ForumRepository) createForumPost(query string, args []any, threadID int
 		replyID = id
 	}
 	for _, image := range images {
-		if _, err := tx.Exec(`INSERT INTO forum_images (thread_id, reply_id, content_type, content)
-			VALUES (?, ?, ?, ?)`, threadID, replyID, image.ContentType, image.Content); err != nil {
+		imageID, err := savePostImage(tx, userID, image)
+		if err != nil {
+			return 0, err
+		}
+		if _, err := tx.Exec("INSERT INTO forum_images (thread_id, reply_id, image_id) VALUES (?, ?, ?)",
+			threadID, replyID, imageID); err != nil {
 			return 0, err
 		}
 	}
@@ -53,15 +57,17 @@ func (r *ForumRepository) createForumPost(query string, args []any, threadID int
 func (r *ForumRepository) LoadApprovedImages(thread *models.ForumThread, replies []*models.ForumReply) error {
 	args := []any{thread.ID}
 	repliesByID := make(map[int]*models.ForumReply, len(replies))
-	query := "SELECT id, reply_id FROM forum_images WHERE thread_id = ? AND approved = TRUE AND (reply_id IS NULL"
+	query := `SELECT i.id, i.reply_id FROM forum_images i
+		JOIN community_images a ON a.id = i.image_id
+		WHERE i.thread_id = ? AND a.approved = TRUE AND (i.reply_id IS NULL`
 	if len(replies) > 0 {
-		query += " OR reply_id IN (" + strings.TrimSuffix(strings.Repeat("?,", len(replies)), ",") + ")"
+		query += " OR i.reply_id IN (" + strings.TrimSuffix(strings.Repeat("?,", len(replies)), ",") + ")"
 		for _, reply := range replies {
 			args = append(args, reply.ID)
 			repliesByID[reply.ID] = reply
 		}
 	}
-	rows, err := r.db.Query(query+") ORDER BY id", args...)
+	rows, err := r.db.Query(query+") ORDER BY i.id", args...)
 	if err != nil {
 		return err
 	}
@@ -86,7 +92,8 @@ func (r *ForumRepository) GetForumImage(id int, approved bool) (models.ForumImag
 	if r.db == nil {
 		return image, errors.New("database connection is offline")
 	}
-	err := r.db.QueryRow("SELECT content_type, content FROM forum_images WHERE id = ? AND approved = ?", id, approved).
+	err := r.db.QueryRow(`SELECT a.content_type, a.content FROM forum_images i
+		JOIN community_images a ON a.id = i.image_id WHERE i.id = ? AND a.approved = ?`, id, approved).
 		Scan(&image.ContentType, &image.Content)
 	return image, err
 }
@@ -98,10 +105,11 @@ func (r *ForumRepository) PendingForumImages(after, limit int) ([]models.Pending
 	rows, err := r.db.Query(`SELECT i.id, t.id, COALESCE(i.reply_id, 0), t.title, COALESCE(u.username, 'Player'),
 		COALESCE(r.body, t.body)
 		FROM forum_images i
+		JOIN community_images a ON a.id = i.image_id
 		JOIN forum_threads t ON t.id = i.thread_id
 		LEFT JOIN forum_replies r ON r.id = i.reply_id
 		LEFT JOIN users u ON u.id = COALESCE(r.user_id, t.user_id)
-		WHERE i.approved = FALSE AND i.id > ? ORDER BY i.id LIMIT ?`, after, limit)
+		WHERE a.approved = FALSE AND i.id > ? ORDER BY i.id LIMIT ?`, after, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -121,9 +129,11 @@ func (r *ForumRepository) ReviewForumImage(id int, approve bool) (bool, error) {
 	if r.db == nil {
 		return false, errors.New("database connection is offline")
 	}
-	query := "DELETE FROM forum_images WHERE id = ? AND approved = FALSE"
+	query := `DELETE FROM community_images WHERE approved = FALSE
+		AND id = (SELECT image_id FROM forum_images WHERE id = ?)`
 	if approve {
-		query = "UPDATE forum_images SET approved = TRUE WHERE id = ? AND approved = FALSE"
+		query = `UPDATE community_images a JOIN forum_images i ON i.image_id = a.id
+			SET a.approved = TRUE WHERE i.id = ? AND a.approved = FALSE`
 	}
 	result, err := r.db.Exec(query, id)
 	if err != nil {

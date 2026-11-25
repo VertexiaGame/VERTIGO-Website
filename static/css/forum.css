@@ -62,11 +62,11 @@
     overflow: hidden;
     isolation: isolate;
     text-decoration: none;
-    color: #FFFFFF;
+    color: var(--on-accent);
     background: var(--accent);
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1), inset 0 0 4px rgba(255, 255, 255, 0.25);
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1), var(--inset-sheen);
     transform: translateY(0) scale(1);
-    transition: transform 0.25s var(--ease-pop), box-shadow 0.25s var(--ease-smooth);
+    transition: transform var(--dur-med) var(--ease-pop), box-shadow var(--dur-med) var(--ease-smooth);
     animation: fbdCardIn 0.26s var(--ease-pop) var(--d) backwards;
 }
 
@@ -89,7 +89,7 @@
 
 .fbd-card:not(.fbd-sub-hero):active {
     transform: translateY(0) scale(0.985);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .fbd-card:focus-visible {
@@ -144,7 +144,7 @@
     background-size: 750px auto;
     opacity: 0.1;
     pointer-events: none;
-    transition: background-position 0.5s var(--ease-smooth), opacity 0.25s ease;
+    transition: background-position 0.5s var(--ease-smooth), opacity var(--dur-med) ease;
     z-index: 0;
 }
 
@@ -152,16 +152,16 @@
     position: absolute;
     right: 18px;
     bottom: -38px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 160px;
     font-weight: 700;
     line-height: 1;
     color: rgba(255, 255, 255, 0.16);
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    text-shadow: 0px 0px 4px var(--shade);
     user-select: none;
     pointer-events: none;
     transform: translate(0, 0) rotate(0deg) scale(1);
-    transition: transform 0.3s var(--ease-pop), color 0.25s ease;
+    transition: transform var(--dur-slow) var(--ease-pop), color var(--dur-med) ease;
     animation: fbdArtIn 0.3s var(--ease-pop) calc(var(--d) + 0.03s) backwards;
     z-index: 1;
 }
@@ -170,17 +170,17 @@
     position: relative;
     margin: 0;
     max-width: 100%;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 30px;
     font-weight: 700;
     line-height: 35px;
-    color: #FFFFFF;
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25), 0px 2px 10px rgba(0, 0, 0, 0.25);
+    color: var(--on-accent);
+    text-shadow: 0px 0px 4px var(--shade), 0px 2px 10px var(--shade);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transform: translateX(0);
-    transition: transform 0.25s var(--ease-pop);
+    transition: transform var(--dur-med) var(--ease-pop);
     animation: fbdSlideIn 0.26s var(--ease-pop) calc(var(--d) + 0.05s) backwards;
     z-index: 3;
 }
@@ -213,7 +213,7 @@
     mask-repeat: round no-repeat;
     transform: scaleY(1);
     transform-origin: bottom;
-    transition: transform 0.24s var(--ease-pop);
+    transition: transform var(--dur-med) var(--ease-pop);
     animation: fbdStudsIn 0.28s var(--ease-pop) calc(var(--d) + 0.08s) backwards;
     pointer-events: none;
 }
@@ -222,12 +222,12 @@
     flex: 1;
     min-width: 0;
     margin: 0;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 400;
     line-height: 20px;
-    color: #FFFFFF;
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+    color: var(--on-accent);
+    text-shadow: 0px 0px 4px var(--shade);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -245,11 +245,11 @@
     background: rgba(255, 255, 255, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.24);
     box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.16);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.2;
-    color: #FFFFFF;
+    color: var(--on-accent);
     text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -291,7 +291,7 @@
     flex-wrap: wrap;
     gap: 8px;
     margin: 0;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     line-height: 20px;
     color: var(--muted);
@@ -305,24 +305,24 @@
     padding: 4px 10px;
     border-radius: var(--radius-md);
     background: var(--surface-raised);
-    border: 1px solid var(--border);
+    border: var(--bd-hair);
     color: var(--ink);
     font-weight: 500;
     text-decoration: none;
     transform: scale(1);
-    transition: transform 0.2s var(--ease-pop), color 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+    transition: transform var(--dur-base) var(--ease-pop), color var(--dur-base) ease, border-color var(--dur-base) ease, background-color var(--dur-base) ease;
 }
 
 .fbd-dir-link:hover {
     color: var(--accent);
     border-color: var(--line);
-    background: #FFFFFF;
+    background: var(--white);
     transform: scale(1.04);
 }
 
 .fbd-dir-link:active {
     transform: scale(0.96);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .fbd-dir-ico {
@@ -379,11 +379,11 @@
     flex: 0 0 auto;
     height: 34px;
     padding: 0 14px;
-    background: #FFFFFF;
-    color: #666666;
-    border: 2px solid rgba(61, 61, 61, 0.25);
+    background: var(--white);
+    color: var(--ink-muted);
+    border: var(--bd-soft);
     border-radius: var(--radius-lg);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 500;
     text-align: left;
@@ -391,7 +391,7 @@
     white-space: nowrap;
     cursor: pointer;
     transform: scale(1);
-    transition: transform 0.2s var(--ease-pop), background-color 0.2s ease, color 0.2s ease;
+    transition: transform var(--dur-base) var(--ease-pop), background-color var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .fbd-rules-btn:hover,
@@ -403,7 +403,7 @@
 .fbd-rules-btn:active,
 .fbd-tool-btn:active {
     transform: scale(0.96);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .fbd-rules-btn:focus-visible,
@@ -423,7 +423,7 @@
     flex-shrink: 0;
     font-size: 13px;
     transform: rotate(0deg) scale(1);
-    transition: transform 0.24s var(--ease-pop);
+    transition: transform var(--dur-med) var(--ease-pop);
 }
 
 .fbd-rules-ico {
@@ -447,7 +447,7 @@
     flex-shrink: 0;
     font-size: 11px;
     color: var(--muted);
-    transition: transform 0.26s var(--ease-pop), color 0.2s ease;
+    transition: transform var(--dur-med) var(--ease-pop), color var(--dur-base) ease;
 }
 
 .fbd-rules.is-open .fbd-rules-caret {
@@ -482,11 +482,11 @@
     transform: translateY(-4px) scale(0.99);
     transform-origin: top center;
     transition:
-        grid-template-rows 0.26s var(--ease-smooth),
-        margin-top 0.26s var(--ease-smooth),
-        opacity 0.2s ease,
-        transform 0.26s var(--ease-pop),
-        visibility 0s linear 0.26s;
+        grid-template-rows var(--dur-med) var(--ease-smooth),
+        margin-top var(--dur-med) var(--ease-smooth),
+        opacity var(--dur-base) ease,
+        transform var(--dur-med) var(--ease-pop),
+        visibility 0s linear var(--dur-med);
 }
 
 .fbd-rules.is-open .fbd-rules-body {
@@ -510,9 +510,9 @@
     flex-direction: column;
     gap: 8px;
     background: var(--surface-raised);
-    border: 1px solid var(--border);
+    border: var(--bd-hair);
     border-radius: var(--radius-lg);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     line-height: 1.5;
     color: var(--ink);
@@ -548,7 +548,7 @@
 }
 
 .fth-author-link {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 500;
     color: var(--ink-strong);
@@ -745,14 +745,18 @@
     outline-offset: 2px;
 }
 
+:is(#forumBoardPane, #forumThreadPane) .forum-post,
+#forumThreadPane .forum-quote {
+    box-sizing: border-box;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
+}
+
 :is(#forumBoardPane, #forumThreadPane) .forum-post {
     display: grid;
     grid-template-columns: 128px minmax(0, 1fr);
     width: 100%;
-    box-sizing: border-box;
     background: var(--surface);
-    border: 2px solid var(--line);
-    border-radius: 12px;
     animation: shpCardIn 0.24s var(--ease-smooth) backwards;
 }
 
@@ -762,8 +766,8 @@
     justify-content: center;
     min-width: 0;
     padding: 8px;
-    border-right: 2px solid var(--line);
-    border-radius: 10px 0 0 10px;
+    border-right: var(--bd-thick);
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
     background: var(--surface-raised-hover);
 }
 
@@ -772,7 +776,7 @@
     width: 100%;
     height: 140px;
     object-fit: contain;
-    transition: transform 0.3s var(--ease-smooth);
+    transition: transform var(--dur-slow) var(--ease-smooth);
 }
 
 :is(#forumBoardPane, #forumThreadPane) .forum-post-avatar:hover img {
@@ -893,35 +897,61 @@
 .fbd-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; color: var(--ink); font-size: 13px; }
 .fbd-pagination a { text-decoration: none; }
 
-#fthResults { transition: opacity 0.16s ease, transform 0.16s var(--ease-smooth); }
+#fthResults { transition: opacity var(--dur-fast) ease, transform var(--dur-fast) var(--ease-smooth); }
 #fthResults.is-sorting { opacity: 0; transform: translateY(4px); }
 #fthSortError[hidden] { display: none !important; }
 
-.forum-upload {
-    position: relative;
-}
-
-.forum-upload input {
-    position: absolute;
-    inset: 0;
+.forum-upload:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: inherit;
+    padding: 9px 12px;
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+    color: var(--ink);
+    font: 500 14px/1.2 'Ubuntu', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--dur-base) ease, color var(--dur-base) ease, border-color var(--dur-base) ease;
 }
 
-.forum-upload:focus-within {
+.forum-upload:hover,
+.forum-upload[aria-expanded="true"] {
+    border-color: var(--line);
+    color: var(--accent-ink);
+}
+
+.forum-upload-arrow {
+    margin-inline-start: auto;
+    font-size: 11px;
+    transition: transform var(--dur-med) var(--ease-smooth);
+}
+
+.forum-upload[aria-expanded="true"] .forum-upload-arrow {
+    transform: rotate(180deg);
+}
+
+.forum-upload[hidden] {
+    display: none;
+}
+
+.forum-upload:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
-.forum-upload:has(input:disabled) {
+.forum-upload:disabled {
     opacity: .65;
     cursor: wait;
 }
 
-.forum-upload .crtupname:empty {
-    display: none;
+.forum-upload-actions:not([hidden]) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .forum-upload-error {

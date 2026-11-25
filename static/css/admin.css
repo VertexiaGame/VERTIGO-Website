@@ -9,8 +9,8 @@
 
 .adm-card {
     background: var(--surface-raised) !important;
-    border: 1px solid var(--surface) !important;
-    border-radius: 12px !important;
+    border: var(--bd-hair) !important;
+    border-radius: var(--radius-lg) !important;
     padding: 16px !important;
     display: flex !important;
     flex-direction: column !important;
@@ -23,12 +23,12 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
-    border-bottom: 1px solid var(--surface) !important;
+    border-bottom: var(--bd-hair) !important;
     padding-bottom: 10px !important;
 }
 
 .adm-cardttl {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 15px !important;
     font-weight: 500 !important;
     color: var(--accent) !important;
@@ -45,7 +45,7 @@
 .adm-stat {
     display: inline-flex !important;
     align-items: center !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     color: var(--ink) !important;
@@ -69,7 +69,7 @@
     align-items: baseline !important;
     justify-content: space-between !important;
     gap: 12px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
 }
 
@@ -82,8 +82,8 @@
     height: 56px !important;
     object-fit: contain !important;
     background: var(--surface) !important;
-    border: 2px solid var(--line) !important;
-    border-radius: 8px !important;
+    border: var(--bd-thick) !important;
+    border-radius: var(--radius-md) !important;
     flex-shrink: 0 !important;
 }
 
@@ -137,13 +137,13 @@
     display: inline-flex !important;
     align-items: center !important;
     padding: 4px 10px !important;
-    border-radius: 6px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    border-radius: var(--radius-sm) !important;
+    font-family: var(--font) !important;
     font-size: 12px !important;
     font-weight: 500 !important;
-    color: #FFFFFF !important;
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25) !important;
-    box-shadow: inset 0px 0px 4px rgba(255, 255, 255, 0.25) !important;
+    color: var(--on-accent) !important;
+    text-shadow: 0px 0px 4px var(--shade) !important;
+    box-shadow: var(--inset-sheen) !important;
     white-space: nowrap !important;
 }
 
@@ -228,7 +228,7 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 12px !important;
     color: var(--muted) !important;
 }
@@ -293,17 +293,17 @@
     min-width: 160px !important;
     flex: 0 1 auto !important;
     background-color: var(--surface) !important;
-    border: 2px solid rgba(61, 61, 61, 0.25) !important;
-    border-radius: 6px !important;
+    border: var(--bd-soft) !important;
+    border-radius: var(--radius-sm) !important;
     padding: 0 28px 0 10px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     color: var(--ink) !important;
     outline: none !important;
     cursor: pointer !important;
     box-sizing: border-box !important;
-    transition: border-color 0.2s ease, background-color 0.2s ease !important;
+    transition: border-color var(--dur-base) ease, background-color var(--dur-base) ease !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     appearance: none !important;
@@ -314,7 +314,7 @@
 }
 
 .adm-select:focus {
-    border-color: rgba(61, 61, 61, 0.25) !important;
+    border-color: var(--line-soft) !important;
 }
 
 .adm-select option {
@@ -324,8 +324,8 @@
 
 .adm-panel {
     background: var(--surface-raised) !important;
-    border: 1px solid var(--surface) !important;
-    border-radius: 12px !important;
+    border: var(--bd-hair) !important;
+    border-radius: var(--radius-lg) !important;
     padding: 16px !important;
     box-sizing: border-box !important;
     width: 100% !important;
@@ -340,8 +340,8 @@
     width: 100% !important;
     height: 330px !important;
     background: var(--surface) !important;
-    border: 2px solid var(--line) !important;
-    border-radius: 12px !important;
+    border: var(--bd-thick) !important;
+    border-radius: var(--radius-lg) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -385,18 +385,18 @@
     background: rgba(61, 61, 61, 0.75) !important;
     backdrop-filter: blur(6px) !important;
     -webkit-backdrop-filter: blur(6px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    border-radius: 6px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    border: 1px solid var(--sheen-25) !important;
+    border-radius: var(--radius-sm) !important;
+    font-family: var(--font) !important;
     font-size: 12px !important;
     font-weight: 500 !important;
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
     gap: 5px !important;
     transform: scale(1) !important;
-    transition: background 0.15s ease, transform 0.15s ease !important;
+    transition: background var(--dur-fast) ease, transform var(--dur-fast) ease !important;
 }
 
 .adm-3d-toggle-btn:hover {
@@ -410,7 +410,7 @@
 }
 
 .adm-3d-err {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     color: var(--danger) !important;
     padding: 16px !important;
@@ -442,7 +442,7 @@
 .adm-clnmedia-icon,
 .adm-forum-preview {
     border: 1px solid var(--line) !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius-md) !important;
     background: var(--surface) !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
@@ -482,7 +482,7 @@
 }
 
 .adm-main-tab-list .tabbtn:focus-visible {
-    outline: 2px solid #fff !important;
+    outline: 2px solid var(--white) !important;
     outline-offset: -3px;
 }
 
@@ -526,15 +526,15 @@
     width: 100% !important;
     overflow-x: auto !important;
     background: var(--surface-raised) !important;
-    border: 1px solid var(--surface) !important;
-    border-radius: 12px !important;
+    border: var(--bd-hair) !important;
+    border-radius: var(--radius-lg) !important;
     box-sizing: border-box !important;
 }
 
 .adm-usrtbl {
     width: 100% !important;
     border-collapse: collapse !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
 }
 
@@ -544,13 +544,13 @@
     background: var(--surface) !important;
     color: var(--muted) !important;
     font-weight: 500 !important;
-    border-bottom: 2px solid var(--line) !important;
+    border-bottom: var(--bd-thick) !important;
     white-space: nowrap !important;
 }
 
 .adm-usrtbl td {
     padding: 10px 14px !important;
-    border-bottom: 1px solid var(--surface) !important;
+    border-bottom: var(--bd-hair) !important;
     color: var(--ink) !important;
     vertical-align: middle !important;
 }
@@ -581,11 +581,11 @@
     flex-wrap: wrap !important;
     margin-top: 16px !important;
     padding-top: 12px !important;
-    border-top: 1px solid var(--surface) !important;
+    border-top: var(--bd-hair) !important;
 }
 
 .adm-pgntxt {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     color: var(--muted) !important;
 }
@@ -627,7 +627,7 @@
 }
 
 .adm-filter-status {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     color: var(--muted) !important;
 }
@@ -641,8 +641,8 @@
     padding: 10px 12px !important;
     background: var(--warning-soft) !important;
     border: 1px solid var(--warning-line) !important;
-    border-radius: 8px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    border-radius: var(--radius-md) !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     color: var(--warning-ink) !important;
 }
@@ -659,7 +659,7 @@
 .adm-filter-reasons {
     margin: 0 !important;
     padding-left: 18px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     color: var(--ink) !important;
 }
@@ -668,7 +668,7 @@
     display: flex !important;
     align-items: center !important;
     gap: 10px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
 }
 
@@ -689,7 +689,7 @@
     display: flex !important;
     flex-wrap: wrap !important;
     gap: 4px 14px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 12px !important;
     color: var(--muted) !important;
 }

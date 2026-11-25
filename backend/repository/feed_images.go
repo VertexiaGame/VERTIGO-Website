@@ -11,12 +11,12 @@ const feedImagePostJoins = `
 	LEFT JOIN feed f ON i.feed_type = 'worldwide' AND f.id = i.feed_id AND f.removed = 'false'
 	LEFT JOIN ffeed ff ON i.feed_type = 'friends' AND ff.id = i.feed_id AND ff.removed = 'false'`
 
-func (r *FeedRepository) CreatePost(userID int, content, feedType string, images []models.ForumImageUpload) (int, error) {
+func (r *FeedRepository) CreatePost(userID int, content, feedType string, images []models.ForumImageUpload) (*models.FeedPost, error) {
 	if r.db == nil {
-		return 0, errors.New("feed is unavailable")
+		return nil, errors.New("feed is unavailable")
 	}
 	if len(images) > models.ForumImageMaxCount {
-		return 0, errors.New("attach up to 3 images")
+		return nil, errors.New("attach up to 3 images")
 	}
 
 	table, authorColumn := "feed", "user_id"
@@ -28,30 +28,42 @@ func (r *FeedRepository) CreatePost(userID int, content, feedType string, images
 
 	tx, err := r.db.Begin()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	query := "INSERT INTO " + table + " (id, " + authorColumn + ", status) " +
 		"VALUES (LAST_INSERT_ID((SELECT COALESCE(MAX(x.id), 0) + 1 FROM (SELECT id FROM " + table + ") x)), ?, ?)"
 	if _, err := tx.Exec(query, userID, content); err != nil {
-		return 0, err
+		return nil, err
 	}
-	var postID int
-	if err := tx.QueryRow("SELECT LAST_INSERT_ID()").Scan(&postID); err != nil {
-		return 0, err
+	post := &models.FeedPost{UserID: userID, Content: content}
+	if err := tx.QueryRow("SELECT LAST_INSERT_ID()").Scan(&post.ID); err != nil {
+		return nil, err
 	}
 
 	for _, image := range images {
-		if _, err := tx.Exec("INSERT INTO feed_images (feed_id, feed_type, content_type, content) VALUES (?, ?, ?, ?)",
-			postID, feedType, image.ContentType, image.Content); err != nil {
-			return 0, err
+		imageID, err := savePostImage(tx, userID, image)
+		if err != nil {
+			return nil, err
+		}
+		attachment, err := tx.Exec("INSERT INTO feed_images (feed_id, feed_type, image_id) VALUES (?, ?, ?)",
+			post.ID, feedType, imageID)
+		if err != nil {
+			return nil, err
+		}
+		if image.SavedID != 0 {
+			id, err := attachment.LastInsertId()
+			if err != nil {
+				return nil, err
+			}
+			post.Images = append(post.Images, int(id))
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		return 0, err
+		return nil, err
 	}
-	return postID, nil
+	return post, nil
 }
 
 func (r *FeedRepository) GetImage(id, currentUserID int) (models.ForumImageUpload, error) {
@@ -59,9 +71,9 @@ func (r *FeedRepository) GetImage(id, currentUserID int) (models.ForumImageUploa
 	if r.db == nil {
 		return image, sql.ErrNoRows
 	}
-	err := r.db.QueryRow(`SELECT i.content_type, i.content
-		FROM feed_images i`+feedImagePostJoins+`
-		WHERE i.id = ? AND i.approved = TRUE AND (f.id IS NOT NULL OR (ff.id IS NOT NULL AND
+	err := r.db.QueryRow(`SELECT a.content_type, a.content
+		FROM feed_images i JOIN community_images a ON a.id = i.image_id`+feedImagePostJoins+`
+		WHERE i.id = ? AND a.approved = TRUE AND (f.id IS NOT NULL OR (ff.id IS NOT NULL AND
 			(ff.userid = ? OR EXISTS (
 				SELECT 1 FROM friends WHERE state = 'accepted'
 				AND ((uid = ? AND fid = ff.userid) OR (fid = ? AND uid = ff.userid))
@@ -75,8 +87,9 @@ func (r *FeedRepository) GetPendingImage(id int) (models.ForumImageUpload, error
 	if r.db == nil {
 		return image, sql.ErrNoRows
 	}
-	err := r.db.QueryRow(`SELECT i.content_type, i.content FROM feed_images i`+feedImagePostJoins+`
-		WHERE i.id = ? AND i.approved = FALSE AND (f.id IS NOT NULL OR ff.id IS NOT NULL)`, id).
+	err := r.db.QueryRow(`SELECT a.content_type, a.content FROM feed_images i
+		JOIN community_images a ON a.id = i.image_id`+feedImagePostJoins+`
+		WHERE i.id = ? AND a.approved = FALSE AND (f.id IS NOT NULL OR ff.id IS NOT NULL)`, id).
 		Scan(&image.ContentType, &image.Content)
 	return image, err
 }
@@ -87,9 +100,9 @@ func (r *FeedRepository) PendingImages(after, limit int) ([]models.PendingFeedIm
 	}
 	rows, err := r.db.Query(`SELECT i.id, i.feed_id, i.feed_type, COALESCE(u.username, 'Player'),
 		COALESCE(f.status, ff.status, '')
-		FROM feed_images i`+feedImagePostJoins+`
+		FROM feed_images i JOIN community_images a ON a.id = i.image_id`+feedImagePostJoins+`
 		LEFT JOIN users u ON u.id = COALESCE(f.user_id, ff.userid)
-		WHERE i.approved = FALSE AND i.id > ? AND (f.id IS NOT NULL OR ff.id IS NOT NULL)
+		WHERE a.approved = FALSE AND i.id > ? AND (f.id IS NOT NULL OR ff.id IS NOT NULL)
 		ORDER BY i.id LIMIT ?`, after, limit)
 	if err != nil {
 		return nil, err
@@ -110,10 +123,11 @@ func (r *FeedRepository) ReviewImage(id int, approve bool) (bool, error) {
 	if r.db == nil {
 		return false, errors.New("feed is unavailable")
 	}
-	query := "DELETE FROM feed_images WHERE id = ? AND approved = FALSE"
+	query := `DELETE FROM community_images WHERE approved = FALSE
+		AND id = (SELECT image_id FROM feed_images WHERE id = ?)`
 	if approve {
-		query = "UPDATE feed_images i" + feedImagePostJoins +
-			" SET i.approved = TRUE WHERE i.id = ? AND i.approved = FALSE AND (f.id IS NOT NULL OR ff.id IS NOT NULL)"
+		query = "UPDATE community_images a JOIN feed_images i ON i.image_id = a.id" + feedImagePostJoins +
+			" SET a.approved = TRUE WHERE i.id = ? AND a.approved = FALSE AND (f.id IS NOT NULL OR ff.id IS NOT NULL)"
 	}
 	result, err := r.db.Exec(query, id)
 	if err != nil {

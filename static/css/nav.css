@@ -42,16 +42,16 @@
     margin: auto 0;
     background: url('/static/branding/VERTEXIA.avif') no-repeat center;
     background-size: contain;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+    filter: drop-shadow(0 1px 2px var(--shade));
 }
 
 .navlnk,
 .navtxt {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 20px;
     line-height: 23px;
-    color: #FFFFFF;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    color: var(--on-accent);
+    text-shadow: 0 1px 2px var(--shade);
     text-decoration: none;
     display: flex;
     align-items: center;
@@ -76,12 +76,12 @@
 .navbrd {
     transform: scale(1);
     opacity: 1;
-    animation: navlinkentrybounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease, text-shadow 0.20s ease;
+    animation: navlinkentrybounce 0.6s var(--ease-pop) backwards;
+    transition: transform var(--dur-slow) var(--ease-pop), opacity var(--dur-fast) ease, text-shadow var(--dur-base) ease;
 }
 
 .navbrd {
-    animation: navbarbrandentryslide 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    animation: navbarbrandentryslide 0.6s var(--ease-pop) !important;
 }
 
 .navlnk:hover,
@@ -101,7 +101,7 @@
 .pfpbtn:active,
 .navbrd:active {
     transform: scale(0.96) rotateX(-15deg);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .navhome { width: 56px; animation-delay: 0.4s; }
@@ -119,7 +119,7 @@
     flex: none;
     flex-grow: 0;
     opacity: 1;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     animation: navdividerfade 0.8s ease backwards;
     animation-delay: 0.4s;
 }
@@ -172,13 +172,13 @@
     flex: none;
     flex-grow: 0;
     object-fit: contain;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+    filter: drop-shadow(0 1px 2px var(--shade));
 }
 
 .pfpimg {
     width: 46px;
     height: 46px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background-color: rgba(0, 0, 0, 0.2);
     flex: none;
     flex-grow: 0;
@@ -258,7 +258,7 @@
     background: rgba(61, 61, 61, 0.6);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     box-sizing: border-box;
     z-index: 100;
     opacity: 0;
@@ -266,7 +266,7 @@
     transform-origin: top right;
     transform: translateY(-8px) scale(0.95);
     pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s;
+    transition: opacity var(--dur-base) ease, transform var(--dur-base) var(--ease-pop), visibility var(--dur-base);
 }
 
 .udrop.active {
@@ -277,7 +277,7 @@
 }
 
 .udrop.active > * {
-    animation: dropitementry 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+    animation: dropitementry 0.3s var(--ease-pop) backwards;
 }
 
 .udrop.active > :nth-child(1) { animation-delay: 20ms; }
@@ -301,7 +301,7 @@ html.reduced-motion .udrop.active > * {
 }
 
 .dropusr {
-    font-family: 'Ubuntu';
+    font-family: var(--font);
     font-style: normal;
     font-weight: 400;
     font-size: 18px;
@@ -310,21 +310,21 @@ html.reduced-motion .udrop.active > * {
     align-items: center;
     gap: 8px;
     padding: 4px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     align-self: stretch;
-    color: #FFFFFF;
-    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    color: var(--on-accent);
+    text-shadow: 0px 1px 2px var(--shade);
     text-decoration: none;
     flex: none;
     flex-grow: 0;
     cursor: pointer;
-    transition: background 0.3s ease, transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease;
+    transition: background var(--dur-slow) ease, transform var(--dur-slow) var(--ease-smooth), opacity var(--dur-fast) ease;
 }
 
 .dropav {
     width: 24px;
     height: 24px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background-color: rgba(0, 0, 0, 0.2);
     flex: none;
     flex-grow: 0;
@@ -340,7 +340,7 @@ html.reduced-motion .udrop.active > * {
 
 .dropusr:hover {
     background: rgba(255, 255, 255, 0.2);
-    transition-duration: 0.15s;
+    transition-duration: var(--dur-fast);
 }
 
 .dropusr:active {
@@ -358,7 +358,7 @@ html.reduced-motion .udrop.active > * {
 }
 
 .dropitm {
-    font-family: 'Ubuntu';
+    font-family: var(--font);
     font-style: normal;
     font-weight: 400;
     font-size: 16px;
@@ -367,16 +367,16 @@ html.reduced-motion .udrop.active > * {
     align-items: center;
     gap: 8px;
     padding: 4px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     align-self: stretch;
-    color: #FFFFFF;
-    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    color: var(--on-accent);
+    text-shadow: 0px 1px 2px var(--shade);
     text-decoration: none;
     flex: none;
     flex-grow: 0;
     height: 18px;
     cursor: pointer;
-    transition: background 0.3s ease, transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease;
+    transition: background var(--dur-slow) ease, transform var(--dur-slow) var(--ease-smooth), opacity var(--dur-fast) ease;
 }
 
 .droptico {
@@ -385,7 +385,7 @@ html.reduced-motion .udrop.active > * {
     flex: none;
     flex-grow: 0;
     object-fit: contain;
-    filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+    filter: brightness(0) invert(1) drop-shadow(0 1px 2px var(--shade));
 }
 
 .droplgo .droptico {
@@ -394,7 +394,7 @@ html.reduced-motion .udrop.active > * {
 }
 
 .copyleft {
-    font-family: 'Ubuntu';
+    font-family: var(--font);
     font-style: normal;
     font-weight: 400;
     font-size: 16px;
@@ -402,8 +402,8 @@ html.reduced-motion .udrop.active > * {
     display: flex;
     align-items: center;
     text-align: center;
-    color: #FFFFFF;
-    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    color: var(--on-accent);
+    text-shadow: 0px 1px 2px var(--shade);
     text-decoration: none;
     flex: none;
     flex-grow: 0;
@@ -412,7 +412,7 @@ html.reduced-motion .udrop.active > * {
 
 .dropitm:hover {
     background: rgba(255, 255, 255, 0.2);
-    transition-duration: 0.15s;
+    transition-duration: var(--dur-fast);
 }
 
 .dropitm:active {
@@ -469,7 +469,7 @@ html.reduced-motion .udrop.active > * {
 .mobhead {
     width: 46px !important;
     height: 46px !important;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     object-fit: cover;
     background: rgba(0, 0, 0, 0.2);
     flex: none;
@@ -480,7 +480,7 @@ html.reduced-motion .udrop.active > * {
     height: 23px;
     background: rgba(255, 255, 255, 0.2);
     flex: none;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
 }
 
 @media (max-width: 768px), .mobmode {
@@ -566,8 +566,8 @@ html.reduced-motion .udrop.active > * {
         line-height: 23px !important;
         height: 23px !important;
         width: auto !important;
-        color: #FFFFFF !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
+        color: var(--on-accent) !important;
+        text-shadow: 0 1px 2px var(--shade) !important;
     }
     .sbar .navdiv {
         display: block !important;
@@ -578,20 +578,20 @@ html.reduced-motion .udrop.active > * {
     .sico {
         width: 30px !important;
         height: 30px !important;
-        filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.25)) !important;
+        filter: brightness(0) invert(1) drop-shadow(0 1px 2px var(--shade)) !important;
     }
     .pfpimg {
         width: 46px !important;
         height: 46px !important;
     }
     .navtxt {
-        font-family: 'Ubuntu', sans-serif !important;
+        font-family: var(--font) !important;
         font-weight: 400 !important;
         font-size: 20px !important;
         line-height: 23px !important;
         height: 23px !important;
-        color: #FFFFFF !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
+        color: var(--on-accent) !important;
+        text-shadow: 0 1px 2px var(--shade) !important;
         display: flex !important;
         align-items: center !important;
     }
@@ -604,7 +604,7 @@ html.reduced-motion .udrop.active > * {
         width: 1px !important;
         height: 23px !important;
         background: rgba(255,255,255,0.2) !important;
-        border-radius: 999px !important;
+        border-radius: var(--radius-pill) !important;
         flex-shrink: 0 !important;
         border: none !important;
         transform: none !important;
@@ -641,12 +641,12 @@ html.reduced-motion .udrop.active > * {
     .mobitm img {
         width: 46px !important;
         height: 46px !important;
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)) !important;
+        filter: drop-shadow(0 1px 2px var(--shade)) !important;
     }
     .mobhead {
         width: 46px !important;
         height: 46px !important;
-        border-radius: 999px !important;
+        border-radius: var(--radius-pill) !important;
         background: rgba(0,0,0,0.2) !important;
         filter: none !important;
     }
@@ -722,7 +722,7 @@ html.mobmode .sbar .navlnk {
     display: flex !important;
     font-size: 20px !important;
     line-height: 23px !important;
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
 }
 html.mobmode .sico {
     width: 30px !important;
@@ -734,7 +734,7 @@ html.mobmode .navtxt {
     font-size: 20px !important;
     line-height: 23px !important;
     height: 23px !important;
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
 }
 html.mobmode .sbtn { gap: 6px !important; height: 30px !important; }
 html.mobmode .navdiv, html.mobmode .sbardiv, html.mobmode .mobdiv {

@@ -21,7 +21,7 @@
     background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
     text-align: center;
@@ -41,23 +41,23 @@
 
 .erricon {
     font-size: 56px;
-    color: var(--accent, var(--accent));
+    color: var(--accent);
     text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.15);
     margin-bottom: 4px;
 }
 
 .errcode {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 120px;
     font-weight: 700;
     line-height: 1;
-    color: var(--accent, var(--accent));
+    color: var(--accent);
     text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
     margin-bottom: 4px;
 }
 
 .errtitle {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 28px;
     font-weight: 500;
     line-height: 1.2;
@@ -66,11 +66,11 @@
 }
 
 .errmsg {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 400;
     line-height: 1.5;
-    color: #555555;
+    color: var(--ink-muted);
     margin: 0;
     max-width: 360px;
 }

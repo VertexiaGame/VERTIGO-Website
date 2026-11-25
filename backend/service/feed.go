@@ -91,14 +91,14 @@ func (s *FeedService) GetSinglePost(id, currentUserID int, feedType string) (*mo
 	return nil, ""
 }
 
-func (s *FeedService) PostToFeed(username, content, feedType string, images ...models.ForumImageUpload) (int, int, string, error) {
+func (s *FeedService) PostToFeed(username, content, feedType string, images ...models.ForumImageUpload) (*models.FeedPost, error) {
 	if username == "" {
-		return 0, 0, "", errors.New("Unauthorized")
+		return nil, errors.New("Unauthorized")
 	}
 
 	content = strings.TrimSpace(content)
 	if content == "" && len(images) == 0 {
-		return 0, 0, "", errors.New("Content cannot be empty")
+		return nil, errors.New("Content cannot be empty")
 	}
 
 	if r := []rune(content); len(r) > 150 {
@@ -107,7 +107,7 @@ func (s *FeedService) PostToFeed(username, content, feedType string, images ...m
 
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil || user == nil {
-		return 0, 0, "", errors.New("User not found")
+		return nil, errors.New("User not found")
 	}
 
 	if s.cooldown != nil {
@@ -116,17 +116,21 @@ func (s *FeedService) PostToFeed(username, content, feedType string, images ...m
 			key = fmt.Sprintf("friends_feed_post:%d", user.ID)
 		}
 		if allowed, remaining := s.cooldown.Allow(key, 15*time.Second); !allowed {
-			return 0, user.ID, "", fmt.Errorf("The feed has a %s cooldown per message.", s.cooldown.FormatRemaining(remaining))
+			return nil, fmt.Errorf("The feed has a %s cooldown per message.", s.cooldown.FormatRemaining(remaining))
 		}
 	}
 
-	postID, err := s.feedRepo.CreatePost(user.ID, content, feedType, images)
+	post, err := s.feedRepo.CreatePost(user.ID, content, feedType, images)
 	if err != nil {
+		if errors.Is(err, models.ErrSavedImageUnavailable) {
+			return nil, err
+		}
 		log.Printf("Feed post creation failed: %v", err)
-		return 0, user.ID, "", errors.New("Could not post to the feed. Please try again.")
+		return nil, errors.New("Could not post to the feed. Please try again.")
 	}
 
-	return postID, user.ID, content, nil
+	post.Username = user.Username
+	return post, nil
 }
 
 func (s *FeedService) GetImage(id, currentUserID int) (models.ForumImageUpload, error) {

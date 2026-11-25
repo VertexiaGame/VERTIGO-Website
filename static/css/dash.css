@@ -23,7 +23,7 @@
 .feedpg {
     width: 100% !important;
     background: transparent !important;
-    border-radius: 0 0 6px 6px !important;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important;
     display: flex !important;
     justify-content: center !important;
     padding: 40px 0 !important;
@@ -39,7 +39,7 @@
     height: 330px !important;
     background: var(--surface) !important;
     border: none !important;
-    border-radius: 0px 12px 12px 0px !important;
+    border-radius: 0px var(--radius-lg) var(--radius-lg) 0px !important;
     box-shadow: 4px 0 1px 0 var(--line), 0 4px 1px 0 var(--line), 0 -4px 1px 0 var(--line) !important;
     display: flex !important;
     align-items: center !important;
@@ -68,14 +68,14 @@
     color: var(--ink-soft) !important;
     margin-top: 0 !important;
     margin-bottom: 20px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
 }
 .carcnt {
     position: relative !important;
     width: 100% !important;
     max-width: 530px !important;
     height: 260px !important;
-    border-radius: 16px !important;
+    border-radius: var(--radius-xl) !important;
     overflow: hidden !important;
     box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1) !important;
 }
@@ -83,19 +83,19 @@
     display: flex !important;
     width: 100% !important;
     height: 100% !important;
-    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    transition: transform 0.5s var(--ease-smooth) !important;
 }
 .cararr {
     position: absolute !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
     background: transparent !important;
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
     border: none !important;
     cursor: pointer !important;
     z-index: 10 !important;
     opacity: 0 !important;
-    transition: opacity 0.3s ease !important;
+    transition: opacity var(--dur-slow) ease !important;
     font-size: 36px !important;
     padding: 0 !important;
     text-shadow: 0px 1px 6px rgba(0, 0, 0, 0.6) !important;
@@ -136,18 +136,18 @@
     bottom: 20px !important;
     text-align: left !important;
     max-width: 80% !important;
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
     z-index: 2 !important;
     pointer-events: none !important;
 }
 .carnm {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-weight: 500 !important;
     font-size: 18px !important;
     line-height: 20px !important;
     margin: 0 0 2px 0 !important;
     text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8) !important;
-    transition: font-size 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    transition: font-size var(--dur-slow) var(--ease-smooth) !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
@@ -157,7 +157,7 @@
     font-size: 24px !important;
 }
 .cardsc {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-weight: 400 !important;
     font-size: 13px !important;
     line-height: 16px !important;
@@ -168,7 +168,7 @@
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
-    transition: font-size 0.3s ease !important;
+    transition: font-size var(--dur-slow) ease !important;
 }
 .carcnt:hover .cardsc {
     font-size: 14px !important;
@@ -254,12 +254,12 @@
     left: 0 !important;
     top: 34px !important;
     background: var(--surface) !important;
-    border: 2px solid rgba(61, 61, 61, 0.25) !important;
-    border-radius: 12px !important;
-    transition: border-color 0.2s ease !important;
+    border: var(--bd-soft) !important;
+    border-radius: var(--radius-lg) !important;
+    transition: border-color var(--dur-base) ease !important;
 }
 .feedinbox:focus-within {
-    border-color: rgba(61, 61, 61, 0.25) !important;
+    border-color: var(--line-soft) !important;
     outline: none !important;
     box-shadow: none !important;
 }
@@ -284,7 +284,7 @@
     background: transparent !important;
     padding-left: 16px !important;
     padding-right: 66px !important;
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 400 !important;
     font-size: 18px !important;
@@ -293,12 +293,12 @@
     box-shadow: none !important;
 }
 .feedin::placeholder {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 400 !important;
     font-size: 18px !important;
     line-height: 22px !important;
-    color: rgba(61, 61, 61, 0.25) !important;
+    color: var(--line-soft) !important;
 }
 .feedsnd {
     position: absolute !important;
@@ -313,7 +313,7 @@
     border: none !important;
     outline: none !important;
     cursor: pointer !important;
-    transition: transform 0.2s !important;
+    transition: transform var(--dur-base) !important;
     color: #000000 !important;
     opacity: 0.25 !important;
 }
@@ -326,13 +326,13 @@
     top: 88px !important;
     left: 16px !important;
     color: var(--danger) !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     z-index: 10 !important;
     opacity: 0;
     transform: translateY(-5px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
     pointer-events: none !important;
 }
 .feederr.visible {
@@ -353,17 +353,17 @@
     border-width: 0px 2px 2px 2px !important;
     border-style: solid !important;
     border-color: rgba(255, 255, 255, 0.15) !important;
-    border-radius: 0px 0px 6px 6px !important;
+    border-radius: 0px 0px var(--radius-sm) var(--radius-sm) !important;
     cursor: pointer !important;
     user-select: none !important;
     z-index: 5 !important;
-    transition: background 0.2s, border-color 0.2s !important;
+    transition: background var(--dur-base), border-color var(--dur-base) !important;
 }
 .rctbdg:hover {
     background: rgba(120, 120, 120, 0.6) !important;
 }
 .rctbdg.reacted {
-    background: rgba(145, 42, 223, 0.45) !important;
+    background: var(--accent-glow) !important;
     border-color: rgba(255, 255, 255, 0.23) !important;
 }
 .rctbdg.reacted:hover {
@@ -379,7 +379,7 @@
     align-items: center !important;
     justify-content: center !important;
     font-size: 16px !important;
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
 }
 .rctcnt {
     position: absolute !important;
@@ -403,17 +403,17 @@
 .dgtstp {
     display: flex !important;
     flex-direction: column !important;
-    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    transition: transform 0.4s var(--ease-smooth) !important;
 }
 .dgtnum {
     display: block !important;
     height: 28px !important;
     line-height: 28px !important;
     text-align: center !important;
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-weight: 500 !important;
     font-size: 20px !important;
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
     flex-shrink: 0 !important;
 }
 @keyframes reaction-pop-anim {
@@ -429,7 +429,7 @@
     }
 }
 .rctpop {
-    animation: reaction-pop-anim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    animation: reaction-pop-anim 0.3s var(--ease-pop) !important;
 }
 .tabcnt {
     position: relative !important;
@@ -455,40 +455,40 @@
     box-sizing: border-box !important;
     height: 34px !important;
     padding: 0 16px !important;
-    background: rgba(145, 42, 223, 0.15) !important;
+    background: var(--accent-soft) !important;
     border: 2px solid rgba(255, 255, 255, 0.1) !important;
     border-bottom: none !important;
-    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0px 0px !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0px 0px !important;
     color: rgba(255, 255, 255, 0.6) !important;
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 500 !important;
     cursor: pointer !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease !important;
+    transition: color var(--dur-slow) ease, background-color var(--dur-slow) ease, border-color var(--dur-slow) ease !important;
     outline: none !important;
     position: relative !important;
     z-index: 2 !important;
 }
 .tabbtn:hover {
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
     background: rgba(145, 42, 223, 0.25) !important;
 }
 .tabbtn.active {
-    color: #FFFFFF !important;
+    color: var(--on-accent) !important;
     background: transparent !important;
     border-color: transparent !important;
 }
 .tabind {
     box-sizing: border-box !important;
     position: absolute !important;
-    background: rgba(145, 42, 223, 0.45) !important;
+    background: var(--accent-glow) !important;
     border: 2px solid rgba(255, 255, 255, 0.23) !important;
     border-bottom: none !important;
-    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0px 0px !important;
-    transition: left 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s cubic-bezier(0.25, 1, 0.5, 1), top 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0px 0px !important;
+    transition: left var(--dur-slow) var(--ease-smooth), width var(--dur-slow) var(--ease-smooth), top var(--dur-slow) var(--ease-smooth), height var(--dur-slow) var(--ease-smooth) !important;
     z-index: 1 !important;
     pointer-events: none !important;
 }
@@ -507,7 +507,7 @@
     left: 0 !important;
     margin-top: 94px !important;
     overflow-y: visible !important;
-    transition: margin-top 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1) !important;
+    transition: margin-top var(--dur-med) var(--ease-pop-soft) !important;
 }
 .tabcnt.haserr .pstlst {
     margin-top: 118px !important;
@@ -517,8 +517,8 @@
     width: 100% !important;
     min-height: 85px !important;
     margin-bottom: 6px !important;
-    animation: postreducedbounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1) backwards;
-    transition: min-height 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    animation: postreducedbounce 0.5s var(--ease-pop-soft) backwards;
+    transition: min-height 0.35s var(--ease-smooth) !important;
 }
 
 .pstitm.offscreen .pstcrd,
@@ -569,7 +569,7 @@
 }
 .pstitm.focused .pstcrd,
 .pstcrd.focused {
-    animation: postFocusAnim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards !important;
+    animation: postFocusAnim 0.35s var(--ease-pop-soft) forwards !important;
 }
 .pstitm:first-child {
     margin-top: 4px !important;
@@ -580,9 +580,9 @@
     width: 100% !important;
     min-height: 85px !important;
     background: var(--surface) !important;
-    border: 2px solid var(--line) !important;
-    border-radius: 12px !important;
-    transition: min-height 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease !important;
+    border: var(--bd-thick) !important;
+    border-radius: var(--radius-lg) !important;
+    transition: min-height 0.35s var(--ease-smooth), box-shadow var(--dur-med) ease !important;
 }
 .pstavt {
     position: absolute !important;
@@ -590,11 +590,11 @@
     height: 85px !important;
     left: -2px !important;
     top: -2px !important;
-    border-radius: 10px 0px 0px 10px !important;
-    border-right: 2px solid var(--line) !important;
+    border-radius: var(--radius-lg) 0px 0px var(--radius-lg) !important;
+    border-right: var(--bd-thick) !important;
     border-bottom: none !important;
     overflow: hidden !important;
-    transition: border-bottom 0.2s ease, border-radius 0.2s ease !important;
+    transition: border-bottom var(--dur-base) ease, border-radius var(--dur-base) ease !important;
 }
 .pstavt img {
     width: 85px !important;
@@ -604,8 +604,8 @@
 }
 .pstcrd.expanded .pstavt,
 .pstitm.expanded .pstavt {
-    border-bottom: 2px solid var(--line) !important;
-    border-bottom-left-radius: 10px !important;
+    border-bottom: var(--bd-thick) !important;
+    border-bottom-left-radius: var(--radius-lg) !important;
 }
 .psthdr {
     position: relative !important;
@@ -640,7 +640,7 @@
     white-space: nowrap !important;
 }
 .pstaut {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 500 !important;
     font-size: 20px !important;
@@ -652,7 +652,7 @@
     text-decoration: none !important;
 }
 .psttme {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 400 !important;
     font-size: 13px !important;
@@ -673,7 +673,7 @@
     opacity: 0 !important;
     transform: scale(0.9) translateY(-2px) !important;
     visibility: hidden !important;
-    transition: opacity 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.25s !important;
+    transition: opacity var(--dur-med) var(--ease-smooth), transform var(--dur-med) var(--ease-smooth), visibility var(--dur-med) !important;
 }
 .pstitm:hover .pstact,
 .pstcrd:hover .pstact {
@@ -692,7 +692,7 @@
     color: var(--ink) !important;
     opacity: 0.25 !important;
     cursor: pointer !important;
-    transition: transform 0.2s ease, opacity 0.2s ease !important;
+    transition: transform var(--dur-base) ease, opacity var(--dur-base) ease !important;
 }
 .pstrpl:hover,
 .pstrpl.active {
@@ -710,7 +710,7 @@
     color: var(--ink) !important;
     opacity: 1 !important;
     cursor: pointer !important;
-    transition: transform 0.2s ease, opacity 0.2s ease !important;
+    transition: transform var(--dur-base) ease, opacity var(--dur-base) ease !important;
 }
 .pstrct:hover {
     transform: scale(1.15) !important;
@@ -728,7 +728,7 @@
     opacity: 0.25 !important;
     cursor: pointer !important;
     text-decoration: none !important;
-    transition: transform 0.2s ease, opacity 0.2s ease !important;
+    transition: transform var(--dur-base) ease, opacity var(--dur-base) ease !important;
 }
 .pstflg:hover {
     transform: scale(1.15) !important;
@@ -741,7 +741,7 @@
     margin-top: 4px !important;
     margin-right: 16px !important;
     margin-bottom: 8px !important;
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 500 !important;
     font-size: 18px !important;
@@ -756,7 +756,7 @@
     overflow-wrap: break-word !important;
     cursor: pointer !important;
     max-height: 44px !important;
-    transition: max-height 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease !important;
+    transition: max-height 0.35s var(--ease-smooth), opacity var(--dur-base) ease !important;
 }
 .pbdy.expanded {
     display: block !important;
@@ -770,7 +770,7 @@
     margin-right: 16px !important;
     margin-top: -4px !important;
     margin-bottom: 8px !important;
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-size: 14px !important;
     font-weight: 500 !important;
     line-height: 18px !important;
@@ -842,7 +842,7 @@
     margin-left: 20px !important;
     width: calc(100% - 20px) !important;
     box-sizing: border-box !important;
-    animation: replyExpandAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    animation: replyExpandAnim 0.3s var(--ease-out) forwards !important;
 }
 
 .cmtlst:empty {
@@ -858,7 +858,7 @@
     margin-top: 8px !important;
     margin-left: 23px !important;
     padding-left: 25px !important;
-    border-left: 2px solid var(--line) !important;
+    border-left: var(--bd-thick) !important;
     box-sizing: border-box !important;
     width: calc(100% - 23px) !important;
 }
@@ -874,7 +874,7 @@
     display: inline-flex !important;
     align-items: center !important;
     gap: 4px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 12px !important;
     font-weight: 500 !important;
     color: var(--muted) !important;
@@ -900,12 +900,12 @@
     margin-top: 16px !important;
     padding: 20px !important;
     text-align: center !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 14px !important;
     color: var(--muted) !important;
     background: var(--surface-raised) !important;
     border: 2px dashed var(--line) !important;
-    border-radius: 12px !important;
+    border-radius: var(--radius-lg) !important;
     box-sizing: border-box !important;
 }
 
@@ -913,7 +913,7 @@
     position: relative !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    animation: cmtEntryAnim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards !important;
+    animation: cmtEntryAnim 0.3s var(--ease-pop-soft) forwards !important;
 }
 
 .cmtcrd {
@@ -921,12 +921,12 @@
     box-sizing: border-box !important;
     width: 100% !important;
     background: var(--surface) !important;
-    border: 2px solid var(--line) !important;
-    border-radius: 12px !important;
+    border: var(--bd-thick) !important;
+    border-radius: var(--radius-lg) !important;
     padding: 8px 65px 8px 56px !important;
     min-height: 48px !important;
     box-shadow: none !important;
-    transition: min-height 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease !important;
+    transition: min-height 0.35s var(--ease-smooth), box-shadow var(--dur-med) ease !important;
 }
 
 .cmtavt {
@@ -935,8 +935,8 @@
     top: -2px !important;
     width: 48px !important;
     height: 48px !important;
-    border-radius: 10px 0 0 10px !important;
-    border-right: 2px solid var(--line) !important;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg) !important;
+    border-right: var(--bd-thick) !important;
     overflow: hidden !important;
 }
 
@@ -954,7 +954,7 @@
 }
 
 .cmtaut {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-weight: 500 !important;
     font-size: 14px !important;
     color: var(--danger-ink) !important;
@@ -962,7 +962,7 @@
 }
 
 .cmttme {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-size: 11px !important;
     color: var(--muted) !important;
 }
@@ -1003,7 +1003,7 @@
 }
 
 .cmtbdy {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     line-height: 17px !important;
     color: var(--ink) !important;
@@ -1029,13 +1029,13 @@
     height: 38px !important;
     background: var(--surface) !important;
     border: 1px solid rgba(61, 61, 61, 0.3) !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius-md) !important;
     box-sizing: border-box !important;
-    animation: cmtEntryAnim 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards !important;
+    animation: cmtEntryAnim 0.25s var(--ease-pop-soft) forwards !important;
 }
 
 .cmtinbox.closing {
-    animation: replyInputCollapse 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    animation: replyInputCollapse 0.22s var(--ease-out) forwards !important;
     pointer-events: none !important;
     overflow: hidden !important;
 }
@@ -1054,7 +1054,7 @@
 }
 
 .cmtmre {
-    font-family: 'Ubuntu' !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     color: var(--accent) !important;
@@ -1071,7 +1071,7 @@
 }
 
 .bkcbtn {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 14px !important;
     font-weight: 500 !important;
     color: var(--accent) !important;
@@ -1114,11 +1114,18 @@
 }
 .feed-composer .feed-attach-button {
     right: 48px !important;
-    font-size: 18px;
 }
-.feed-composer .feedsnd:focus-visible {
+.feed-composer .feedsnd > i {
+    font-size: 24px;
+}
+.feed-composer .feedsnd:not(.feed-attach-button):focus-visible {
     outline: 2px solid var(--accent) !important;
     outline-offset: -4px;
+    opacity: 1 !important;
+}
+.feed-composer .feed-attach-button:focus-visible {
+    border-radius: var(--radius-md);
+    background: var(--surface-hover) !important;
     opacity: 1 !important;
 }
 .feed-attachments:not([hidden]) {
@@ -1135,10 +1142,6 @@
 .feed-attachments .crtthumbcount,
 .feed-attachments button {
     flex-shrink: 0;
-}
-.feed-attachments .crtupname {
-    min-width: 0;
-    overflow-wrap: anywhere;
 }
 .feed-upload-error:not(:empty),
 .feed-composer ~ .feederr.visible {

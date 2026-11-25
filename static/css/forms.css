@@ -4,7 +4,7 @@
     width: 100%;
     background: transparent;
     color: var(--ink-soft);
-    border-radius: 0 0 6px 6px;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     box-sizing: border-box;
     min-height: 500px;
     flex-grow: 1;
@@ -19,10 +19,10 @@
 .frmsbar {
     width: 320px;
     padding: 40px;
-    border-left: 1px solid var(--surface);
+    border-left: var(--bd-hair);
     box-sizing: border-box;
     background: rgba(250, 250, 250, 0.6);
-    border-radius: 0 0 6px 0;
+    border-radius: 0 0 var(--radius-sm) 0;
 }
 
 .frmsbar.regsbar {
@@ -61,7 +61,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     transform: scale(1);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform var(--dur-slow) var(--ease-pop);
 }
 
 .regartbox:hover {
@@ -70,7 +70,7 @@
 
 .regartbox:active {
     transform: scale(0.98) rotateX(-15deg);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .regarttxt {
@@ -79,14 +79,14 @@
     left: 20px;
     transform: rotate(-7deg);
     text-align: center;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 22px;
     font-weight: 700;
     line-height: 1.2;
-    color: #FFFFFF;
-    background: var(--accent, var(--accent));
+    color: var(--on-accent);
+    background: var(--accent);
     padding: 8px 18px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     box-shadow: none;
     user-select: none;
     z-index: 3;
@@ -95,7 +95,7 @@
 }
 
 .regarttxt strong {
-    color: #FFFFFF;
+    color: var(--on-accent);
     font-weight: 700;
 }
 
@@ -118,7 +118,7 @@
 .regartwrap .ttptxt::after {
     top: auto;
     bottom: 100%;
-    border-color: transparent transparent #2b2b2b transparent;
+    border-color: transparent transparent var(--tooltip-bg) transparent;
 }
 
 .regartwrap .ttpcnt:hover .ttptxt {
@@ -126,10 +126,10 @@
 }
 
 .frmttl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 28px;
     font-weight: 500;
-    color: var(--accent, var(--accent));
+    color: var(--accent);
     margin-top: 0;
     margin-bottom: 24px;
 }
@@ -152,7 +152,7 @@
     left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    color: #888888;
+    color: var(--ink-faint);
     font-size: 14px;
     pointer-events: none;
 }
@@ -163,12 +163,12 @@ input[type="email"],
 .frmin {
     width: 100%;
     height: 36px;
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: var(--white);
+    border: var(--bd-hair);
+    border-radius: var(--radius-md);
     padding-left: 38px;
     padding-right: 12px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     color: var(--ink-soft);
     box-sizing: border-box;
@@ -179,15 +179,15 @@ input[type="text"]:not(.input)::placeholder,
 input[type="password"]::placeholder,
 input[type="email"]::placeholder,
 .frmin::placeholder {
-    color: #888888;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-faint);
+    font-family: var(--font);
 }
 
 input[type="text"]:not(.input):focus,
 input[type="password"]:focus,
 input[type="email"]:focus,
 .frmin:focus {
-    border-color: var(--accent, var(--accent));
+    border-color: var(--accent);
 }
 
 input[type="text"]:not(.input).inerr,
@@ -208,22 +208,22 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--white) inset !important;
     -webkit-text-fill-color: var(--ink-soft) !important;
     transition: background-color 5000s ease-in-out 0s;
 }
 
 .frmhlp {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
-    color: #888888;
+    color: var(--ink-faint);
     margin-top: 0;
     margin-left: 2px;
     opacity: 0;
     max-height: 0;
     overflow: hidden;
     transform: translateY(-5px);
-    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, margin-top 0.2s ease;
+    transition: opacity var(--dur-base) ease, transform var(--dur-base) ease, max-height var(--dur-base) ease, margin-top var(--dur-base) ease;
 }
 
 .frmgrp:focus-within .frmhlp {
@@ -234,7 +234,7 @@ input:-webkit-autofill:active {
 }
 
 .frminerr {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     color: var(--danger);
     margin-top: 0;
@@ -243,7 +243,7 @@ input:-webkit-autofill:active {
     max-height: 0;
     overflow: hidden;
     transform: translateY(-5px);
-    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease, margin-top 0.2s ease;
+    transition: opacity var(--dur-base) ease, transform var(--dur-base) ease, max-height var(--dur-base) ease, margin-top var(--dur-base) ease;
 }
 
 .frminerr.visible {
@@ -269,21 +269,21 @@ input[type="checkbox"],
     -webkit-appearance: none;
     width: 16px;
     height: 16px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    border: var(--bd-hair);
+    border-radius: var(--radius-xs);
     outline: none;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    background: #ffffff;
-    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--white);
+    transition: background-color var(--dur-base) ease, border-color var(--dur-base) ease, transform var(--dur-fast) var(--ease-pop);
 }
 
 input[type="checkbox"]:hover,
 .frmchkgrp input:hover {
-    border-color: var(--accent, var(--accent));
+    border-color: var(--accent);
     box-shadow: none;
     outline: none;
 }
@@ -301,8 +301,8 @@ input[type="checkbox"]:active,
 
 input[type="checkbox"]:checked,
 .frmchkgrp input:checked {
-    background-color: var(--accent, var(--accent));
-    border-color: var(--accent, var(--accent));
+    background-color: var(--accent);
+    border-color: var(--accent);
     transform: scale(1.1);
 }
 
@@ -312,7 +312,7 @@ input[type="checkbox"]:checked::after,
     position: absolute;
     width: 4px;
     height: 8px;
-    border: solid #ffffff;
+    border: solid var(--white);
     border-width: 0 2px 2px 0;
     transform: rotate(45deg) translate(-0.5px, -1px) scale(0);
     animation: checkmark-bounce 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.5) forwards;
@@ -325,13 +325,13 @@ input[type="checkbox"]:checked::after,
 }
 
 .frmchkgrp span {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
-    color: #555555;
+    color: var(--ink-muted);
 }
 
 .frmchkgrp a {
-    color: var(--accent, var(--accent));
+    color: var(--accent);
     text-decoration: none;
     font-weight: 500;
 }
@@ -345,10 +345,10 @@ input[type="checkbox"]:checked::after,
 }
 
 .frmsbarttl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 16px;
     font-weight: 500;
-    color: var(--accent, var(--accent));
+    color: var(--accent);
     margin-top: 0;
     margin-bottom: 10px;
 }
@@ -360,15 +360,15 @@ input[type="checkbox"]:checked::after,
 }
 
 .frmsbarlst li {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
-    color: #444444;
+    color: var(--ink-muted);
     margin-bottom: 8px;
     line-height: 1.4;
 }
 
 .frmsbarlnk {
-    color: var(--accent, var(--accent));
+    color: var(--accent);
     text-decoration: none;
     font-weight: 500;
 }
@@ -384,8 +384,8 @@ input[type="checkbox"]:checked::after,
     .frmsbar {
         width: 100%;
         border-left: none;
-        border-top: 1px solid var(--surface);
-        border-radius: 0 0 6px 6px;
+        border-top: var(--bd-hair);
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     }
     .frmmain, .frmsbar {
         padding: 24px;

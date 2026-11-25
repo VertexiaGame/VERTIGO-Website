@@ -32,7 +32,7 @@
 
 .avtcrd,
 .avtclrcrd {
-    border-radius: 12px !important;
+    border-radius: var(--radius-lg) !important;
     padding: 20px 24px !important;
 }
 
@@ -49,8 +49,8 @@
     width: 100%;
     height: 280px;
     background: var(--surface);
-    border: 2px solid var(--line);
-    border-radius: 12px;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -72,7 +72,7 @@
 .avtchr .chrimg {
     position: relative;
     z-index: 1;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--dur-base) ease;
 }
 
 .avtchr.loading .chrimg {
@@ -111,7 +111,7 @@
     opacity: 0;
     visibility: hidden;
     transform: scale(0.9) translateY(-2px);
-    transition: opacity 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.25s;
+    transition: opacity var(--dur-med) var(--ease-smooth), transform var(--dur-med) var(--ease-smooth), visibility var(--dur-med);
 }
 
 .avtchr:hover .avtredrawwrap,
@@ -135,8 +135,8 @@ html.mobmode .avtredrawwrap {
     align-items: center;
     gap: 10px;
     background: var(--surface);
-    border: 2px solid var(--line);
-    border-radius: 10px;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
     padding: 6px 8px;
     box-sizing: border-box;
     flex-shrink: 0;
@@ -145,7 +145,7 @@ html.mobmode .avtredrawwrap {
 .avtwimg {
     width: 40px;
     height: 40px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--surface-raised);
     border: 1px solid var(--line);
@@ -168,7 +168,7 @@ html.mobmode .avtredrawwrap {
 }
 
 .avtwnm {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink-strong);
@@ -178,7 +178,7 @@ html.mobmode .avtredrawwrap {
 }
 
 .avtwt {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     color: var(--muted);
 }
@@ -186,7 +186,7 @@ html.mobmode .avtredrawwrap {
 .avtwrmv {
     width: 26px;
     height: 26px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     border: none;
     background: transparent;
     color: var(--ink);
@@ -197,7 +197,7 @@ html.mobmode .avtredrawwrap {
     justify-content: center;
     font-size: 13px;
     flex-shrink: 0;
-    transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease;
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
 .avtwrmv:hover {
@@ -234,8 +234,8 @@ html.mobmode .avtredrawwrap {
 
 .avtitm {
     background: var(--surface-raised);
-    border: 1px solid var(--surface);
-    border-radius: 12px;
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -244,7 +244,7 @@ html.mobmode .avtredrawwrap {
 }
 
 .avtitm.worn {
-    border-color: rgba(145, 42, 223, 0.45);
+    border-color: var(--accent-glow);
 }
 
 .avtitmimg {
@@ -253,7 +253,7 @@ html.mobmode .avtredrawwrap {
     aspect-ratio: 1 / 1;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     box-sizing: border-box;
 }
@@ -277,15 +277,15 @@ html.mobmode .avtredrawwrap {
 }
 
 .avtitmnote {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 12px;
-    color: #666666;
+    color: var(--ink-muted);
     line-height: 1.4;
 }
 
 .avtldimg {
     opacity: 0;
-    transition: opacity 0.25s ease;
+    transition: opacity var(--dur-med) ease;
 }
 
 .avtldimg.ld {
@@ -297,14 +297,14 @@ html.mobmode .avtredrawwrap {
     top: 6px;
     right: 6px;
     background: var(--grad-accent);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 3px 8px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     font-weight: 500;
-    color: #FFFFFF;
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
-    box-shadow: inset 0px 0px 4px rgba(255, 255, 255, 0.25), 0px 1px 3px rgba(0, 0, 0, 0.15);
+    color: var(--on-accent);
+    text-shadow: 0px 0px 4px var(--shade);
+    box-shadow: var(--inset-sheen), 0px 1px 3px rgba(0, 0, 0, 0.15);
     user-select: none;
     z-index: 2;
 }
@@ -333,7 +333,7 @@ html.mobmode .avtredrawwrap {
 }
 
 .avtitmnm {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink-strong);
@@ -343,7 +343,7 @@ html.mobmode .avtredrawwrap {
 }
 
 .avtitmcr {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 11px;
     color: var(--muted);
     white-space: nowrap;
@@ -369,8 +369,8 @@ html.mobmode .avtredrawwrap {
     flex-shrink: 0;
     padding: 16px;
     background: var(--surface);
-    border: 2px solid var(--line);
-    border-radius: 12px;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
     box-sizing: border-box;
     margin-top: 8px;
     width: 100%;
@@ -386,17 +386,17 @@ html.mobmode .avtredrawwrap {
     visibility: hidden;
     pointer-events: none;
     background: var(--surface-raised);
-    border: 2px solid var(--line);
-    border-radius: 12px;
+    border: var(--bd-thick);
+    border-radius: var(--radius-lg);
     padding: 14px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
     z-index: 100;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
     width: max-content;
-    transition: opacity 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s;
+    transition: opacity var(--dur-base) var(--ease-pop), transform var(--dur-base) var(--ease-pop), visibility var(--dur-base);
 }
 
 .avtpopover.active {
@@ -438,7 +438,7 @@ html.mobmode .avtredrawwrap {
 }
 
 .avtpoptline {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 500;
     color: var(--ink);
@@ -455,7 +455,7 @@ html.mobmode .avtredrawwrap {
     align-items: center;
     justify-content: center;
     padding: 2px;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease;
 }
 
 .avtpopclose:hover {
@@ -479,13 +479,13 @@ html.mobmode .avtredrawwrap {
 
 .avtpart {
     display: block;
-    border: 2px solid rgba(61, 61, 61, 0.25);
+    border: var(--bd-soft);
     border-radius: 0;
     padding: 0;
     cursor: pointer;
     box-sizing: border-box;
-    font-family: 'Ubuntu', sans-serif;
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s ease, border-color 0.15s ease;
+    font-family: var(--font);
+    transition: transform var(--dur-fast) var(--ease-pop), box-shadow var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 
 .avtpart:hover {
@@ -494,7 +494,7 @@ html.mobmode .avtredrawwrap {
 
 .avtpart.sel {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(145, 42, 223, 0.35);
+    box-shadow: var(--focus-ring);
 }
 
 svg.avtfig .avtpart {
@@ -502,7 +502,7 @@ svg.avtfig .avtpart {
     transform: none;
     transform-box: fill-box;
     transform-origin: center;
-    transition: filter 0.15s ease;
+    transition: filter var(--dur-fast) ease;
 }
 
 svg.avtfig .avtpart:hover {
@@ -522,7 +522,7 @@ svg.avtfig .avtpart.sel {
     color: var(--ink);
     background: var(--surface-raised);
     padding: 6px 16px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     width: 100%;
     text-align: center;
 }

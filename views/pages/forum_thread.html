@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/static/css/clan.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/forum.css?v={{.AssetV}}">
 <link rel="stylesheet" href="/static/css/forum-thread.css?v={{.AssetV}}">
+<link rel="stylesheet" href="/static/css/image-picker.css?v={{.AssetV}}">
 <div class="wrap">
     <div class="cont">
         <div class="studs"></div>
@@ -40,7 +41,10 @@
                                 <span class="forum-post-author">{{template "components/clan/tag" .Thread.Tag}}<a href="/user/{{.Thread.UserID}}" hx-get="/user/{{.Thread.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-author-name">{{.Thread.Author}}</a></span>
                                 <span class="ttpcnt forum-post-time" tabindex="0" aria-label="Posted {{.Thread.FullDate}}"><span>Posted {{.Thread.TimeAgo}}</span><span class="ttptxt" aria-hidden="true">{{.Thread.FullDate}}</span></span>
                             </div>
-                            <a class="forum-post-permalink" hx-boost="false" href="#thread" aria-label="Link to original post">#1</a>
+                            <div class="forum-post-actions">
+                                {{if and .IsLoggedIn (not .Thread.Locked)}}<button type="button" class="forum-post-quote" data-forum-quote="0" data-quote-author="{{.Thread.Author}}"{{if gt .Thread.UserID 0}} data-quote-headshot="/api/v1/avatar/headshot/{{.Thread.UserID}}.png"{{end}} data-quote-excerpt="{{.Thread.QuoteExcerpt}}" aria-label="Quote the original post by {{.Thread.Author}}"><i class="fa-solid fa-quote-left" aria-hidden="true"></i><span>Quote</span></button>{{end}}
+                                <a class="forum-post-permalink" hx-boost="false" href="#thread" aria-label="Link to original post">#1</a>
+                            </div>
                         </div>
                         <h1 class="forum-post-title">{{.Thread.Title}}</h1>
                         <p class="forum-post-body">{{.Thread.Body}}</p>
@@ -64,6 +68,16 @@
                     </summary>
                     <form class="cln-compose-form" id="ftdReplyForm" action="{{.Thread.Path}}/replies" method="post" enctype="multipart/form-data" hx-boost="false">
                         <input type="hidden" name="csrf" value="{{.CSRF}}">
+                        <input type="hidden" name="quote_id" id="forumReplyQuoteId" value="">
+                        <div class="forum-quote forum-quote-draft" id="forumReplyQuote" hidden>
+                            <div class="forum-quote-head">
+                                <span class="forum-quote-src">Quoting</span>
+                                <img class="forum-quote-avatar" src="/static/useful/temp/pfp.png" alt="" width="20" height="20" onerror="if (this.getAttribute('src') !== '/static/useful/temp/pfp.png') this.src='/static/useful/temp/pfp.png';">
+                                <span class="forum-quote-author" data-quote-author></span>
+                                <button type="button" class="forum-quote-clear" data-forum-quote-clear aria-label="Remove quote"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                            </div>
+                            <p class="forum-quote-body" data-quote-excerpt></p>
+                        </div>
                         <div class="crtfld">
                             <label class="crtlbl" for="forumReplyBody">Message</label>
                             <div class="setareabox"><textarea class="setarea" id="forumReplyBody" name="body" minlength="3" maxlength="4000" placeholder="Write a reply..." required></textarea></div>
@@ -101,8 +115,30 @@
                                         <span class="forum-post-author">{{template "components/clan/tag" .Tag}}<a href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true" class="forum-post-author-name">{{.Author}}</a></span>
                                         <span class="ttpcnt forum-post-time" tabindex="0" aria-label="Replied {{.FullDate}}"><span>Replied {{.TimeAgo}}</span><span class="ttptxt" aria-hidden="true">{{.FullDate}}</span></span>
                                     </div>
-                                    <a class="forum-post-permalink" hx-boost="false" href="#reply-{{.ID}}" aria-label="Link to reply by {{.Author}}">#</a>
+                                    <div class="forum-post-actions">
+                                        {{if and $.IsLoggedIn (not $.Thread.Locked)}}<button type="button" class="forum-post-quote" data-forum-quote="{{.ID}}" data-quote-author="{{.Author}}"{{if gt .UserID 0}} data-quote-headshot="/api/v1/avatar/headshot/{{.UserID}}.png"{{end}} data-quote-excerpt="{{.Excerpt}}" aria-label="Quote {{.Author}}'s reply"><i class="fa-solid fa-quote-left" aria-hidden="true"></i><span>Quote</span></button>{{end}}
+                                        <a class="forum-post-permalink" hx-boost="false" href="#reply-{{.ID}}" aria-label="Link to reply by {{.Author}}">#</a>
+                                    </div>
                                 </div>
+                                {{with .Quote}}
+                                {{if .Missing}}
+                                <blockquote class="forum-quote is-missing">
+                                    <span class="forum-quote-head"><i class="fa-solid fa-quote-left forum-quote-ico" aria-hidden="true"></i><span>Original reply unavailable</span></span>
+                                </blockquote>
+                                {{else}}
+                                <blockquote class="forum-quote">
+                                    <a class="forum-quote-head" href="{{.Href}}" hx-boost="false" data-forum-quote-jump="{{.Anchor}}" aria-label="Go to the {{if .IsOriginal}}original post{{else}}reply{{end}} by {{.Author}}">
+                                        <img class="forum-quote-avatar" src="{{if gt .UserID 0}}/api/v1/avatar/headshot/{{.UserID}}.png{{else}}/static/useful/temp/pfp.png{{end}}" alt="" width="20" height="20" loading="lazy" onerror="this.onerror=null;this.src='/static/useful/temp/pfp.png';">
+                                        <span>
+                                            <span class="forum-quote-author">{{.Author}}</span>
+                                            <span class="forum-quote-src">{{if .IsOriginal}}in the original post{{else}}wrote{{end}}</span>
+                                        </span>
+                                        <i class="fa-solid fa-arrow-up forum-quote-go" aria-hidden="true"></i>
+                                    </a>
+                                    <p class="forum-quote-body">{{.Excerpt}}</p>
+                                </blockquote>
+                                {{end}}
+                                {{end}}
                                 <p class="forum-post-body">{{.Body}}</p>
                                 {{template "components/forum/image_gallery" .Images}}
                             </div>

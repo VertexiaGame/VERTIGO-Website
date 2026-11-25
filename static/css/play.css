@@ -17,11 +17,11 @@
     flex: 0 0 auto;
     height: 34px;
     padding: 0 14px;
-    background: #FFFFFF;
-    color: #666666;
-    border: 2px solid rgba(61, 61, 61, 0.25);
-    border-radius: var(--radius-lg, 12px);
-    font-family: 'Ubuntu', sans-serif;
+    background: var(--white);
+    color: var(--ink-muted);
+    border: var(--bd-soft);
+    border-radius: var(--radius-lg);
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 500;
     text-align: left;
@@ -30,7 +30,7 @@
     white-space: nowrap;
     flex-shrink: 0;
     transform: scale(1);
-    transition: transform 0.2s var(--ease-pop), background-color 0.2s ease, color 0.2s ease;
+    transition: transform var(--dur-base) var(--ease-pop), background-color var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .gam-pill:hover {
@@ -40,7 +40,7 @@
 
 .gam-pill:active {
     transform: scale(0.96);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .gam-pill:focus-visible {
@@ -58,7 +58,7 @@
     font-size: 13px;
     color: var(--accent);
     transform: rotate(0deg) scale(1);
-    transition: transform 0.24s var(--ease-pop);
+    transition: transform var(--dur-med) var(--ease-pop);
 }
 
 .gam-pill:hover i {
@@ -122,7 +122,7 @@
 .gam-seeall {
     background: transparent;
     border: none;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--muted);
@@ -130,7 +130,7 @@
     white-space: nowrap;
     padding: 4px 6px;
     border-radius: var(--radius-sm);
-    transition: color 0.15s ease, transform 0.15s var(--ease-pop);
+    transition: color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-pop);
 }
 
 .gam-seeall:hover {
@@ -196,7 +196,7 @@
     width: 100%;
     height: clamp(200px, 34vw, 330px);
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: var(--bd-hair);
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-sizing: border-box;
@@ -209,7 +209,7 @@
     height: 100%;
     object-fit: cover;
     transform: scale(1.06);
-    transition: transform 0.6s var(--ease-smooth), opacity 0.25s ease;
+    transition: transform 0.6s var(--ease-smooth), opacity var(--dur-med) ease;
 }
 
 .gam-det-bannerimg.ld {
@@ -234,7 +234,7 @@
     display: flex;
     width: 100%;
     height: 100%;
-    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform 0.5s var(--ease-smooth);
 }
 
 .gam-det-slide {
@@ -333,7 +333,7 @@
 }
 
 .gam-det-tag:hover {
-    color: #666666;
+    color: var(--ink-muted);
     transform: none;
 }
 
@@ -345,18 +345,18 @@
     gap: 6px;
     height: 34px;
     padding: 0 14px;
-    background: #FFFFFF;
-    color: #666666;
-    border: 2px solid rgba(61, 61, 61, 0.25);
-    border-radius: 12px;
-    font-family: 'Ubuntu', sans-serif;
+    background: var(--white);
+    color: var(--ink-muted);
+    border: var(--bd-soft);
+    border-radius: var(--radius-lg);
+    font-family: var(--font);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
     transform: scale(1);
-    transition: transform 0.2s var(--ease-pop), background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: transform var(--dur-base) var(--ease-pop), background-color var(--dur-base) ease, border-color var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .gam-ratebtn:hover {
@@ -366,7 +366,7 @@
 
 .gam-ratebtn:active {
     transform: scale(0.94);
-    transition: transform 0.08s ease;
+    transition: transform var(--dur-press) ease;
 }
 
 .gam-ratebtn:disabled {
@@ -386,14 +386,14 @@
     background: var(--grad-success);
     border: none;
     padding: 0 16px;
-    color: #FFFFFF;
+    color: var(--on-accent);
 }
 
 .gam-ratebtn.active-dislike {
     background: var(--grad-danger);
     border: none;
     padding: 0 16px;
-    color: #FFFFFF;
+    color: var(--on-accent);
 }
 
 #gamPctVal,
@@ -470,9 +470,9 @@
     box-sizing: border-box;
     padding: 12px 14px;
     background: var(--surface-raised);
-    border: 1px solid var(--border);
+    border: var(--bd-hair);
     border-radius: var(--radius-lg);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     color: var(--ink);
     animation: shpCardIn 0.22s var(--ease-pop) backwards;
@@ -538,7 +538,7 @@
     align-items: center;
     justify-content: center;
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: var(--bd-hair);
     color: var(--ink);
     font-size: 11px;
     font-weight: 700;
@@ -558,7 +558,7 @@
     gap: 8px;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid var(--border);
+    border-top: var(--bd-hair);
     flex-wrap: wrap;
 }
 
@@ -570,7 +570,7 @@
     box-sizing: border-box;
     padding: 8px 10px;
     background: var(--surface-raised);
-    border: 1px solid var(--border);
+    border: var(--bd-hair);
     border-radius: var(--radius-md);
 }
 
@@ -589,7 +589,7 @@
     background: transparent;
     border: none;
     border-radius: var(--radius-sm);
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--muted);
@@ -599,7 +599,7 @@
     align-items: center;
     gap: 6px;
     min-width: 0;
-    transition: color 0.15s ease, transform 0.15s var(--ease-pop);
+    transition: color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-pop);
 }
 
 .gam-srv-copy:hover {

@@ -192,6 +192,36 @@ window.switchProfileTab = function(tabName, event) {
                                     {{end}}
                                 </div>
                                 {{end}}
+                                {{with .ProfileStats}}
+                                <dl class="prfstats">
+                                    {{if .JoinedLabel}}
+                                    <div class="prfstat">
+                                        <dt class="prfstatlbl"><i class="fa-solid fa-calendar" aria-hidden="true"></i><span>Joined</span></dt>
+                                        <dd class="prfstatval">{{.JoinedLabel}}</dd>
+                                    </div>
+                                    {{end}}
+                                    <div class="prfstat">
+                                        <dt class="prfstatlbl"><i class="fa-solid fa-signal" aria-hidden="true"></i><span>Status</span></dt>
+                                        <dd class="prfstatval prfstatpres{{if .IsOnline}} is-online{{end}}"><i class="fa-{{if .IsOnline}}solid{{else}}regular{{end}} fa-circle" aria-hidden="true"></i> {{.Status}}</dd>
+                                    </div>
+                                    <div class="prfstat">
+                                        <dt class="prfstatlbl"><i class="fa-solid fa-gamepad" aria-hidden="true"></i><span>Games</span></dt>
+                                        <dd class="prfstatval" title="{{.Games}} {{if eq .Games 1}}game{{else}}games{{end}}">{{.Games}}</dd>
+                                    </div>
+                                    <div class="prfstat">
+                                        <dt class="prfstatlbl"><i class="fa-solid fa-eye" aria-hidden="true"></i><span>Game visits</span></dt>
+                                        <dd class="prfstatval" title="{{.GameVisits}} total game {{if eq .GameVisits 1}}visit{{else}}visits{{end}}">{{.GameVisitsLabel}}</dd>
+                                    </div>
+                                    <div class="prfstat">
+                                        <dt class="prfstatlbl"><i class="fa-solid fa-comments" aria-hidden="true"></i><span>Forum threads</span></dt>
+                                        <dd class="prfstatval" title="{{.ForumThreads}} forum {{if eq .ForumThreads 1}}thread{{else}}threads{{end}}">{{.ForumThreadsLabel}}</dd>
+                                    </div>
+                                    <div class="prfstat">
+                                        <dt class="prfstatlbl"><i class="fa-solid fa-reply" aria-hidden="true"></i><span>Forum replies</span></dt>
+                                        <dd class="prfstatval" title="{{.ForumReplies}} forum {{if eq .ForumReplies 1}}reply{{else}}replies{{end}}">{{.ForumRepliesLabel}}</dd>
+                                    </div>
+                                </dl>
+                                {{end}}
                             </div>
                         </div>
                     </div>

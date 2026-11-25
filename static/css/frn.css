@@ -9,8 +9,8 @@
 
 .frncrd {
     background: var(--surface-raised);
-    border: 1px solid var(--surface);
-    border-radius: 12px;
+    border: var(--bd-hair);
+    border-radius: var(--radius-lg);
     padding: 14px;
     display: flex;
     flex-direction: column;
@@ -53,7 +53,7 @@
 }
 
 .frndn {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 500;
     color: var(--ink-strong);
@@ -64,11 +64,11 @@
 }
 
 .frndn:hover {
-    color: var(--accent, var(--accent));
+    color: var(--accent);
 }
 
 .frnun {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     color: var(--muted);
     white-space: nowrap;
@@ -95,7 +95,7 @@
 }
 
 .frnemt {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     color: var(--muted);
     padding: 20px 0;

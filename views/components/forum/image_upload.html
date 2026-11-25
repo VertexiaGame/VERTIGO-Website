@@ -1,14 +1,16 @@
-<div class="crtfld">
+<div class="crtfld" data-image-upload-field>
     <label class="crtlbl" for="forumImages">Images <span class="crtthumbcount" data-forum-upload-count hidden>0 / 3</span></label>
-    <label class="crtupload forum-upload">
-        <input id="forumImages" type="file" name="images" accept="image/png,image/jpeg" multiple data-forum-upload aria-describedby="forumImageHelp">
-        <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-        <span class="crtupmsg">Choose PNG or JPEG images</span>
-        <span class="crtupname" data-forum-upload-names aria-live="polite"></span>
-    </label>
+    <input id="forumImages" type="file" name="images" accept="image/png,image/jpeg" multiple data-forum-upload aria-describedby="forumImageHelp">
+    <button type="button" class="forum-upload" data-image-picker aria-expanded="false" aria-controls="forumImagePicker" aria-describedby="forumImageHelp" hidden>
+        <i class="fa-regular fa-image" data-image-picker-anchor aria-hidden="true"></i>
+        <span>Attach images</span>
+        <i class="fa-solid fa-chevron-down forum-upload-arrow" aria-hidden="true"></i>
+    </button>
+    {{template "components/forum/image_picker" "forumImagePicker"}}
     <div class="forum-upload-actions" data-forum-upload-actions hidden>
-        <button type="button" class="primary hpyinf hpyinl hpysm" data-forum-upload-clear><span>Clear images</span></button>
+        <span class="image-attachment-names" data-forum-upload-names aria-live="polite"></span>
+        <button type="button" class="image-picker-clear" data-forum-upload-clear>Clear images</button>
     </div>
     <span class="forum-upload-error" data-forum-upload-error role="status"></span>
-    <span class="shp-subheading" id="forumImageHelp">Optional. Add up to 3 images, 2 MB each. Images appear after admin approval.</span>
+    <span class="shp-subheading" id="forumImageHelp">Attach up to 3 images. New PNG or JPEG uploads can be up to 2 MB each and require approval.</span>
 </div>

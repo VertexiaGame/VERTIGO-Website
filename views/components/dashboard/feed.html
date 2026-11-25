@@ -10,17 +10,18 @@
         <div class="feedinbox">
             <input type="text" name="content" class="feedin" placeholder="Chat in Worldwide Feed" autocomplete="off">
             <input id="feedImages" type="file" name="images" accept="image/png,image/jpeg" multiple data-forum-upload hidden>
-            <button type="button" class="feedsnd feed-attach-button" data-image-picker aria-label="Attach images" title="Up to 3 PNG or JPEG images, 2 MB each. Images appear after admin approval.">
-                <i class="fa-regular fa-image" aria-hidden="true"></i>
+            <button type="button" class="feedsnd feed-attach-button" data-image-picker aria-expanded="false" aria-controls="feedImagePicker" aria-label="Attach images" title="Attach images">
+                <i class="fa-regular fa-image" data-image-picker-anchor aria-hidden="true"></i>
             </button>
             <button type="submit" class="feedsnd" aria-label="Post to feed">
-                <i class="fa-solid fa-paper-plane" style="font-size: 24px !important;" aria-hidden="true"></i>
+                <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
             </button>
         </div>
+        {{template "components/forum/image_picker" "feedImagePicker"}}
         <div class="feed-attachments" data-forum-upload-actions hidden>
             <span class="crtthumbcount" data-forum-upload-count>0 / 3</span>
-            <span class="crtupname" data-forum-upload-names aria-live="polite"></span>
-            <button type="button" class="primary hpyinf hpyinl hpysm" data-forum-upload-clear><span>Clear images</span></button>
+            <span class="image-attachment-names" data-forum-upload-names aria-live="polite"></span>
+            <button type="button" class="image-picker-clear" data-forum-upload-clear>Clear images</button>
         </div>
         <span class="feed-upload-error" data-forum-upload-error role="status"></span>
         <span class="feed-upload-success" role="status"></span>

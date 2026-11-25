@@ -81,7 +81,7 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border: 2px solid rgba(169, 169, 169, 0.6);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 12px 16px;
 }
 
@@ -93,7 +93,7 @@
 }
 
 .prfdn {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 32px;
     font-weight: 700;
     color: var(--ink-strong);
@@ -106,7 +106,7 @@
 }
 
 .prfprn {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 16px;
     font-weight: 400;
     color: var(--muted);
@@ -128,7 +128,7 @@
 }
 
 .prfun {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 16px;
     font-weight: 500;
     color: var(--muted);
@@ -139,9 +139,9 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
-    color: #4a5568;
+    color: var(--ink-muted);
 }
 
 .prfst {
@@ -188,7 +188,7 @@
     top: 5px;
     left: 0;
     white-space: nowrap;
-    transition: top 0.2s ease, transform 0.2s ease;
+    transition: top var(--dur-base) ease, transform var(--dur-base) ease;
 }
 
 .prffriendstack:hover .prffollow,
@@ -219,7 +219,7 @@
     width: 100%;
     background: rgba(61, 61, 61, 0.12);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg, 12px);
+    border-radius: var(--radius-lg);
     padding: 4px;
     box-sizing: border-box;
 }
@@ -235,9 +235,9 @@
     position: absolute;
     background: rgba(236, 236, 236, 0.7);
     border: 1px solid var(--line);
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-md);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    transition: left 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s cubic-bezier(0.25, 1, 0.5, 1), top 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: left var(--dur-slow) var(--ease-smooth), width var(--dur-slow) var(--ease-smooth), top var(--dur-slow) var(--ease-smooth), height var(--dur-slow) var(--ease-smooth);
     z-index: 1;
     pointer-events: none;
 }
@@ -247,8 +247,8 @@
     background: transparent;
     border: none;
     height: 36px;
-    color: #666666;
-    font-family: 'Ubuntu', sans-serif;
+    color: var(--ink-muted);
+    font-family: var(--font);
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
@@ -257,8 +257,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s ease;
-    border-radius: var(--radius-md, 8px);
+    transition: color var(--dur-base) ease;
+    border-radius: var(--radius-md);
     outline: none;
 }
 
@@ -279,7 +279,7 @@
     padding: 4px;
     background: rgba(61, 61, 61, 0.12);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg, 12px);
+    border-radius: var(--radius-lg);
 }
 
 .prfshopcats .shp-cat-item {
@@ -322,16 +322,16 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 2px solid rgba(61, 61, 61, 0.25);
+    border: var(--bd-soft);
     background: var(--surface-raised);
     color: var(--ink);
     font-size: 13px;
     cursor: pointer;
-    transition: background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+    transition: background var(--dur-fast) ease, transform var(--dur-fast) ease, opacity var(--dur-fast) ease;
 }
 
 .prfshoppagbtn:hover:not(:disabled) {
-    background: #FFFFFF;
+    background: var(--white);
     transform: scale(1.08);
 }
 
@@ -345,7 +345,7 @@
 }
 
 .prfshoppaglbl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink);
@@ -442,7 +442,7 @@
 }
 
 .prfboxttl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 20px;
     font-weight: 700;
     color: var(--ink-soft);
@@ -453,13 +453,15 @@
 .prfbox-card {
     background: rgba(0, 0, 0, 0.02);
     border: 3px dashed var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 16px;
     box-sizing: border-box;
     width: 100%;
 }
 
-.prfwrngbox {
+.prfwrngbox,
+.prfabtbox {
+    flex: 1;
     min-height: 110px;
 }
 
@@ -497,7 +499,7 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 2px solid rgba(61, 61, 61, 0.25);
+    border: var(--bd-soft);
     background: var(--surface-raised);
     color: var(--ink);
     font-size: 13px;
@@ -506,11 +508,11 @@
     justify-content: center;
     cursor: pointer;
     transform: scale(1);
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1), background-color 0.15s ease;
+    transition: transform var(--dur-base) var(--ease-pop-soft), background-color var(--dur-fast) ease;
 }
 
 .prfwrngarr:hover {
-    background: #FFFFFF;
+    background: var(--white);
     transform: scale(1.08);
 }
 
@@ -530,7 +532,7 @@
 }
 
 .prfbodycolorslbl {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     font-weight: 500;
     color: var(--muted);
@@ -555,11 +557,12 @@
 }
 
 .prfabtbox {
-    min-height: 110px;
+    display: flex;
+    flex-direction: column;
 }
 
 .prfboxtxt {
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     font-weight: 400;
     color: var(--ink-soft);
@@ -585,11 +588,64 @@
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--dur-fast) ease;
 }
 
 .prfsclico:hover {
     opacity: 0.8;
+}
+
+.prfstats {
+    display: grid;
+    flex: 1;
+    grid-auto-rows: 1fr;
+    margin: 12px 0 0;
+    font-family: var(--font);
+    line-height: 20px;
+}
+
+.prfstat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding-block: 8px;
+    border-block-start: var(--bd-hair);
+}
+
+.prfstatlbl {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.prfstatlbl i {
+    flex: 0 0 14px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.prfstatval {
+    margin: 0;
+    color: var(--ink-strong);
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+    overflow-wrap: anywhere;
+}
+
+.prfstatpres > i {
+    font-size: 8px;
+    vertical-align: middle;
+}
+
+.prfstatpres.is-online {
+    color: var(--success-ink);
 }
 
 .prf-music-widget {
@@ -599,9 +655,9 @@
     z-index: 9999 !important;
     width: 300px !important;
     max-width: calc(100vw - 32px) !important;
-    animation: prfMusicSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
-    border-radius: 10px !important;
+    animation: prfMusicSlideIn 0.5s var(--ease-pop) forwards !important;
+    box-shadow: 0 8px 24px var(--shade) !important;
+    border-radius: var(--radius-lg) !important;
     box-sizing: border-box !important;
 }
 

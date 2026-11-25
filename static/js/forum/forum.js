@@ -165,18 +165,77 @@ import { initImageGalleries, initImageUploads } from '../image-attachments.js';
         }
     };
 
+    var prefersReducedMotion = function () {
+        return document.documentElement.classList.contains('reduced-motion') || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    };
+
+    var clearForumQuote = function (form) {
+        if (!form) return;
+        var input = form.querySelector('input[name="quote_id"]');
+        var draft = form.querySelector('#forumReplyQuote');
+        if (input) input.value = '';
+        if (draft) draft.hidden = true;
+        document.querySelectorAll('#forumThreadPane .forum-post-quote.is-active').forEach(function (btn) {
+            btn.classList.remove('is-active');
+        });
+    };
+
+    var startForumQuote = function (button) {
+        var form = document.getElementById('ftdReplyForm');
+        var details = form ? form.closest('details.cln-compose') : null;
+        var input = form ? form.querySelector('input[name="quote_id"]') : null;
+        var draft = form ? form.querySelector('#forumReplyQuote') : null;
+        if (!form || !details || !input || !draft) return;
+
+        input.value = button.dataset.forumQuote || '0';
+        var author = draft.querySelector('[data-quote-author]');
+        var excerpt = draft.querySelector('[data-quote-excerpt]');
+        var avatar = draft.querySelector('.forum-quote-avatar');
+        if (author) author.textContent = button.dataset.quoteAuthor || 'Player';
+        if (excerpt) excerpt.textContent = button.dataset.quoteExcerpt || '';
+        if (avatar) avatar.src = button.dataset.quoteHeadshot || '/static/useful/temp/pfp.png';
+        draft.hidden = false;
+        draft.style.animation = 'none';
+        void draft.offsetWidth;
+        draft.style.animation = '';
+
+        document.querySelectorAll('#forumThreadPane .forum-post-quote.is-active').forEach(function (btn) {
+            btn.classList.remove('is-active');
+        });
+        button.classList.add('is-active');
+
+        var field = form.querySelector('textarea[name="body"]');
+        if (!details.open) {
+            var summary = details.querySelector('summary.cln-compose-sum');
+            toggleComposeDetails(details, summary);
+        } else if (field) {
+            field.focus({ preventScroll: true });
+        }
+        details.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+    };
+
+    var jumpToForumQuote = function (link) {
+        var target = document.getElementById(link.dataset.forumQuoteJump || '');
+        if (!target) return false;
+        target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+        target.classList.remove('is-quoted');
+        void target.offsetWidth;
+        target.classList.add('is-quoted');
+        window.history.replaceState(window.history.state, '', '#' + target.id);
+        return true;
+    };
+
     var submitForumReply = async function (form) {
         if (form.dataset.submitting === '1') return;
         var field = form.querySelector('textarea[name="body"]');
         var button = form.querySelector('button[type="submit"]');
-        var uploads = form.querySelector('[data-forum-upload]');
+        var uploads = form.querySelectorAll('[data-image-upload-field] button:not(:disabled), [data-forum-upload]');
         var status = document.getElementById('forumReplyStatus');
         if (!field || !button || !form.reportValidity()) return;
         form.dataset.submitting = '1';
         var body = new FormData(form);
-        button.disabled = true; field.disabled = true; uploads.disabled = true;
-        var clearUploads = form.querySelector('[data-forum-upload-clear]');
-        clearUploads.disabled = true;
+        button.disabled = true; field.disabled = true;
+        uploads.forEach(function (control) { control.disabled = true; });
         if (status) { status.hidden = true; status.classList.remove('visible'); }
         var posted = false;
         try {
@@ -185,6 +244,7 @@ import { initImageGalleries, initImageUploads } from '../image-attachments.js';
             if (!response.ok || !data.success) throw new Error(data.error || 'Could not post your reply. Please try again.');
             posted = true;
             form.reset();
+            clearForumQuote(form);
             if (!form.isConnected) return;
             var destination = new URL(data.path || window.location.href, window.location.href);
             if (destination.origin !== window.location.origin) throw new Error('Could not display your reply.');
@@ -210,8 +270,7 @@ import { initImageGalleries, initImageUploads } from '../image-attachments.js';
             var newReply = document.getElementById('reply-' + data.id);
             if (newReply) {
                 newReply.classList.add('is-new');
-                var reduced = document.documentElement.classList.contains('reduced-motion') || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-                newReply.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block: 'nearest'});
+                newReply.scrollIntoView({behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest'});
             }
         } catch (err) {
             if (status && form.isConnected) {
@@ -220,8 +279,8 @@ import { initImageGalleries, initImageUploads } from '../image-attachments.js';
             }
         } finally {
             delete form.dataset.submitting;
-            button.disabled = false; field.disabled = false; uploads.disabled = false;
-            clearUploads.disabled = false;
+            button.disabled = false; field.disabled = false;
+            uploads.forEach(function (control) { control.disabled = false; });
         }
     };
 
@@ -281,6 +340,27 @@ import { initImageGalleries, initImageUploads } from '../image-attachments.js';
             if (sortLink && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
                 e.preventDefault();
                 sortForumThreads(sortLink);
+                return;
+            }
+
+            var quoteBtn = e.target.closest('#forumThreadPane [data-forum-quote]');
+            if (quoteBtn) {
+                e.preventDefault();
+                startForumQuote(quoteBtn);
+                return;
+            }
+
+            var quoteClear = e.target.closest('#forumThreadPane [data-forum-quote-clear]');
+            if (quoteClear) {
+                e.preventDefault();
+                clearForumQuote(quoteClear.closest('form'));
+                return;
+            }
+
+            var quoteJump = e.target.closest('#forumThreadPane [data-forum-quote-jump]');
+            if (quoteJump && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
+                && quoteJump.getAttribute('href').charAt(0) === '#') {
+                if (jumpToForumQuote(quoteJump)) e.preventDefault();
                 return;
             }
 

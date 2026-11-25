@@ -2,6 +2,14 @@ package service
 
 import "vertexia-frontend/backend/models"
 
+func (s *ForumService) SavedImages(ownerID int, before int64, limit int) ([]models.SavedImage, error) {
+	return s.forumRepo.SavedImages(ownerID, before, limit)
+}
+
+func (s *ForumService) SavedImage(ownerID int, id int64) (models.ForumImageUpload, error) {
+	return s.forumRepo.SavedImage(ownerID, id)
+}
+
 func (s *ForumService) LoadApprovedImages(thread *models.ForumThread, replies []*models.ForumReply) error {
 	return s.forumRepo.LoadApprovedImages(thread, replies)
 }

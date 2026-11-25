@@ -13,13 +13,13 @@
     height: 52px !important;
     flex-shrink: 0 !important;
     background: var(--surface) !important;
-    border: 2px solid rgba(61, 61, 61, 0.25) !important;
-    border-radius: 12px !important;
-    transition: border-color 0.2s ease !important;
+    border: var(--bd-soft) !important;
+    border-radius: var(--radius-lg) !important;
+    transition: border-color var(--dur-base) ease !important;
 }
 
 .mcard .feedinbox:focus-within {
-    border-color: rgba(61, 61, 61, 0.25) !important;
+    border-color: var(--line-soft) !important;
     outline: none !important;
     box-shadow: none !important;
 }
@@ -39,7 +39,7 @@
     background: transparent !important;
     padding-left: 16px !important;
     padding-right: 66px !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 400 !important;
     font-size: 18px !important;
@@ -49,12 +49,12 @@
 }
 
 .mcard .feedin::placeholder {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-style: normal !important;
     font-weight: 400 !important;
     font-size: 18px !important;
     line-height: 22px !important;
-    color: rgba(61, 61, 61, 0.25) !important;
+    color: var(--line-soft) !important;
 }
 
 .mcard .feedsnd {
@@ -70,7 +70,7 @@
     border: none !important;
     outline: none !important;
     cursor: pointer !important;
-    transition: transform 0.2s !important;
+    transition: transform var(--dur-base) !important;
     color: #000000 !important;
     opacity: 0.25 !important;
 }
@@ -95,9 +95,9 @@
     gap: 12px !important;
     padding: 10px 12px !important;
     background: var(--surface-raised) !important;
-    border: 2px solid var(--line) !important;
-    border-radius: 12px !important;
-    transition: background 0.15s ease, border-color 0.15s ease !important;
+    border: var(--bd-thick) !important;
+    border-radius: var(--radius-lg) !important;
+    transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease !important;
 }
 
 .musitm:hover {
@@ -113,7 +113,7 @@
 .muscvr {
     width: 42px !important;
     height: 42px !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius-md) !important;
     object-fit: cover !important;
     flex-shrink: 0 !important;
     background: var(--line) !important;
@@ -128,7 +128,7 @@
 }
 
 .musttl {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 14px !important;
     font-weight: 500 !important;
     color: var(--ink) !important;
@@ -138,7 +138,7 @@
 }
 
 .musart {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 12px !important;
     color: var(--muted) !important;
     white-space: nowrap !important;
@@ -149,7 +149,7 @@
 .msempty {
     text-align: center !important;
     color: var(--muted) !important;
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 13px !important;
     padding: 30px 0 !important;
 }
@@ -186,8 +186,8 @@
 
 .musplayer {
     background: var(--surface-raised) !important;
-    border: 2px solid var(--line) !important;
-    border-radius: 10px !important;
+    border: var(--bd-thick) !important;
+    border-radius: var(--radius-lg) !important;
     padding: 6px 10px !important;
     display: flex !important;
     align-items: center !important;
@@ -200,7 +200,7 @@
 .musplayer-cvr {
     width: 28px !important;
     height: 28px !important;
-    border-radius: 4px !important;
+    border-radius: var(--radius-xs) !important;
     object-fit: cover !important;
     flex-shrink: 0 !important;
     background: var(--line) !important;
@@ -216,7 +216,7 @@
 }
 
 .musplayer-ttl {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 12px !important;
     font-weight: 500 !important;
     color: var(--ink) !important;
@@ -227,7 +227,7 @@
 }
 
 .musplayer-art {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 10px !important;
     color: var(--muted) !important;
     white-space: nowrap !important;
@@ -243,7 +243,7 @@
     color: var(--ink) !important;
     cursor: pointer !important;
     opacity: 0.8 !important;
-    transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease !important;
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease, color var(--dur-fast) ease !important;
     padding: 4px !important;
     display: flex !important;
     align-items: center !important;
@@ -268,7 +268,7 @@
 }
 
 .musplayer-time {
-    font-family: 'Ubuntu', sans-serif !important;
+    font-family: var(--font) !important;
     font-size: 10px !important;
     font-weight: 500 !important;
     color: var(--muted) !important;
@@ -284,7 +284,7 @@
     height: 6px !important;
     background: rgba(61, 61, 61, 0.2) !important;
     border: 1px solid rgba(61, 61, 61, 0.1) !important;
-    border-radius: 3px !important;
+    border-radius: var(--radius-xs) !important;
     cursor: pointer !important;
     position: relative !important;
     overflow: hidden !important;
@@ -295,8 +295,8 @@
     height: 100% !important;
     width: 0%;
     background: var(--grad-accent) !important;
-    box-shadow: inset 0px 0px 4px rgba(255, 255, 255, 0.25) !important;
-    border-radius: 3px !important;
+    box-shadow: var(--inset-sheen) !important;
+    border-radius: var(--radius-xs) !important;
     transition: width 0.1s linear !important;
 }
 
@@ -307,7 +307,7 @@
     color: var(--ink) !important;
     cursor: pointer !important;
     opacity: 0.7 !important;
-    transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease !important;
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease, color var(--dur-fast) ease !important;
     padding: 4px !important;
     display: flex !important;
     align-items: center !important;
@@ -330,7 +330,7 @@
     color: var(--danger) !important;
     cursor: pointer !important;
     opacity: 0.75 !important;
-    transition: opacity 0.15s ease, transform 0.15s ease !important;
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease !important;
     padding: 4px !important;
     display: flex !important;
     align-items: center !important;
@@ -357,7 +357,7 @@
     color: var(--ink) !important;
     cursor: pointer !important;
     opacity: 0.7 !important;
-    transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease !important;
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease, color var(--dur-fast) ease !important;
     padding: 6px !important;
     display: flex !important;
     align-items: center !important;
@@ -376,7 +376,7 @@
 #profileMusicWidget .musplayer {
     flex-wrap: wrap !important;
     gap: 0 8px !important;
-    transition: padding 0.25s var(--ease-smooth), gap 0.25s var(--ease-smooth) !important;
+    transition: padding var(--dur-med) var(--ease-smooth), gap var(--dur-med) var(--ease-smooth) !important;
 }
 
 #profileMusicWidget .musplayer:hover {
@@ -387,13 +387,13 @@
 #profileMusicWidget .musplayer-cvr {
     height: auto !important;
     aspect-ratio: 1 / 1 !important;
-    transition: width 0.25s var(--ease-smooth), border-radius 0.25s var(--ease-smooth), box-shadow 0.25s var(--ease-smooth) !important;
+    transition: width var(--dur-med) var(--ease-smooth), border-radius var(--dur-med) var(--ease-smooth), box-shadow var(--dur-med) var(--ease-smooth) !important;
 }
 
 #profileMusicWidget .musplayer:hover .musplayer-cvr {
     width: 100% !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 4px 12px var(--shade) !important;
 }
 
 #profileMusicWidget .musplayer-meta {
@@ -409,7 +409,7 @@
     visibility: hidden !important;
     overflow: hidden !important;
     pointer-events: none !important;
-    transition: max-height 0.25s var(--ease-smooth), opacity 0.2s ease, visibility 0.25s !important;
+    transition: max-height var(--dur-med) var(--ease-smooth), opacity var(--dur-base) ease, visibility var(--dur-med) !important;
 }
 
 #profileMusicWidget .musplayer:hover .musplayer-seek {
@@ -420,12 +420,12 @@
 }
 
 #profileMusicWidget .musplayer-barcnt {
-    transition: height 0.25s var(--ease-smooth), background-color 0.25s var(--ease-smooth) !important;
+    transition: height var(--dur-med) var(--ease-smooth), background-color var(--dur-med) var(--ease-smooth) !important;
 }
 
 #profileMusicWidget .musplayer:hover .musplayer-barcnt {
     height: 10px !important;
-    border-radius: 6px !important;
+    border-radius: var(--radius-sm) !important;
     background: rgba(61, 61, 61, 0.28) !important;
 }
 

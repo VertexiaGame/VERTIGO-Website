@@ -782,7 +782,7 @@ const insertNewFeedPost = post => {
 const submitFeedImages = async form => {
     if (form.dataset.submitting) return;
     const body = new FormData(form);
-    const controls = form.querySelectorAll('button, .feedin, [data-forum-upload]');
+    const controls = form.querySelectorAll('button:not(:disabled), .feedin, [data-forum-upload]');
     const notice = form.querySelector('.feed-upload-success');
     notice.textContent = '';
     form.dataset.submitting = '1';
@@ -794,8 +794,10 @@ const submitFeedImages = async form => {
         if (form.isConnected) {
             form.reset();
             form.elements.feed_type.value = currentTab;
-            if (post.content) insertNewFeedPost(post);
-            notice.textContent = 'Your images are awaiting admin approval.';
+            if (post.content || post.images?.length) insertNewFeedPost(post);
+            if (body.getAll('images').some(file => file.size > 0)) {
+                notice.textContent = 'Your new images are awaiting admin approval.';
+            }
         }
     } catch (error) {
         if (form.isConnected) showFeedError(error.message);
@@ -878,7 +880,7 @@ const setupGlobalDelegation = () => {
         if (!feedForm) return;
         e.preventDefault();
 
-        if (feedForm.querySelector('[data-forum-upload]').files.length) {
+        if (feedForm.elements.saved_images || feedForm.querySelector('[data-forum-upload]').files.length) {
             submitFeedImages(feedForm);
             return;
         }

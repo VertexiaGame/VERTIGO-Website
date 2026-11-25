@@ -164,7 +164,14 @@ func (s *ForumService) CountThreads(boardID int) (int, error) {
 func (s *ForumService) GetReplies(threadID, limit, offset int) ([]*models.ForumReply, error) {
 	return s.forumRepo.GetReplies(threadID, limit, offset)
 }
+
+var ErrForumQuoteNotFound = errors.New("the post you quoted is no longer available")
+
 func (s *ForumService) CreateReply(user *models.User, threadID int, body string, images ...models.ForumImageUpload) (int, error) {
+	return s.CreateQuotedReply(user, threadID, body, nil, images...)
+}
+
+func (s *ForumService) CreateQuotedReply(user *models.User, threadID int, body string, quoteID *int, images ...models.ForumImageUpload) (int, error) {
 	if user == nil || user.ID <= 0 {
 		return 0, errors.New("you must be signed in to reply")
 	}
@@ -180,12 +187,26 @@ func (s *ForumService) CreateReply(user *models.User, threadID int, body string,
 	if length < ForumThreadBodyMin || length > ForumThreadBodyMax {
 		return 0, fmt.Errorf("reply must be between %d and %d characters", ForumThreadBodyMin, ForumThreadBodyMax)
 	}
+	if quoteID != nil {
+		if *quoteID < 0 {
+			return 0, ErrForumQuoteNotFound
+		}
+		if *quoteID > 0 {
+			ok, err := s.forumRepo.ReplyInThread(*quoteID, threadID)
+			if err != nil {
+				return 0, err
+			}
+			if !ok {
+				return 0, ErrForumQuoteNotFound
+			}
+		}
+	}
 	if s.cooldown != nil {
 		if ok, remaining := s.cooldown.Allow(fmt.Sprintf("forum-reply:%d", user.ID), 10*time.Second); !ok {
 			return 0, fmt.Errorf("slow down for %s", s.cooldown.FormatRemaining(remaining))
 		}
 	}
-	replyID, err := s.forumRepo.CreateReply(threadID, user.ID, body, images...)
+	replyID, err := s.forumRepo.CreateQuotedReply(threadID, user.ID, body, quoteID, images...)
 	if err != nil {
 		return 0, err
 	}

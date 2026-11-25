@@ -332,6 +332,8 @@
             this.container.innerHTML = '';
             const THREE = window.THREE || (await import('three'));
             const { OBJLoader } = await import('three/addons/loaders/OBJLoader.js');
+            const { loadSolidOBJ } = await import('/static/js/three/objsolid.js');
+            this.loadSolidOBJ = loadSolidOBJ;
             if (this.isDestroyed) return;
             this.THREE = THREE;
             this.OBJLoader = OBJLoader;
@@ -419,12 +421,11 @@
 
         async loadModel() {
             const THREE = this.THREE;
-            const loader = new this.OBJLoader();
             let model = null;
             const meshCandidates = this.meshUrls();
             for (let i = 0; i < meshCandidates.length; i++) {
                 try {
-                    model = await loader.loadAsync(meshCandidates[i]);
+                    model = await this.loadSolidOBJ(this.OBJLoader, meshCandidates[i]);
                     if (model) break;
                 } catch (e) {}
             }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { loadSolidOBJ } from '/static/js/three/objsolid.js';
 
 window.THREE = THREE;
 
@@ -381,28 +382,6 @@ export class AvatarViewer {
         return null;
     }
 
-    async fetchItemTransform(id) {
-        try {
-            const response = await fetch(`/api/v1/shop/items/${id}`);
-            if (!response.ok) return null;
-            const detail = await response.json();
-            const raw = detail ? detail.transform : null;
-            if (!raw) return null;
-            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            if (!parsed || typeof parsed !== 'object') return null;
-            return parsed;
-        } catch {
-            return null;
-        }
-    }
-
-    hasStoredPosition(transform) {
-        if (!transform || typeof transform !== 'object') return false;
-        const cand = (transform.placement && transform.placement.position) || transform.position;
-        if (!cand) return false;
-        return [cand.x, cand.y, cand.z].every(n => typeof n === 'number' && isFinite(n));
-    }
-
     poseToolArm(obj) {
         obj.updateMatrixWorld(true);
         const c = new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3());
@@ -471,7 +450,6 @@ export class AvatarViewer {
 
         const results = await Promise.all(partPromises);
 
-        let headObj = null;
         let leftArmObj = null;
         for (const { part, obj } of results) {
             if (!obj) continue;
@@ -515,7 +493,6 @@ export class AvatarViewer {
                 }
             });
 
-            if (part.isHead) headObj = obj;
             if (part.name === 'LeftArm') leftArmObj = obj;
             this.avatarGroup.add(obj);
         }
@@ -569,13 +546,11 @@ export class AvatarViewer {
                     const hatUrls = [`/assets/uploads/shop/hat/${hatId}.obj`, `/assets/shop/hat/${hatId}.obj`];
                     for (const hatUrl of hatUrls) {
                         try {
-                            hatObj = await loader.loadAsync(hatUrl);
+                            hatObj = await loadSolidOBJ(OBJLoader, hatUrl);
                             if (hatObj) break;
                         } catch {}
                     }
                     if (!hatObj) continue;
-                    const hatTransform = await this.fetchItemTransform(hatId);
-                    const hatPositioned = this.hasStoredPosition(hatTransform);
                     const hatTex = await loadHatTexture(hatId);
                     const hatMat = new THREE.MeshStandardMaterial({
                         color: hatTex ? new THREE.Color(0xffffff) : new THREE.Color(0xd6d6d6),
@@ -592,14 +567,6 @@ export class AvatarViewer {
                             if (child.geometry && !child.geometry.attributes.normal) child.geometry.computeVertexNormals();
                         }
                     });
-                    if (!hatPositioned && headObj) {
-                        const headBox = new THREE.Box3().setFromObject(headObj);
-                        const headCenter = headBox.getCenter(new THREE.Vector3());
-                        const hatBox = new THREE.Box3().setFromObject(hatObj);
-                        const hatCenter = hatBox.getCenter(new THREE.Vector3());
-                        hatObj.position.sub(hatCenter).add(headCenter);
-                        hatObj.position.y += headBox.getSize(new THREE.Vector3()).y * 0.45;
-                    }
                     this.avatarGroup.add(hatObj);
                 } catch {}
             }
@@ -609,13 +576,11 @@ export class AvatarViewer {
                     const toolUrls = [`/assets/uploads/shop/gear/${data.tool}.obj`, `/assets/shop/gear/${data.tool}.obj`];
                     for (const toolUrl of toolUrls) {
                         try {
-                            toolObj = await loader.loadAsync(toolUrl);
+                            toolObj = await loadSolidOBJ(OBJLoader, toolUrl);
                             if (toolObj) break;
                         } catch {}
                     }
                     if (toolObj) {
-                        const toolTransform = await this.fetchItemTransform(data.tool);
-                        const toolPositioned = this.hasStoredPosition(toolTransform);
                         const toolTex = await loadToolTexture(data.tool);
                         const toolMat = new THREE.MeshStandardMaterial({
                             color: toolTex ? new THREE.Color(0xffffff) : new THREE.Color(0xd6d6d6),
@@ -632,10 +597,6 @@ export class AvatarViewer {
                                 if (child.geometry && !child.geometry.attributes.normal) child.geometry.computeVertexNormals();
                             }
                         });
-                        if (!toolPositioned) {
-                            toolObj.position.set(0.6, 0.2, 0.3);
-                            toolObj.rotation.set(0, 0, Math.PI / 2);
-                        }
                         this.avatarGroup.add(toolObj);
                     }
                 } catch {}
