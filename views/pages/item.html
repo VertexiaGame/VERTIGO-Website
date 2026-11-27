@@ -181,34 +181,28 @@ window.updateItemTabIndicator = function() {
                 {{template "components/shop/special" .}}
                 {{else if eq .ActiveTab "comments"}}
                 <div id="shpitmPaneComments" class="shpitm-pane">
-                    <div class="shpitm-commentwrap">
-                        <div class="feedinbox shpitm-feedinbox" id="shpitmFeedBox">
-                            <input type="text" class="feedin" placeholder="say something cool..." id="shpitmCommentInput" autocomplete="off">
-                            <button type="button" class="feedsnd" onclick="window.postFakeComment()" title="Post">
-                                <i class="fa-solid fa-paper-plane" style="font-size: 20px !important;"></i>
-                            </button>
-                        </div>
-                        <div class="pstlst shpitm-pstlst" id="shpitmCommentsList">
-                            <div class="feedemt">nobody has commented yet... be the first!</div>
-                        </div>
-                    </div>
+                    {{with .Comments}}{{template "components/comments/section" .}}{{end}}
                 </div>
                 {{else}}
-                <div id="shpitmPaneRelated" class="shpitm-pane">
+                <section id="shpitmPaneRelated" class="shpitm-pane shpitm-related" aria-labelledby="shpitmRelatedTitle">
                     <div class="shpitm-relatedhdr">
-                        <h3 class="shpitm-relatedttl">Related Items</h3>
-                        <a href="/shop?cat={{.Item.Type}}" hx-get="/shop?cat={{.Item.Type}}" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm" style="text-decoration:none;"><span>More Items</span></a>
+                        <h2 id="shpitmRelatedTitle" class="shpitm-relatedttl">Related Items</h2>
+                        {{$browseURL := "/shop"}}
+                        {{with .RelatedCategory}}{{$browseURL = printf "/shop?cat=%s" .}}{{end}}
+                        <a href="{{$browseURL}}" hx-get="{{$browseURL}}" hx-target="body" hx-push-url="true" class="primary hpyprim hpyinl hpysm shpitm-relatedlink"><span>{{if .RelatedCategory}}Browse category{{else}}Browse shop{{end}}</span></a>
                     </div>
-                    {{if .Related}}
-                    <div class="shp-grid" style="margin-top:12px;">
+                    {{if .RelatedError}}
+                    <p class="shpitm-relatedempty">Related items couldn’t be loaded. Try again in a moment.</p>
+                    {{else if .Related}}
+                    <ul class="shpitm-relatedgrid" role="list">
                         {{range .Related}}
-                        {{template "components/shop/card" .}}
+                        <li>{{template "components/shop/card" .}}</li>
                         {{end}}
-                    </div>
+                    </ul>
                     {{else}}
-                    <div class="feedemt" style="margin-top:12px;">No related items found.</div>
+                    <p class="shpitm-relatedempty">No other items in this category yet.</p>
                     {{end}}
-                </div>
+                </section>
                 {{end}}
                 </div>
             </div>

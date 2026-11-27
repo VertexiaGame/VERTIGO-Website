@@ -14,7 +14,7 @@ window.switchGameDetailTab = function(tabName, event) {
         if (event.currentTarget && event.currentTarget.disabled) return;
         event.preventDefault();
     }
-    if (tabName !== 'about' && tabName !== 'servers') return;
+    if (tabName !== 'about' && tabName !== 'servers' && tabName !== 'comments') return;
     const tabs = Array.from(document.querySelectorAll('.gam-det-tabbtn:not([disabled])'));
     const clickedTab = event ? event.currentTarget : document.querySelector('.gam-det-tabbtn[data-tab="' + tabName + '"]');
     if (clickedTab && clickedTab.classList.contains('active')) return;
@@ -24,6 +24,14 @@ window.switchGameDetailTab = function(tabName, event) {
     const serversPane = document.getElementById('gamDetPaneServers');
     if (aboutPane) aboutPane.hidden = (tabName !== 'about');
     if (serversPane) serversPane.hidden = (tabName !== 'servers');
+    const commentsPane = document.getElementById('gamDetPaneComments');
+    if (commentsPane) commentsPane.hidden = (tabName !== 'comments');
+    try {
+        const url = new URL(window.location.href);
+        if (tabName === 'about') url.searchParams.delete('tab');
+        else url.searchParams.set('tab', tabName);
+        history.replaceState(history.state, '', url);
+    } catch (e) {}
     window.updateGameDetailTabIndicator();
     if (tabName === 'servers') {
         window.refreshGameServers(null);
@@ -461,15 +469,16 @@ const initGameDetailPage = () => {
     window.ratingGameInFlight = false;
     window.joinGameInFlight = false;
     window.gameBannerIndex = 0;
-    const aboutBtn = document.querySelector('.gam-det-tabbtn[data-tab="about"]');
-    if (aboutBtn) {
-        document.querySelectorAll('.gam-det-tabbtn').forEach(function(t) { t.classList.remove('active'); });
-        aboutBtn.classList.add('active');
-    }
+    const activeBtn = document.querySelector('.gam-det-tabbtn.active:not([disabled])') || document.querySelector('.gam-det-tabbtn[data-tab="about"]');
+    const activeTab = activeBtn ? activeBtn.dataset.tab : 'about';
+    document.querySelectorAll('.gam-det-tabbtn').forEach(function(t) { t.classList.toggle('active', t === activeBtn); });
     const aboutPane = document.getElementById('gamDetPaneAbout');
     const serversPane = document.getElementById('gamDetPaneServers');
-    if (aboutPane) aboutPane.hidden = false;
-    if (serversPane) serversPane.hidden = true;
+    const commentsPane = document.getElementById('gamDetPaneComments');
+    if (aboutPane) aboutPane.hidden = activeTab !== 'about';
+    if (serversPane) serversPane.hidden = activeTab !== 'servers';
+    if (commentsPane) commentsPane.hidden = activeTab !== 'comments';
+    if (activeTab === 'servers' && window.refreshGameServers) window.refreshGameServers(null);
     const banner = document.getElementById('gamDetBanner');
     if (banner) {
         window.showGameBannerSlide(0);

@@ -6,14 +6,6 @@
 <body hx-boost="true">
     {{template "components/layout/navbar" .}}
     <div id="pageProgress" class="page-progress" aria-hidden="true"><div class="page-progress-bar"></div></div>
-    <div id="rateLimitBanner" class="ratelimit" role="alert" aria-live="assertive" hidden>
-        <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
-        <span class="ratelimit-msg">Slow down. You are being rate limited.</span>
-        <span class="ratelimit-timer">Try again in <span id="rateLimitSeconds">60</span>s</span>
-        <button type="button" class="ratelimit-close" aria-label="Dismiss" onclick="window.dismissRateLimit()">
-            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-    </div>
     {{embed}}
     {{template "components/layout/footer"}}
     {{template "elements/modal"}}

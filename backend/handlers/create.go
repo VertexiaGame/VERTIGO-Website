@@ -343,18 +343,21 @@ func CreatePreviewPost(c fiber.Ctx) error {
 
 	src, err := fileHeader.Open()
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Could not read upload")
 	}
 	defer src.Close()
 
 	tmpFile, err := os.CreateTemp("", "crtpreview*"+ext)
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Could not save upload")
 	}
 	tmpPath := tmpFile.Name()
 	defer os.Remove(tmpPath)
 	if _, err := io.Copy(tmpFile, src); err != nil {
 		tmpFile.Close()
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Could not save upload")
 	}
 	tmpFile.Close()
@@ -372,11 +375,13 @@ func CreatePreviewPost(c fiber.Ctx) error {
 			if texExt == ".png" || texExt == ".jpg" || texExt == ".jpeg" {
 				texSrc, err := texHeader.Open()
 				if err != nil {
+					recordInternalError(c, err)
 					return c.Status(fiber.StatusInternalServerError).SendString("Could not read texture")
 				}
 				tmpTex, err := os.CreateTemp("", "crtpreviewtex*"+texExt)
 				if err != nil {
 					texSrc.Close()
+					recordInternalError(c, err)
 					return c.Status(fiber.StatusInternalServerError).SendString("Could not save texture")
 				}
 				texTmpPath := tmpTex.Name()
@@ -384,6 +389,7 @@ func CreatePreviewPost(c fiber.Ctx) error {
 				if _, err := io.Copy(tmpTex, texSrc); err != nil {
 					tmpTex.Close()
 					texSrc.Close()
+					recordInternalError(c, err)
 					return c.Status(fiber.StatusInternalServerError).SendString("Could not save texture")
 				}
 				tmpTex.Close()

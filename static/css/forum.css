@@ -1,3 +1,7 @@
+.bar .barbtns > a.button.barbtn {
+    text-decoration: none;
+}
+
 .fbd-lay {
     padding-bottom: 24px;
 }

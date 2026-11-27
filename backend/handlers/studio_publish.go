@@ -179,23 +179,27 @@ func StudioGameVrtxUploadPost(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	if err := os.MkdirAll(gameVrtxUploadDir, 0755); err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
 	}
 	dst := gameVrtxDiskPath(gameID)
 	tmp, err := os.CreateTemp(gameVrtxUploadDir, "vrtxupload*.tmp")
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
 	}
 	tmpPath := tmp.Name()
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
 		os.Remove(tmpPath)
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
 	}
 	tmp.Close()
 	os.Remove(dst)
 	if err := os.Rename(tmpPath, dst); err != nil {
 		os.Remove(tmpPath)
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
 	}
 	return c.JSON(fiber.Map{"success": true, "id": gameID})
@@ -236,6 +240,7 @@ func StudioGamesListGet(c fiber.Ctx) error {
 	}
 	games, err := service.Game.GetUserGames(user.ID)
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not load games"})
 	}
 	if games == nil {

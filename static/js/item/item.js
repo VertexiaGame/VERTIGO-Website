@@ -6,52 +6,6 @@
 
 
 
-    window.postFakeComment = function() {
-        var input = document.getElementById('shpitmCommentInput');
-        var list = document.getElementById('shpitmCommentsList');
-        if (!input || !list) return;
-        var text = (input.value || '').trim();
-        if (!text) {
-            input.focus();
-            if (input.parentElement) {
-                input.parentElement.classList.add('inerr');
-                setTimeout(function(){ input.parentElement.classList.remove('inerr'); }, 1200);
-            }
-            return;
-        }
-        if (text.length > 500) text = text.slice(0, 500);
-        var empty = list.querySelector('.feedemt');
-        if (empty) empty.remove();
-        var author = (window.VERTEXIA_USERNAME || document.body.getAttribute('data-username') || 'You');
-        var safeText = esc(text);
-        var safeAuthor = esc(author);
-        var uid = 0;
-        try {
-            var m = document.cookie.match(/user_id=(\d+)/);
-            if (m) uid = parseInt(m[1], 10) || 0;
-        } catch(e){}
-        var html = '<div class="pstitm">'
-            + '<div class="pstcrd">'
-            + '<div class="pstavt"><img src="/api/v1/avatar/headshot/' + uid + '.png" onerror="this.src=\'/static/useful/temp/pfp.png\';" alt="'+safeAuthor+'"></div>'
-            + '<div class="psthdr"><a class="pstaut" href="#">'+safeAuthor+'</a><span class="psttme">just now</span></div>'
-            + '<div class="pstact">'
-            + '<div class="pstrpl" title="Reply"><i class="fa-solid fa-reply"></i></div>'
-            + '<a href="#" class="pstflg" title="Report"><i class="fa-solid fa-flag"></i></a>'
-            + '</div>'
-            + '<div class="pbdy">'+safeText+'</div>'
-            + '</div>'
-            + '</div>';
-        list.insertAdjacentHTML('afterbegin', html);
-        input.value = '';
-        input.focus();
-        var first = list.querySelector('.pstitm');
-        if (first) {
-            first.style.animation = 'none';
-            void first.offsetWidth;
-            first.style.animation = '';
-        }
-    };
-
     function refreshTabIndicator() {
         if (window.updateItemTabIndicator) window.updateItemTabIndicator();
     }
@@ -665,16 +619,6 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     window.location.href = '/shop?q=' + encodeURIComponent(bar.value.trim());
-                }
-            });
-        }
-        var commentInput = document.getElementById('shpitmCommentInput');
-        if (commentInput && !commentInput._bound) {
-            commentInput._bound = true;
-            commentInput.addEventListener('keydown', function(e){
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    window.postFakeComment();
                 }
             });
         }

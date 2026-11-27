@@ -167,7 +167,17 @@ func GameDetailGet(c fiber.Ctx) error {
 		"Tags":         tags,
 		"ViewerRating": viewerRating,
 		"ThumbURLs":    gameThumbURLs(gameID),
+		"Comments":     pageCommentSection(c, models.CommentTargetGame, gameID),
+		"ActiveTab":    gameDetailTab(c.Query("tab")),
 	}, "layouts/main")
+}
+
+func gameDetailTab(raw string) string {
+	switch raw {
+	case "servers", "comments":
+		return raw
+	}
+	return "about"
 }
 
 func GameRatePost(c fiber.Ctx) error {
@@ -215,11 +225,12 @@ func GameRatePost(c fiber.Ctx) error {
 	}
 	userRating, err := service.Game.RateGame(user.ID, gameID, action)
 	if err != nil {
-		log.Printf("GameRatePost error: %v", err)
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save rating"})
 	}
 	game, err = service.Game.GetGameByID(gameID)
 	if err != nil || game == nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not load rating"})
 	}
 	return c.JSON(fiber.Map{

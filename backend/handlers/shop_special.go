@@ -134,7 +134,7 @@ func shopSpecialError(c fiber.Ctx, err error) error {
 	case errors.Is(err, models.ErrSpecialUnavailable):
 		status = fiber.StatusServiceUnavailable
 	default:
-		log.Printf("Special item transaction failed: %v", err)
+		recordInternalError(c, err)
 		status = fiber.StatusInternalServerError
 		err = errors.New("The transaction could not be completed. Please try again.")
 	}

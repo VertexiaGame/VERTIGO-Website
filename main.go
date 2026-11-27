@@ -70,6 +70,7 @@ func main() {
 	})
 
 	app.Use(recoverer.New())
+	app.Use(handlers.LogInternalServerErrors)
 
 	app.Use(func(c fiber.Ctx) error {
 		c.Set("X-Frame-Options", "SAMEORIGIN")

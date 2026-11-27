@@ -155,12 +155,15 @@ func Setup(app *fiber.App) {
 	app.Get("/games", handlers.PlayGet)
 	app.Get("/play/:id", handlers.GameDetailGet)
 	app.Post("/play/:id/rate", handlers.GameRatePost)
+	app.Post("/play/:id/comments", handlers.ClanActionLimiter(), handlers.GameCommentPost)
 
 	app.Get("/shop", handlers.ShopGet)
 	app.Get("/shop/item/:id", handlers.ShopItemPage)
 	app.Post("/shop/purchase/:id", handlers.ShopPurchasePost)
 	app.Post("/shop/item/:id/purchase", handlers.ShopPurchasePost)
 	app.Post("/shop/item/:id/resale/:serial/:action", handlers.ShopSpecialPost)
+	app.Post("/shop/item/:id/comments", handlers.ClanActionLimiter(), handlers.ShopItemCommentPost)
+	app.Post("/comments/:id/remove", handlers.ClanActionLimiter(), handlers.CommentRemovePost)
 	app.Get("/shop/:id", handlers.ShopItemRedirect)
 	app.Get("/item/:id", handlers.ShopItemRedirect)
 
@@ -242,6 +245,7 @@ func Setup(app *fiber.App) {
 	api.Get("/feed", handlers.GetFeedPaginated)
 	api.Post("/feed", handlers.PostFeed)
 	api.Get("/feed/comments", handlers.GetFeedCommentsHandler)
+	api.Get("/comments/:kind/:id", handlers.CommentsAPI)
 	api.Get("/feed/:id", handlers.GetFeedSingle)
 	api.Get("/images", handlers.SavedImagesGet)
 	api.Get("/images/:id", handlers.SavedImageGet)

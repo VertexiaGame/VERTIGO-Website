@@ -24,6 +24,7 @@ func MusicSearchGet(c fiber.Ctx) error {
 
 	tracks, err := service.Music.SearchTracks(q)
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})

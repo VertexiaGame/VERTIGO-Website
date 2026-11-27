@@ -84,12 +84,13 @@
                 <div class="prftabcnt shpitm-tabw gam-det-tabs">
                     <div class="prftablst">
                         <div class="prftabind gam-det-tabind"></div>
-                        <button type="button" class="prftabbtn shpitm-tabbtn gam-det-tabbtn active" data-tab="about" onclick="window.switchGameDetailTab('about', event)">About</button>
-                        <button type="button" class="prftabbtn shpitm-tabbtn gam-det-tabbtn" data-tab="servers" onclick="window.switchGameDetailTab('servers', event)">Servers</button>
+                        <button type="button" class="prftabbtn shpitm-tabbtn gam-det-tabbtn{{if eq .ActiveTab "about"}} active{{end}}" data-tab="about" onclick="window.switchGameDetailTab('about', event)">About</button>
+                        <button type="button" class="prftabbtn shpitm-tabbtn gam-det-tabbtn{{if eq .ActiveTab "servers"}} active{{end}}" data-tab="servers" onclick="window.switchGameDetailTab('servers', event)">Servers</button>
+                        <button type="button" class="prftabbtn shpitm-tabbtn gam-det-tabbtn{{if eq .ActiveTab "comments"}} active{{end}}" data-tab="comments" onclick="window.switchGameDetailTab('comments', event)">Comments</button>
                         <button type="button" class="prftabbtn shpitm-tabbtn gam-det-tabbtn" disabled aria-disabled="true" title="Coming soon" style="opacity:0.5;cursor:not-allowed;">Store</button>
                     </div>
                 </div>
-                <div id="gamDetPaneAbout" class="shpitm-pane gam-det-pane">
+                <div id="gamDetPaneAbout" class="shpitm-pane gam-det-pane"{{if ne .ActiveTab "about"}} hidden{{end}}>
                     <div class="shpitm-descsec">
                         <h2 class="prfboxttl">Description</h2>
                         <div class="prfbox-card shpitm-descbox">
@@ -122,7 +123,7 @@
                     </div>
                     {{end}}
                 </div>
-                <div id="gamDetPaneServers" class="shpitm-pane gam-det-pane" hidden>
+                <div id="gamDetPaneServers" class="shpitm-pane gam-det-pane"{{if ne .ActiveTab "servers"}} hidden{{end}}>
                     <div class="shpitm-descsec">
                         <div class="shpitm-relatedhdr gam-srv-head">
                             <h2 class="prfboxttl">Active Servers</h2>
@@ -136,6 +137,9 @@
                             </div>
                         </div>
                     </div>
+                </div>
+                <div id="gamDetPaneComments" class="shpitm-pane gam-det-pane"{{if ne .ActiveTab "comments"}} hidden{{end}}>
+                    {{with .Comments}}{{template "components/comments/section" .}}{{end}}
                 </div>
                 <div class="shpitm-relatedhdr gam-det-relatedhdr">
                     <h3 class="shpitm-relatedttl">More like this</h3>

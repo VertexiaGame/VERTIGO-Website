@@ -127,6 +127,7 @@ func StudioAuthAllow(c fiber.Ctx) error {
 		code, err = service.StudioAuth.GenerateCode(user.ID)
 	}
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to generate code")
 	}
 
@@ -192,10 +193,10 @@ func StudioAuthExchange(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{
-		"uid":      user.ID,
-		"username": user.Username,
+		"uid":         user.ID,
+		"username":    user.Username,
 		"displayname": user.DisplayName,
-		"ukey":     user.Unikey,
+		"ukey":        user.Unikey,
 	})
 }
 

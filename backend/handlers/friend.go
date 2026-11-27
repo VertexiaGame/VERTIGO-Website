@@ -99,6 +99,7 @@ func FriendsGet(c fiber.Ctx) error {
 			}
 			friends, err := service.Friend.GetFriendsList(targetID)
 			if err != nil {
+				recordInternalError(c, err)
 				return c.Status(fiber.StatusInternalServerError).SendString("Error loading friends list")
 			}
 			return Render(c, "pages/friends", fiber.Map{
@@ -113,6 +114,7 @@ func FriendsGet(c fiber.Ctx) error {
 
 	incoming, outgoing, friends, err := service.Friend.GetFriendRequestsPageData(user.ID)
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error loading friend requests")
 	}
 
@@ -166,6 +168,7 @@ func FollowsGet(c fiber.Ctx) error {
 		}
 		target, err = service.User.GetUserByID(id)
 		if err != nil {
+			recordInternalError(c, err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		if target == nil {
@@ -178,10 +181,12 @@ func FollowsGet(c fiber.Ctx) error {
 	}
 	followers, err := service.User.GetFollowList(target.ID, true)
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error loading follow list")
 	}
 	following, err := service.User.GetFollowList(target.ID, false)
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error loading follow list")
 	}
 	return Render(c, "pages/follows", fiber.Map{
@@ -218,6 +223,7 @@ func FollowUserPost(c fiber.Ctx) error {
 	}
 	follow := strings.HasPrefix(c.Path(), "/follow/")
 	if err := service.User.SetFollowing(user.ID, id, follow); err != nil {
+		recordInternalError(c, err)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	if c.Get("HX-Request") == "true" {

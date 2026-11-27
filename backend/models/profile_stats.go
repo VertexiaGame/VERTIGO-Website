@@ -3,12 +3,14 @@ package models
 import (
 	"strconv"
 	"strings"
+	"time"
 )
 
 type ProfileStats struct {
 	JoinedLabel  string
 	IsOnline     bool
 	Status       string
+	LastOnline   string
 	ForumThreads int
 	ForumReplies int
 	Games        int
@@ -41,3 +43,28 @@ func CompactCount(n int) string {
 func (s ProfileStats) GameVisitsLabel() string   { return CompactCount(s.GameVisits) }
 func (s ProfileStats) ForumThreadsLabel() string { return CompactCount(s.ForumThreads) }
 func (s ProfileStats) ForumRepliesLabel() string { return CompactCount(s.ForumReplies) }
+
+func LastOnlineLabel(last, now time.Time) string {
+	if last.IsZero() || last.Year() < 2000 {
+		return ""
+	}
+	plural := func(n int, unit string) string {
+		if n == 1 {
+			return "1 " + unit + " ago"
+		}
+		return strconv.Itoa(n) + " " + unit + "s ago"
+	}
+	since := now.Sub(last)
+	switch {
+	case since < 5*time.Minute:
+		return "Now"
+	case since < time.Hour:
+		return plural(int(since/time.Minute), "minute")
+	case since < 24*time.Hour:
+		return plural(int(since/time.Hour), "hour")
+	case since < 30*24*time.Hour:
+		return plural(int(since/(24*time.Hour)), "day")
+	default:
+		return last.Format("Jan 2, 2006")
+	}
+}

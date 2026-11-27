@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/url"
 	"strconv"
@@ -44,13 +45,12 @@ func enrichForumThreadTags(threads []*models.ForumThread) {
 
 func ForumIndexGet(c fiber.Ctx) error {
 	if service.Forum == nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, errors.New("Forum service unavailable"))
 	}
 
 	boards, err := service.Forum.GetBoards()
 	if err != nil {
-		log.Printf("VERTEXIA DB Error: Failed to fetch forum boards: %v", err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("VERTEXIA DB Error: Failed to fetch forum boards: %v", err))
 	}
 	if boards == nil {
 		boards = []*models.ForumBoard{}
@@ -68,18 +68,16 @@ func ForumMyThreadsGet(c fiber.Ctx) error {
 		return c.Redirect().To("/login?next=" + url.QueryEscape("/forum/mine"))
 	}
 	if service.Forum == nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, errors.New("Forum service unavailable"))
 	}
 	total, err := service.Forum.CountThreadsByUser(user.ID)
 	if err != nil {
-		log.Printf("Forum user thread count failed: %v", err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("Forum user thread count failed: %v", err))
 	}
 	page, pages := forumPage(c.Query("page"), total)
 	threads, err := service.Forum.GetThreadsByUser(user.ID, forumPageSize, (page-1)*forumPageSize)
 	if err != nil {
-		log.Printf("Forum user threads failed: %v", err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("Forum user threads failed: %v", err))
 	}
 	enrichForumThreadTags(threads)
 	return Render(c, "pages/forum_my_threads", fiber.Map{
@@ -90,7 +88,7 @@ func ForumMyThreadsGet(c fiber.Ctx) error {
 
 func ForumBoardGet(c fiber.Ctx) error {
 	if service.Forum == nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, errors.New("Forum service unavailable"))
 	}
 
 	boardID, err := strconv.Atoi(strings.TrimSpace(c.Params("id")))
@@ -103,8 +101,7 @@ func ForumBoardGet(c fiber.Ctx) error {
 		if errors.Is(err, service.ErrForumBoardNotFound) {
 			return serveErrorPage(c, fiber.StatusNotFound)
 		}
-		log.Printf("VERTEXIA DB Error: Failed to fetch forum board %d: %v", boardID, err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("VERTEXIA DB Error: Failed to fetch forum board %d: %v", boardID, err))
 	}
 	if board == nil {
 		return serveErrorPage(c, fiber.StatusNotFound)
@@ -113,14 +110,12 @@ func ForumBoardGet(c fiber.Ctx) error {
 	sortBy := normalizeForumSort(c.Query("sort"))
 	total, err := service.Forum.CountThreads(board.ID)
 	if err != nil {
-		log.Printf("Forum thread count failed: %v", err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("Forum thread count failed: %v", err))
 	}
 	page, pages := forumPage(c.Query("page"), total)
 	threads, err := service.Forum.GetThreadsByBoard(board.ID, sortBy, forumPageSize, (page-1)*forumPageSize)
 	if err != nil {
-		log.Printf("VERTEXIA DB Error: Failed to fetch threads for board %d: %v", board.ID, err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("VERTEXIA DB Error: Failed to fetch threads for board %d: %v", board.ID, err))
 	}
 	enrichForumThreadTags(threads)
 
@@ -225,7 +220,7 @@ func ForumThreadGet(c fiber.Ctx) error {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
 	if err != nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, err)
 	}
 	board, err := service.Forum.GetBoardByID(thread.BoardID)
 	if err != nil {
@@ -234,7 +229,7 @@ func ForumThreadGet(c fiber.Ctx) error {
 	page, pages := forumPage(c.Query("page"), thread.RepliesCount)
 	replies, err := service.Forum.GetReplies(id, forumPageSize, (page-1)*forumPageSize)
 	if err != nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, err)
 	}
 	if err := service.Forum.LoadApprovedImages(thread, replies); err != nil {
 		log.Printf("Forum images failed for thread %d: %v", id, err)

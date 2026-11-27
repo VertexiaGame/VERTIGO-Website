@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"log"
 	"mime"
 	"slices"
 	"strconv"
@@ -103,7 +103,7 @@ func SavedImagesGet(c fiber.Ctx) error {
 	const pageSize = 12
 	images, err := service.Forum.SavedImages(ownerID, before, pageSize+1)
 	if err != nil {
-		log.Printf("Saved image list failed: %v", err)
+		recordInternalError(c, err)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	next := ""
@@ -133,7 +133,7 @@ func SavedImageGet(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	if err != nil {
-		log.Printf("Saved image %d failed: %v", id, err)
+		recordInternalError(c, err)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	c.Set(fiber.HeaderContentType, image.ContentType)
@@ -155,7 +155,7 @@ func serveForumImage(c fiber.Ctx, approved bool) error {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	if err != nil {
-		log.Printf("Forum image %d failed: %v", id, err)
+		recordInternalError(c, err)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	c.Set(fiber.HeaderContentType, image.ContentType)
@@ -226,8 +226,7 @@ func AdminForumImageReviewPost(c fiber.Ctx) error {
 	}
 	reviewed, err := service.Forum.ReviewForumImage(id, action == "approve")
 	if err != nil {
-		log.Printf("Forum image %d review failed: %v", id, err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("Forum image %d review failed: %v", id, err))
 	}
 	if !reviewed {
 		return c.Status(fiber.StatusConflict).SendString("This image has already been reviewed.")

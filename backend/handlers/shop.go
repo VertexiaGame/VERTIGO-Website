@@ -186,10 +186,6 @@ func ShopItemPage(c fiber.Ctx) error {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
 	c.Set("Cache-Control", "private, no-store")
-	var related []*models.ShopItem
-	if service.Shop != nil {
-		related, _ = service.Shop.GetRelatedItems(item, 6)
-	}
 	username := GetActiveUser(c)
 	isLoggedIn := username != ""
 	var currentUserID int
@@ -225,7 +221,6 @@ func ShopItemPage(c fiber.Ctx) error {
 	data := fiber.Map{
 		"Title":            pageTitle,
 		"Item":             item,
-		"Related":          related,
 		"CanViewFull":      canViewFull,
 		"IsLoggedIn":       isLoggedIn,
 		"CurrentUserID":    currentUserID,
@@ -238,6 +233,22 @@ func ShopItemPage(c fiber.Ctx) error {
 		"Sales":            sales,
 	}
 	populateShopItemTabs(c, item, currentUserID, data)
+	switch data["ActiveTab"] {
+	case "comments":
+		data["Comments"] = pageCommentSection(c, models.CommentTargetShop, item.ID)
+	case "related":
+		category, _ := models.NormalizeShopCategory(item.Type)
+		if category != "all" {
+			data["RelatedCategory"] = category
+		}
+		related, err := service.Shop.GetRelatedItems(item, 6)
+		if err != nil {
+			log.Printf("Shop item %d related items lookup failed: %v", item.ID, err)
+			data["RelatedError"] = true
+		} else {
+			data["Related"] = related
+		}
+	}
 	return Render(c, "pages/item", data, "layouts/main")
 }
 
@@ -463,6 +474,7 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 	dir := filepath.Join(shopItemUploadDir, filepath.Base(itemType))
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		cleanup()
+		recordInternalError(c, err)
 		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 
@@ -522,12 +534,14 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 		if err != nil {
 			modelSrc.Close()
 			cleanup()
+			recordInternalError(c, err)
 			return fail("Could not save upload", fiber.StatusInternalServerError)
 		}
 		if _, err := io.Copy(modelDst, modelSrc); err != nil {
 			modelSrc.Close()
 			modelDst.Close()
 			cleanup()
+			recordInternalError(c, err)
 			return fail("Could not save upload", fiber.StatusInternalServerError)
 		}
 		modelSrc.Close()
@@ -556,6 +570,7 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 	if stock == 0 {
 		if err := service.Shop.GrantItem(user.ID, itemID, models.BoughtViaAwarded, 0, 0); err != nil {
 			cleanup()
+			recordInternalError(c, err)
 			return fail("Could not save upload", fiber.StatusInternalServerError)
 		}
 	}

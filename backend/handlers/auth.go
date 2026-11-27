@@ -69,6 +69,7 @@ func AltchaGet(c fiber.Ctx) error {
 
 	challenge, err := service.Auth.GenerateAltchaChallenge()
 	if err != nil {
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -288,6 +289,7 @@ func ValidateUkey(c fiber.Ctx) error {
 				"error": "User not found",
 			})
 		}
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})

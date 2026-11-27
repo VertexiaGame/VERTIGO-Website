@@ -25,6 +25,7 @@ var (
 	Shop       *ShopService
 	Clan       *ClanService
 	Forum      *ForumService
+	Comment    *CommentService
 	Asset      *AssetService
 	Banner     *BannerService
 	StudioAuth *StudioAuthService
@@ -42,6 +43,7 @@ func Init(db *sql.DB) {
 	shopRepo := repository.NewShopRepository(db)
 	clanRepo := repository.NewClanRepository(db)
 	forumRepo := repository.NewForumRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
 	assetRepo := repository.NewAssetRepository(db)
 	bannerRepo := repository.NewBannerRepository(db)
 	Cooldown = NewCooldownService(5 * time.Second)
@@ -56,6 +58,7 @@ func Init(db *sql.DB) {
 	Shop = NewShopService(shopRepo)
 	Clan = NewClanService(clanRepo, userRepo, Cooldown)
 	Forum = NewForumService(forumRepo, Cooldown)
+	Comment = NewCommentService(commentRepo, Cooldown)
 	Asset = NewAssetService(assetRepo)
 	Banner = NewBannerService(bannerRepo, Cooldown)
 	StudioAuth = NewStudioAuthService(userRepo)

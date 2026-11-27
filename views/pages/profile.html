@@ -204,6 +204,12 @@ window.switchProfileTab = function(tabName, event) {
                                         <dt class="prfstatlbl"><i class="fa-solid fa-signal" aria-hidden="true"></i><span>Status</span></dt>
                                         <dd class="prfstatval prfstatpres{{if .IsOnline}} is-online{{end}}"><i class="fa-{{if .IsOnline}}solid{{else}}regular{{end}} fa-circle" aria-hidden="true"></i> {{.Status}}</dd>
                                     </div>
+                                    {{if .LastOnline}}
+                                    <div class="prfstat">
+                                        <dt class="prfstatlbl"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>Last online</span></dt>
+                                        <dd class="prfstatval">{{.LastOnline}}</dd>
+                                    </div>
+                                    {{end}}
                                     <div class="prfstat">
                                         <dt class="prfstatlbl"><i class="fa-solid fa-gamepad" aria-hidden="true"></i><span>Games</span></dt>
                                         <dd class="prfstatval" title="{{.Games}} {{if eq .Games 1}}game{{else}}games{{end}}">{{.Games}}</dd>

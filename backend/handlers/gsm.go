@@ -95,6 +95,7 @@ func gsmJoinError(c fiber.Ctx, err error) error {
 	case errors.Is(err, gsm.ErrUnavailable):
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Gameservers are currently unavailable"})
 	default:
+		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not join game"})
 	}
 }

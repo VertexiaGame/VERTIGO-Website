@@ -468,8 +468,11 @@ func (r *ShopRepository) GetItemByID(id int) (*models.ShopItem, error) {
 }
 
 func (r *ShopRepository) GetRelatedItems(item *models.ShopItem, limit int) ([]*models.ShopItem, error) {
-	if r.db == nil || item == nil {
-		return []*models.ShopItem{}, nil
+	if item == nil {
+		return nil, nil
+	}
+	if r.db == nil {
+		return nil, errors.New("database connection is offline")
 	}
 	if limit <= 0 {
 		limit = 6
@@ -478,16 +481,13 @@ func (r *ShopRepository) GetRelatedItems(item *models.ShopItem, limit int) ([]*m
 		limit = 12
 	}
 	normType, _ := models.NormalizeShopCategory(item.Type)
-	filter := &models.ShopFilter{
-		Category: normType,
-		Page:     1,
-		Limit:    limit + 1,
-		Sort:     "newest",
-	}
-	whereSQL, args := r.buildWhereClause(filter)
-	whereSQL = whereSQL + " AND s.id != ?"
+	whereSQL, args := r.buildWhereClause(&models.ShopFilter{Category: normType})
+	whereSQL += " AND s.id != ? AND s.approval_state = 'approved'"
 	args = append(args, item.ID)
-	orderBySQL := r.buildOrderBy(filter.Sort)
+	if normType == "all" {
+		whereSQL += " AND LOWER(s.type) = LOWER(?)"
+		args = append(args, item.Type)
+	}
 	selectQuery := fmt.Sprintf(`
 		SELECT s.id, s.cid, s.creator_type, COALESCE(u.username, 'VERTEXIA') AS creator_name,
 		       s.name, COALESCE(s.description, '') AS description, s.type, s.bucks, s.bits, s.special,
@@ -495,25 +495,24 @@ func (r *ShopRepository) GetRelatedItems(item *models.ShopItem, limit int) ([]*m
 		       s.createdat, s.updatedat, s.original_stock, s.rap, s.offsale, s.transform
 		FROM shopitem s
 		LEFT JOIN users u ON s.cid = u.id AND s.creator_type = 'user'
-		%s %s LIMIT ?`, whereSQL, orderBySQL)
-	queryArgs := append([]any{}, args...)
-	queryArgs = append(queryArgs, filter.Limit)
-	rows, err := r.db.Query(selectQuery, queryArgs...)
+		%s
+		ORDER BY (s.cid = ? AND s.creator_type = ?) DESC, s.createdat DESC, s.id DESC
+		LIMIT ?`, whereSQL)
+	args = append(args, item.CID, item.CreatorType, limit)
+	rows, err := r.db.Query(selectQuery, args...)
 	if err != nil {
-		return []*models.ShopItem{}, nil
+		return nil, err
 	}
 	defer rows.Close()
 	var items []*models.ShopItem
 	for rows.Next() {
 		it, err := r.scanShopItem(rows)
-		if err == nil {
-			items = append(items, it)
-			if len(items) >= limit {
-				break
-			}
+		if err != nil {
+			return nil, err
 		}
+		items = append(items, it)
 	}
-	return items, nil
+	return items, rows.Err()
 }
 
 func (r *ShopRepository) HasItem(userID, itemID int) bool {

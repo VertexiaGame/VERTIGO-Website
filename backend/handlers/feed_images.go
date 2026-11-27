@@ -3,7 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"errors"
-	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v3"
@@ -28,7 +28,7 @@ func serveFeedImage(c fiber.Ctx, pending bool) error {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 	if err != nil {
-		log.Printf("Feed image %d failed: %v", id, err)
+		recordInternalError(c, err)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	c.Set(fiber.HeaderContentType, image.ContentType)
@@ -92,8 +92,7 @@ func AdminFeedImageReviewPost(c fiber.Ctx) error {
 	}
 	reviewed, err := service.Feed.ReviewImage(id, action == "approve")
 	if err != nil {
-		log.Printf("Feed image %d review failed: %v", id, err)
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, fmt.Errorf("Feed image %d review failed: %v", id, err))
 	}
 	if !reviewed {
 		return c.Status(fiber.StatusConflict).SendString("This image has already been reviewed.")

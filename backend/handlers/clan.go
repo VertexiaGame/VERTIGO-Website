@@ -186,7 +186,7 @@ func clanPageData(clan *models.Clan, access *service.ClanAccess) fiber.Map {
 
 func ClansGet(c fiber.Ctx) error {
 	if service.Clan == nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, errors.New("Clan service unavailable"))
 	}
 
 	viewerID := activeUserID(c)
@@ -239,7 +239,7 @@ func ClansGet(c fiber.Ctx) error {
 
 func ClanDetailGet(c fiber.Ctx) error {
 	if service.Clan == nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, errors.New("Clan service unavailable"))
 	}
 
 	identifier := c.Params("name")
@@ -259,7 +259,7 @@ func ClanDetailGet(c fiber.Ctx) error {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
 	if err != nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, err)
 	}
 
 	wearingTag := false
@@ -285,7 +285,7 @@ func ClanEditPage(c fiber.Ctx) error {
 		return c.Redirect().To("/login")
 	}
 	if service.Clan == nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, errors.New("Clan service unavailable"))
 	}
 
 	clanID, err := strconv.Atoi(c.Params("id"))
@@ -298,7 +298,7 @@ func ClanEditPage(c fiber.Ctx) error {
 		return serveErrorPage(c, fiber.StatusNotFound)
 	}
 	if err != nil {
-		return serveErrorPage(c, fiber.StatusInternalServerError)
+		return internalErrorPage(c, err)
 	}
 	if !access.CanManageClan() {
 		return serveErrorPage(c, fiber.StatusForbidden)

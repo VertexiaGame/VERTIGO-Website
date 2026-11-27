@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -337,8 +336,7 @@ func AdminIndex(c fiber.Ctx) error {
 		}
 		forumImages, err = loadAdminForumImages(c)
 		if err != nil {
-			log.Printf("Forum image queue failed: %v", err)
-			return serveErrorPage(c, fiber.StatusInternalServerError)
+			return internalErrorPage(c, fmt.Errorf("Forum image queue failed: %v", err))
 		}
 		if partial {
 			return c.Render("components/admin/forum_images", forumImages)
@@ -353,8 +351,7 @@ func AdminIndex(c fiber.Ctx) error {
 		}
 		feedImages, err = loadAdminFeedImages(c)
 		if err != nil {
-			log.Printf("Feed image queue failed: %v", err)
-			return serveErrorPage(c, fiber.StatusInternalServerError)
+			return internalErrorPage(c, fmt.Errorf("Feed image queue failed: %v", err))
 		}
 		if partial {
 			return c.Render("components/admin/feed_images", feedImages)

@@ -119,6 +119,10 @@ func (u *User) Status() string {
 	return "Offline"
 }
 
+func (u *User) LastOnlineLabel() string {
+	return LastOnlineLabel(u.LastOnline, time.Now())
+}
+
 func (u *User) JoinedLabel() string {
 	if u.CreationDate.IsZero() {
 		return ""

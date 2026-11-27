@@ -158,6 +158,7 @@ func ProfileGet(c fiber.Ctx) error {
 		JoinedLabel: targetUser.JoinedLabel(),
 		IsOnline:    targetUser.IsOnline(),
 		Status:      targetUser.Status(),
+		LastOnline:  targetUser.LastOnlineLabel(),
 		Games:       len(profileGames),
 	}
 	for _, game := range profileGames {

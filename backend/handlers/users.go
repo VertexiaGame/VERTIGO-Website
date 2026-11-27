@@ -196,7 +196,7 @@ func UsersCardsGet(c fiber.Ctx) error {
 
 	users, totalItems, err := service.User.DiscoverUsers(query, sort, onlineOnly, usersPageSize, (page-1)*usersPageSize)
 	if err != nil {
-		log.Printf("UsersCardsGet discovery error: %v", err)
+		recordInternalError(c, err)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 

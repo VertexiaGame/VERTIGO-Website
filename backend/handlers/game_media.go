@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"os"
@@ -88,7 +89,8 @@ func AdminGameMediaQueueAPI(c fiber.Ctx) error {
 	defer gameMediaMu.Unlock()
 	entries, err := os.ReadDir(gameMediaPendingDir)
 	if err != nil && !os.IsNotExist(err) {
-		return c.SendStatus(500)
+		recordInternalError(c, err)
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	items := []fiber.Map{}
 	for _, entry := range entries {
@@ -177,21 +179,25 @@ func AdminGameMediaReviewPost(c fiber.Ctx) error {
 				dst = gameThumbPath(id, i)
 			}
 			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-				return c.SendStatus(500)
+				recordInternalError(c, err)
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 			data, err := os.ReadFile(filepath.Join(dir, fmt.Sprintf("%d.png", i)))
 			if err != nil {
-				return c.SendStatus(500)
+				recordInternalError(c, err)
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 			f, err := os.CreateTemp(filepath.Dir(dst), ".game-media-")
 			if err != nil {
-				return c.SendStatus(500)
+				recordInternalError(c, err)
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 			staged = append(staged, f.Name())
 			_, err = f.Write(data)
 			closeErr := f.Close()
 			if err != nil || closeErr != nil {
-				return c.SendStatus(500)
+				recordInternalError(c, errors.Join(err, closeErr))
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 		}
 		for i, src := range staged {
@@ -200,10 +206,12 @@ func AdminGameMediaReviewPost(c fiber.Ctx) error {
 				dst = gameThumbPath(id, i+1)
 			}
 			if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
-				return c.SendStatus(500)
+				recordInternalError(c, err)
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 			if err := os.Rename(src, dst); err != nil {
-				return c.SendStatus(500)
+				recordInternalError(c, err)
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 		}
 		if kind == "thumbs" {
@@ -213,7 +221,8 @@ func AdminGameMediaReviewPost(c fiber.Ctx) error {
 		}
 	}
 	if err := os.RemoveAll(dir); err != nil {
-		return c.SendStatus(500)
+		recordInternalError(c, err)
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	return c.JSON(fiber.Map{"success": true})
 }

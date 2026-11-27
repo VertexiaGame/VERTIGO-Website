@@ -1,0 +1,57 @@
+
+<div class="shpitm-commentwrap" id="shpitmComments" data-comments-type="{{.TargetType}}" data-comments-id="{{.TargetID}}" data-csrf="{{.CSRF}}">
+    {{if .CanPost}}
+    <div class="cmtrep shpcmt-replyto" id="shpitmReplyTo" hidden>
+        <i class="fa-solid fa-reply"></i><span>replying to</span><a href="#" id="shpitmReplyToName"></a>
+        <button type="button" class="shpcmt-replycancel" id="shpitmReplyCancel" title="Cancel reply" aria-label="Cancel reply"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form class="feedinbox shpitm-feedinbox" id="shpitmFeedBox" method="POST" action="{{.PostURL}}" hx-boost="false">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="parent_id" value="" id="shpitmCommentParent">
+        <input type="text" name="body" class="feedin" placeholder="say something cool..." id="shpitmCommentInput" autocomplete="off" maxlength="500">
+        <button type="submit" class="feedsnd" title="Post">
+            <i class="fa-solid fa-paper-plane" style="font-size: 20px !important;"></i>
+        </button>
+    </form>
+    {{else if not .IsLoggedIn}}
+    <div class="feedemt shpcmt-login"><a href="/login">Log in</a> to comment.</div>
+    {{end}}
+    <div class="feederr{{if .Error}} visible{{end}}" id="shpitmCommentError" role="status">{{.Error}}</div>
+    <div class="pstlst shpitm-pstlst" id="shpitmCommentsList">
+        {{range .Comments}}
+        <div class="pstitm" id="comment-{{.ID}}" data-comment-id="{{.ID}}" data-user-id="{{.UserID}}" data-username="{{.Username}}">
+            <div class="pstcrd">
+                <div class="pstavt"><img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.Username}}"></div>
+                <div class="psthdr"><a class="pstaut" href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true">{{.Username}}</a><span class="psttme" title="{{.FullDate}}">{{.TimeAgo}}</span></div>
+                <div class="pstact">
+                    {{if $.CanPost}}<div class="pstrpl" title="Reply" data-comment-reply="{{.ID}}"><i class="fa-solid fa-reply"></i></div>{{end}}
+                    {{if .CanDelete}}<a href="#" class="pstflg shpcmt-del" title="Remove" data-comment-remove="{{.ID}}"><i class="fa-solid fa-trash"></i></a>{{end}}
+                </div>
+                <div class="pbdy">{{.Body}}</div>
+            </div>
+            <div class="cmtnest shpcmt-nest"{{if not .Replies}} hidden{{end}}>
+                {{$parent := .}}
+                {{range .Replies}}
+                <div class="cmtitm" id="comment-{{.ID}}" data-comment-id="{{.ID}}" data-user-id="{{.UserID}}" data-username="{{.Username}}">
+                    <div class="cmtcrd">
+                        <div class="cmtavt"><img src="/api/v1/avatar/headshot/{{.UserID}}.png" onerror="this.src='/static/useful/temp/pfp.png';" alt="{{.Username}}"></div>
+                        <div class="cmthdr"><a class="cmtaut" href="/user/{{.UserID}}" hx-get="/user/{{.UserID}}" hx-target="body" hx-push-url="true">{{.Username}}</a><span class="cmttme" title="{{.FullDate}}">{{.TimeAgo}}</span></div>
+                        <div class="cmtrep"><i class="fa-solid fa-reply"></i><span>replying to</span><a href="/user/{{$parent.UserID}}" hx-get="/user/{{$parent.UserID}}" hx-target="body" hx-push-url="true">@{{$parent.Username}}</a></div>
+                        <div class="cmtact">
+                            {{if $.CanPost}}<div class="pstrpl" title="Reply" data-comment-reply="{{.ID}}"><i class="fa-solid fa-reply"></i></div>{{end}}
+                            {{if .CanDelete}}<a href="#" class="pstflg shpcmt-del" title="Remove" data-comment-remove="{{.ID}}"><i class="fa-solid fa-trash"></i></a>{{end}}
+                        </div>
+                        <div class="cmtbdy">{{.Body}}</div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        {{else}}
+        <div class="feedemt">nobody has commented yet... be the first!</div>
+        {{end}}
+    </div>
+    {{if .HasMore}}
+    <button type="button" class="primary hpyprim hpyinl hpysm shpcmt-more" id="shpitmCommentsMore" data-before="{{.LastID}}"><span>Load more comments</span></button>
+    {{end}}
+</div>

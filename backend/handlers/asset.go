@@ -374,11 +374,13 @@ func AssetUploadPost(c fiber.Ctx) error {
 
 	fileName, err := models.GenerateRandomString(24)
 	if err != nil {
+		recordInternalError(c, err)
 		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 
 	dir := filepath.Join(assetUploadDir, strconv.Itoa(user.ID))
 	if err := os.MkdirAll(dir, 0755); err != nil {
+		recordInternalError(c, err)
 		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 
@@ -386,12 +388,14 @@ func AssetUploadPost(c fiber.Ctx) error {
 	fullSavedPath := filepath.Join(assetUploadDir, relPath)
 	dst, err := os.Create(fullSavedPath)
 	if err != nil {
+		recordInternalError(c, err)
 		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 
 	if _, err := io.Copy(dst, src); err != nil {
 		dst.Close()
 		os.Remove(fullSavedPath)
+		recordInternalError(c, err)
 		return fail("Could not save upload", fiber.StatusInternalServerError)
 	}
 	dst.Close()

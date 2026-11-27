@@ -1144,7 +1144,8 @@
     flex-shrink: 0;
 }
 .feed-upload-error:not(:empty),
-.feed-composer ~ .feederr.visible {
+.feed-composer ~ .feederr.visible,
+.shpitm-commentwrap > .feederr.visible {
     display: block;
     padding: 4px 12px;
     color: var(--danger);
@@ -1157,10 +1158,12 @@
     font-size: 13px;
 }
 .feed-upload-error:empty,
-.feed-composer ~ .feederr:not(.visible) {
+.feed-composer ~ .feederr:not(.visible),
+.shpitm-commentwrap > .feederr:not(.visible) {
     display: none;
 }
-.feed-composer ~ .feederr {
+.feed-composer ~ .feederr,
+.shpitm-commentwrap > .feederr {
     position: static !important;
 }
 .tabcnt .feed-composer ~ .pstlst {
