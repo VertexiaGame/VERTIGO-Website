@@ -1,0 +1,80 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vertexia-platform",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-20",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "routes": [
+    { "pattern": "vertexia.wempos-forum.com", "custom_domain": true }
+  ],
+  "containers": [
+    {
+      "class_name": "VertexiaPlatform",
+      "image": "../Dockerfile",
+      "image_build_context": "..",
+      // Keep in sync with MAX_INSTANCES in src/index.ts.
+      "max_instances": 4,
+      // standard-1: 1/2 vCPU, 4 GiB memory, 8 GB disk.
+      "instance_type": "standard-1"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "VERTEXIA_PLATFORM", "class_name": "VertexiaPlatform" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["VertexiaPlatform"] }
+  ],
+  // Non-secret defaults. Everything here is forwarded to the container (except INSTANCE_COUNT).
+  "vars": {
+    "APP_ENV": "production",
+    "PUBLIC_BASE_URL": "https://vertexia.wempos-forum.com",
+    "RUN_WITH_DATABASE": "true",
+    "DB_TLS": "true",
+    "SESSION_SECURE": "true",
+    "SESSION_SAMESITE": "Lax",
+    // The container has no public ingress: every request comes through the
+    // Worker, which drops client X-Forwarded-* headers and sets
+    // X-Forwarded-For from CF-Connecting-IP. Trusting any source is safe.
+    "TRUST_PROXY": "true",
+    "PROXY_HEADER": "X-Forwarded-For",
+    "TRUSTED_PROXIES": "0.0.0.0/0,::/0",
+    "REDIS_REQUIRED": "true",
+    "GSM_ENABLED": "true",
+    "GSM_PUBLIC_HOST": "games.vertexia.wempos-forum.com",
+    "NETCODE_TOKEN_TTL": "60s",
+    "CLIENT_TOKEN_TTL": "24h",
+    "STUDIO_TOKEN_TTL": "168h",
+    "INSTANCE_COUNT": "2"
+  }
+  // Secrets: set each with `pnpm exec wrangler secret put <NAME>` (never commit values):
+  //   DB_USER
+  //   DB_PASS
+  //   DB_HOST
+  //   DB_PORT
+  //   DB_NAME
+  //   DB_TLS_CA_PEM
+  //   DB_TLS_SERVER_NAME
+  //   REDIS_URL
+  //   ALTCHA_HMAC_KEY
+  //   REGISTRATION_IP_SALT
+  //   GAMESERVER_API_KEY
+  //   GSM_AGENT_URL
+  //   GSM_AGENT_SECRET
+  //   NETCODE_PRIVATE_KEY
+  //   NETCODE_PROTOCOL_ID
+  //   R2_ACCOUNT_ID
+  //   R2_BUCKET
+  //   R2_ACCESS_KEY_ID
+  //   R2_SECRET_ACCESS_KEY
+  //   R2_PUBLIC_BASE_URL
+  //   TYPESAFE_API_KEY
+  //   SITELOCK_PASSWORD
+  // Any other variable listed in APP_VARS (src/index.ts) can be added to "vars" or as a secret
+  // and will be passed through to the container.
+}

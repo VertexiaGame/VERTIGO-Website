@@ -1,0 +1,42 @@
+# VCS (the fauxgl submodule itself is NOT excluded; it is needed for the go.mod replace)
+.git
+**/.git
+.gitmodules
+.github
+
+# Node / Cloudflare tooling
+node_modules
+**/node_modules
+cloudflare/node_modules
+cloudflare/.wrangler
+cloudflare/.dev.vars*
+
+# Runtime-written data
+logs
+uploads
+static/renders
+static/uploads
+assets/uploads
+*.log
+
+# Secrets
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+
+# Temp / editor / build output
+tmp
+*.tmp
+*.swp
+*~
+.DS_Store
+*.exe
+*.test
+*.out
+coverage.*
+*.coverprofile
+go.work
+go.work.sum
