@@ -19,31 +19,31 @@ import (
 )
 
 const (
-	Width          = 330
-	Height         = 330
-	ScaleFactor    = 4
-	Brightness     = 0.52
-	Roughness      = 0.6
-	CamPosX        = 2.0
-	CamPosY        = 3.8
-	CamPosZ        = 5.3
-	CamLookX       = 0.0
-	CamLookY       = 1.6
-	CamLookZ       = 0.0
-	BaseFOV        = 95.0
-	DefaultZoom    = 2.2
-	AutoZoomMargin = 1.20
+	Width             = 330
+	Height            = 330
+	ScaleFactor       = 4
+	Brightness        = 0.52
+	Roughness         = 0.6
+	CamPosX           = 2.0
+	CamPosY           = 3.8
+	CamPosZ           = 5.3
+	CamLookX          = 0.0
+	CamLookY          = 1.6
+	CamLookZ          = 0.0
+	BaseFOV           = 95.0
+	DefaultZoom       = 2.2
+	AutoZoomMargin    = 1.20
 	maxAutoZoomFactor = 1.6
 	maxFov            = 78.0
-	AssetPath      = "./assets/char/"
-	FacePath       = "./assets/faces/"
-	HeadFile       = "Head.obj"
-	TorsoFile      = "Torso.obj"
-	LArmFile       = "LeftArm.obj"
-	RArmFile       = "RightArm.obj"
-	LLegFile       = "LeftLeg.obj"
-	RLegFile       = "RightLeg.obj"
-	TShirtFile     = "TShirt.obj"
+	AssetPath         = "./assets/char/"
+	FacePath          = "./assets/faces/"
+	HeadFile          = "Head.obj"
+	TorsoFile         = "Torso.obj"
+	LArmFile          = "LeftArm.obj"
+	RArmFile          = "RightArm.obj"
+	LLegFile          = "LeftLeg.obj"
+	RLegFile          = "RightLeg.obj"
+	TShirtFile        = "TShirt.obj"
 )
 
 const (

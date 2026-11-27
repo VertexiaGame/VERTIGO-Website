@@ -8,7 +8,6 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"io"
 	"mime"
 	"slices"
 	"strconv"
@@ -61,14 +60,23 @@ func forumImageUploads(c fiber.Ctx) ([]models.ForumImageUpload, error) {
 		if err != nil {
 			return nil, errors.New("could not open image attachment")
 		}
-		content, err := io.ReadAll(reader)
+		content, err := readLimited(reader, models.ForumImageMaxBytes)
 		reader.Close()
+		if errors.Is(err, errUploadTooLarge) {
+			return nil, errors.New("each image must be 2 MB or smaller")
+		}
+		if errors.Is(err, errUploadEmpty) {
+			return nil, errors.New("attach valid PNG or JPEG images")
+		}
 		if err != nil {
 			return nil, errors.New("could not read image attachment")
 		}
 
-		config, format, err := image.DecodeConfig(bytes.NewReader(content))
-		if err != nil || (format != "jpeg" && format != "png") {
+		format, config, err := sniffImage(content, imgPNG, imgJPEG)
+		if errors.Is(err, errImageTooLarge) {
+			return nil, err
+		}
+		if err != nil {
 			return nil, errors.New("attach valid PNG or JPEG images")
 		}
 		const maxPixels = 12_000_000

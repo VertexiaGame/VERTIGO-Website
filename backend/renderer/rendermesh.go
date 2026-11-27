@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/binary"
 	"encoding/json"
@@ -15,8 +16,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/fogleman/fauxgl"
+	"vertexia-frontend/backend/storage"
 )
 
 type renderedMesh struct {
@@ -204,6 +207,9 @@ func loadGLB(path string) (*fauxgl.Mesh, error) {
 			return nil, err
 		}
 
+		if chunkHeader.Length > maxGLBChunkBytes {
+			return nil, errors.New("glb chunk too large")
+		}
 		chunkData := make([]byte, chunkHeader.Length)
 		if _, err := io.ReadFull(file, chunkData); err != nil {
 			return nil, err
@@ -330,6 +336,9 @@ func extractGLBTexture(path string) fauxgl.Texture {
 			break
 		}
 
+		if chunkHeader.Length > maxGLBChunkBytes {
+			break
+		}
 		chunkData := make([]byte, chunkHeader.Length)
 		if _, err := io.ReadFull(file, chunkData); err != nil {
 			break
@@ -364,7 +373,14 @@ func extractGLBTexture(path string) fauxgl.Texture {
 		return nil
 	}
 
+	if bv.ByteOffset < 0 || bv.ByteLength < 0 {
+		return nil
+	}
 	imgData := binBytes[bv.ByteOffset : bv.ByteOffset+bv.ByteLength]
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(imgData))
+	if err != nil || cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > maxTextureDimension || cfg.Height > maxTextureDimension {
+		return nil
+	}
 	img, _, err := image.Decode(bytes.NewReader(imgData))
 	if err != nil {
 		return nil
@@ -373,7 +389,18 @@ func extractGLBTexture(path string) fauxgl.Texture {
 	return fauxgl.NewImageTexture(img)
 }
 
-func loadMeshFile(path string) (*fauxgl.Mesh, error) {
+// maxGLBChunkBytes bounds a single GLB chunk allocation; chunk lengths come
+// from the untrusted file.
+const maxGLBChunkBytes = 64 << 20
+
+func loadMeshFile(path string) (mesh *fauxgl.Mesh, err error) {
+	// The bundled parsers index slices with values from the file and can
+	// panic on malformed uploads.
+	defer func() {
+		if r := recover(); r != nil {
+			mesh, err = nil, errors.New("invalid mesh file")
+		}
+	}()
 	ext := strings.ToLower(filepath.Ext(path))
 	if ext == ".glb" {
 		return loadGLB(path)
@@ -508,6 +535,16 @@ func RenderMeshWithTexture(filePath, texturePath string) ([]byte, error) {
 	return submitRenderJob(req, "mesh render timeout")
 }
 
+// assetMeshKey maps an assets.file_path value to its storage key under
+// uploads/assets, rejecting traversal.
+func assetMeshKey(filePath string) (string, error) {
+	key, err := storage.Key("uploads/assets", filePath)
+	if err != nil || !storage.HasPrefix(key, "uploads/assets") {
+		return "", errors.New("invalid asset path")
+	}
+	return key, nil
+}
+
 func RenderMeshAsset(db *sql.DB, assetID int) ([]byte, error) {
 	if db == nil {
 		return nil, errors.New("database is not connected")
@@ -523,6 +560,16 @@ func RenderMeshAsset(db *sql.DB, assetID int) ([]byte, error) {
 		return nil, errors.New("asset is not a mesh")
 	}
 
-	fullPath := filepath.Join("./uploads/assets", filepath.Clean(filePath))
-	return RenderMesh(fullPath)
+	key, err := assetMeshKey(filePath)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	localPath, cleanup, err := storage.LocalCopy(ctx, storage.Default(), key, 32<<20)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
+	return RenderMesh(localPath)
 }

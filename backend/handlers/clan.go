@@ -3,9 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/url"
-	"os"
-	"path"
-	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,9 +12,8 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
+	"vertexia-frontend/backend/storage"
 )
-
-const clanIconUploadDir = "./static/uploads/clans"
 
 var errClanSession = errors.New("your session expired, please log in again")
 
@@ -327,32 +324,63 @@ func clanSavePendingImage(c fiber.Ctx, field, kind string, clanID int) (string, 
 	if header == nil {
 		return "", nil
 	}
+	if field != "icon" && field != "banner" {
+		return "", errors.New("could not save upload")
+	}
 	if err := checkGameUploadImage(header, kind); err != nil {
 		return "", err
 	}
-	if err := os.MkdirAll(clanIconUploadDir, 0755); err != nil {
+	name := strconv.Itoa(clanID) + "_" + field + "_" + strconv.FormatInt(time.Now().UnixNano(), 36) + ".png"
+	key, err := clanMediaKeyForName(name)
+	if err != nil {
 		return "", errors.New("could not save upload")
 	}
-	name := strconv.Itoa(clanID) + "_" + field + "_" + strconv.FormatInt(time.Now().UnixNano(), 36) + ".png"
-	if err := saveGameUploadImage(header, kind, filepath.Join(clanIconUploadDir, name)); err != nil {
+	if err := saveGameUploadImage(header, kind, key); err != nil {
 		return "", err
 	}
 	return "/static/uploads/clans/" + name + "?v=" + strconv.FormatInt(time.Now().Unix(), 10), nil
 }
 
+// clanMediaName matches the file names clanSavePendingImage generates.
+var clanMediaName = regexp.MustCompile(`^[0-9]{1,10}_(icon|banner)_[0-9a-z]{1,16}\.png$`)
+
+func clanMediaKeyForName(name string) (string, error) {
+	if !clanMediaName.MatchString(name) {
+		return "", storage.ErrInvalidKey
+	}
+	return storage.Key(keyClanMedia, name)
+}
+
+// clanMediaFilePath maps a stored clan media URL back to its storage key. Only
+// URLs that point at a generated name under /static/uploads/clans/ map to a
+// key; anything else (including traversal attempts) yields "".
 func clanMediaFilePath(url string) string {
 	u := strings.TrimSpace(url)
 	if u == "" {
 		return ""
 	}
-	if i := strings.IndexByte(u, '?'); i >= 0 {
+	if i := strings.IndexAny(u, "?#"); i >= 0 {
 		u = u[:i]
 	}
-	name := path.Base(u)
-	if name == "" || name == "." || name == "/" {
+	name, ok := strings.CutPrefix(u, "/static/uploads/clans/")
+	if !ok {
 		return ""
 	}
-	return filepath.Join(clanIconUploadDir, name)
+	key, err := clanMediaKeyForName(name)
+	if err != nil {
+		return ""
+	}
+	return key
+}
+
+func removeClanMedia(url string) {
+	key := clanMediaFilePath(url)
+	if key == "" {
+		return
+	}
+	ctx, cancel := bgStoreCtx()
+	defer cancel()
+	_ = storage.Default().Delete(ctx, key)
 }
 
 func clanApprovalOnly(raw string) bool {
@@ -483,9 +511,7 @@ func ClanUpdatePost(c fiber.Ctx) error {
 
 	if c.FormValue("clear_icon") == "1" {
 		_ = service.Clan.SetClanIcon(clanID, user.ID, user.HasAdminAccess(), "")
-		if p := clanMediaFilePath(clan.Icon); p != "" {
-			os.Remove(p)
-		}
+		removeClanMedia(clan.Icon)
 	} else if iconURL, ierr := clanSavePendingImage(c, "icon", "Clan icon", clanID); ierr != nil {
 		return fail(ierr.Error(), fiber.StatusBadRequest)
 	} else if iconURL != "" {
@@ -1025,9 +1051,7 @@ func AdminClanMediaReviewPost(c fiber.Ctx) error {
 	if err != nil {
 		return adminModerationError(c, err.Error())
 	}
-	if p := clanMediaFilePath(removed); p != "" {
-		_ = os.Remove(p)
-	}
+	removeClanMedia(removed)
 
 	if c.Get("Accept") == "application/json" || c.Get("X-Requested-With") == "XMLHttpRequest" || strings.HasPrefix(c.Path(), "/api/") {
 		return c.JSON(fiber.Map{

@@ -1,16 +1,18 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"html"
-	"os"
-	"path/filepath"
+	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/repository"
+	"vertexia-frontend/backend/storage"
 )
 
 type AvatarService struct {
@@ -25,17 +27,29 @@ func NewAvatarService(avatarRepo *repository.AvatarRepository, userRepo *reposit
 	}
 }
 
+// AvatarFullPath returns the storage key of a user's cached full-body render.
 func AvatarFullPath(userID int) string {
-	return filepath.Join("uploads", "av", strconv.Itoa(userID)+".png")
+	return "uploads/av/" + strconv.Itoa(userID) + ".png"
 }
 
+// AvatarHeadPath returns the storage key of a user's cached headshot render.
 func AvatarHeadPath(userID int) string {
-	return filepath.Join("uploads", "av", strconv.Itoa(userID)+"_head.png")
+	return "uploads/av/" + strconv.Itoa(userID) + "_head.png"
+}
+
+func avatarDeleteStored(keys ...string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	store := storage.Default()
+	for _, key := range keys {
+		if err := store.Delete(ctx, key); err != nil {
+			log.Printf("storage: delete %s: %v", key, err)
+		}
+	}
 }
 
 func (s *AvatarService) InvalidateRenderCache(userID int) {
-	_ = os.Remove(AvatarFullPath(userID))
-	_ = os.Remove(AvatarHeadPath(userID))
+	avatarDeleteStored(AvatarFullPath(userID), AvatarHeadPath(userID))
 }
 
 func (s *AvatarService) GetAvatar(userID int) (*models.Avatar, error) {
@@ -134,7 +148,7 @@ func (s *AvatarService) DeleteOutfit(userID, outfitID int) error {
 	}
 	err := s.avatarRepo.DeleteOutfit(userID, outfitID)
 	if err == nil {
-		_ = os.Remove(filepath.Join("static", "renders", "outfits", fmt.Sprintf("%d.png", outfitID)))
+		avatarDeleteStored(fmt.Sprintf("static/renders/outfits/%d.png", outfitID))
 	}
 	return err
 }

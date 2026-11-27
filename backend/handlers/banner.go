@@ -1,17 +1,22 @@
 package handlers
 
 import (
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
+	"vertexia-frontend/backend/storage"
 )
 
 func bannerRemoveImageFile(id int) {
-	_ = os.Remove(models.BannerImagePath(id))
+	if id <= 0 {
+		return
+	}
+	ctx, cancel := bgStoreCtx()
+	defer cancel()
+	_ = storage.Default().Delete(ctx, models.BannerImageKey(id))
 }
 
 func SettingsBannerPost(c fiber.Ctx) error {
@@ -25,6 +30,7 @@ func SettingsBannerPost(c fiber.Ctx) error {
 	colorB := models.NormalizeBannerHex(c.FormValue("color_b"), "912ADF")
 	angle := models.NormalizeBannerAngle(c.FormValue("angle"), 135)
 
+	var bannerPNG []byte
 	if bannerType == models.BannerTypeImage {
 		header, ferr := c.FormFile("image")
 		if ferr != nil || header == nil || header.Size <= 0 {
@@ -33,6 +39,11 @@ func SettingsBannerPost(c fiber.Ctx) error {
 		if verr := checkGameUploadImage(header, "Banner"); verr != nil {
 			return handleSettingsResponse(c, verr, "", nil)
 		}
+		encoded, perr := prepareUploadPNG(header, "Banner")
+		if perr != nil {
+			return handleSettingsResponse(c, fiber.NewError(fiber.StatusBadRequest, perr.Error()), "", nil)
+		}
+		bannerPNG = encoded
 	}
 
 	if service.Banner == nil {
@@ -73,28 +84,14 @@ func SettingsBannerPost(c fiber.Ctx) error {
 	}
 
 	if bannerType == models.BannerTypeImage {
-		header, ferr := c.FormFile("image")
-		if ferr != nil || header == nil {
-			_ = service.Banner.DeleteBanner(bannerID)
-			return handleSettingsResponse(c, fiber.NewError(fiber.StatusBadRequest, "Please choose an image to upload"), "", nil)
-		}
-		src, ferr := header.Open()
-		if ferr != nil {
-			_ = service.Banner.DeleteBanner(bannerID)
-			return handleSettingsResponse(c, fiber.NewError(fiber.StatusBadRequest, "Could not read banner"), "", nil)
-		}
-		defer src.Close()
-		if merr := os.MkdirAll(models.BannerImageUploadDir, 0755); merr != nil {
-			_ = service.Banner.DeleteBanner(bannerID)
-			return handleSettingsResponse(c, fiber.NewError(fiber.StatusInternalServerError, "Could not save upload"), "", nil)
-		}
-		if serr := saveShopItemImage(src, models.BannerImagePath(bannerID)); serr != nil {
+		ctx, cancel := storeCtx(c)
+		serr := storage.PutBytes(ctx, storage.Default(), models.BannerImageKey(bannerID), bannerPNG, "image/png")
+		cancel()
+		if serr != nil {
 			_ = service.Banner.DeleteBanner(bannerID)
 			bannerRemoveImageFile(bannerID)
-			if serr.Error() == "invalid image file" {
-				return handleSettingsResponse(c, fiber.NewError(fiber.StatusBadRequest, "Banner must be a PNG or JPEG image"), "", nil)
-			}
-			return handleSettingsResponse(c, fiber.NewError(fiber.StatusBadRequest, "Could not save upload"), "", nil)
+			recordInternalError(c, serr)
+			return handleSettingsResponse(c, fiber.NewError(fiber.StatusInternalServerError, "Could not save upload"), "", nil)
 		}
 	}
 

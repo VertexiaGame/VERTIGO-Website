@@ -2,7 +2,10 @@ package renderer
 
 import (
 	"container/list"
+	"context"
+	"errors"
 	"fmt"
+	"image"
 	"io"
 	"log"
 	"net/http"
@@ -14,6 +17,7 @@ import (
 	"time"
 
 	"github.com/fogleman/fauxgl"
+	"vertexia-frontend/backend/storage"
 )
 
 var (
@@ -77,19 +81,57 @@ func fileStatKey(path string) string {
 	return path + "|" + strconv.FormatInt(fi.ModTime().UnixNano(), 10) + "|" + strconv.FormatInt(fi.Size(), 10)
 }
 
+// maxTextureDimension caps decoded texture sizes so a small compressed file
+// cannot expand into gigabytes of pixels.
+const maxTextureDimension = 8192
+
+// loadTextureFile decodes an image after checking its header dimensions.
+func loadTextureFile(path string) (fauxgl.Texture, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	cfg, _, err := image.DecodeConfig(f)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > maxTextureDimension || cfg.Height > maxTextureDimension {
+		return nil, fmt.Errorf("texture dimensions %dx%d out of range", cfg.Width, cfg.Height)
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	im, _, err := image.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+	return fauxgl.NewImageTexture(im), nil
+}
+
+// loadOBJ parses an OBJ file; the parser panics on some malformed input.
+func loadOBJ(path string) (mesh *fauxgl.Mesh, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			mesh, err = nil, fmt.Errorf("invalid mesh %s", filepath.Base(path))
+		}
+	}()
+	return fauxgl.LoadOBJ(path)
+}
+
 func loadTextureCached(path string) (fauxgl.Texture, error) {
 	if key := fileStatKey(path); key != "" {
 		if tex, ok := texLRU.get(key); ok {
 			return tex, nil
 		}
-		tex, err := fauxgl.LoadTexture(path)
+		tex, err := loadTextureFile(path)
 		if err != nil {
 			return nil, err
 		}
 		texLRU.add(key, tex)
 		return tex, nil
 	}
-	return fauxgl.LoadTexture(path)
+	return loadTextureFile(path)
 }
 
 func loadMeshCached(path string) (*fauxgl.Mesh, error) {
@@ -97,7 +139,7 @@ func loadMeshCached(path string) (*fauxgl.Mesh, error) {
 		if mesh, ok := objLRU.get(key); ok {
 			return mesh, nil
 		}
-		mesh, err := fauxgl.LoadOBJ(path)
+		mesh, err := loadOBJ(path)
 		if err != nil || mesh == nil || len(mesh.Triangles) == 0 {
 			if err == nil {
 				err = fmt.Errorf("empty mesh: %s", path)
@@ -107,7 +149,7 @@ func loadMeshCached(path string) (*fauxgl.Mesh, error) {
 		objLRU.add(key, mesh)
 		return mesh, nil
 	}
-	mesh, err := fauxgl.LoadOBJ(path)
+	mesh, err := loadOBJ(path)
 	if err != nil || mesh == nil || len(mesh.Triangles) == 0 {
 		if err == nil {
 			err = fmt.Errorf("empty mesh: %s", path)
@@ -215,6 +257,57 @@ func downloadFile(url string, dest string) error {
 	return err
 }
 
+// shopItemTypes is the allowlist of shop item directories. Item types reach
+// file paths, so anything else is rejected.
+var shopItemTypes = map[string]bool{"hat": true, "faces": true, "shirts": true, "tshirts": true, "pants": true, "gear": true}
+
+const (
+	maxShopTextureBytes = 64 << 20
+	maxShopMeshBytes    = 32 << 20
+)
+
+func cleanShopType(itemType string) (string, bool) {
+	t := strings.ToLower(strings.TrimSpace(itemType))
+	return t, shopItemTypes[t]
+}
+
+// shopStoreKeys lists the storage keys an uploaded shop file may live under:
+// assets/uploads/shop is current, the others are legacy locations.
+func shopStoreKeys(itemType string, id int, ext string) []string {
+	name := strconv.Itoa(id) + ext
+	var keys []string
+	for _, prefix := range []string{"assets/uploads/shop", "static/uploads/shop", "uploads/shop"} {
+		if k, err := storage.Key(prefix, itemType, name); err == nil {
+			keys = append(keys, k)
+		}
+	}
+	return keys
+}
+
+// localShopFile resolves a shop file to a local path: bundled read-only files
+// under assets/shop first, then the object store (downloaded and cached on
+// local disk when the store is remote).
+func localShopFile(itemType string, id int, ext string, limit int64) string {
+	for _, p := range expandCandidates([]string{filepath.Join("assets", "shop", itemType, strconv.Itoa(id)+ext)}) {
+		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() {
+			return p
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	store := storage.Default()
+	for _, key := range shopStoreKeys(itemType, id, ext) {
+		p, err := storage.CachedLocalPath(ctx, store, key, limit)
+		if err == nil {
+			return p
+		}
+		if !errors.Is(err, storage.ErrNotFound) {
+			log.Printf("renderer: fetch %s: %v", key, err)
+		}
+	}
+	return ""
+}
+
 func fetchTexture(itemType string, id int, fallback string) (fauxgl.Texture, error) {
 	if id <= 0 {
 		if fallback != "" {
@@ -222,20 +315,17 @@ func fetchTexture(itemType string, id int, fallback string) (fauxgl.Texture, err
 		}
 		return nil, fmt.Errorf("invalid id")
 	}
-	cleanType := strings.ToLower(filepath.Base(strings.TrimSpace(itemType)))
+	cleanType, ok := cleanShopType(itemType)
+	if !ok {
+		if fallback != "" {
+			return loadTextureCached(fallback)
+		}
+		return nil, fmt.Errorf("invalid item type")
+	}
 
-	localCandidates := expandCandidates([]string{
-		filepath.Join("assets", "uploads", "shop", cleanType, fmt.Sprintf("%d.png", id)),
-		filepath.Join("assets", "shop", cleanType, fmt.Sprintf("%d.png", id)),
-		filepath.Join("static", "uploads", "shop", cleanType, fmt.Sprintf("%d.png", id)),
-		filepath.Join("uploads", "shop", cleanType, fmt.Sprintf("%d.png", id)),
-	})
-
-	for _, localPath := range localCandidates {
-		if _, err := os.Stat(localPath); err == nil {
-			if tex, err := loadTextureCached(localPath); err == nil {
-				return tex, nil
-			}
+	if localPath := localShopFile(cleanType, id, ".png", maxShopTextureBytes); localPath != "" {
+		if tex, err := loadTextureCached(localPath); err == nil {
+			return tex, nil
 		}
 	}
 
@@ -269,20 +359,14 @@ func fetchMesh(itemType string, id int) (*fauxgl.Mesh, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid id")
 	}
-	cleanType := strings.ToLower(filepath.Base(strings.TrimSpace(itemType)))
+	cleanType, ok := cleanShopType(itemType)
+	if !ok {
+		return nil, fmt.Errorf("invalid item type")
+	}
 
-	localCandidates := expandCandidates([]string{
-		filepath.Join("assets", "uploads", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
-		filepath.Join("assets", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
-		filepath.Join("static", "uploads", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
-		filepath.Join("uploads", "shop", cleanType, fmt.Sprintf("%d.obj", id)),
-	})
-
-	for _, localPath := range localCandidates {
-		if _, err := os.Stat(localPath); err == nil {
-			if mesh, err := loadMeshCached(localPath); err == nil && mesh != nil {
-				return mesh, nil
-			}
+	if localPath := localShopFile(cleanType, id, ".obj", maxShopMeshBytes); localPath != "" {
+		if mesh, err := loadMeshCached(localPath); err == nil && mesh != nil {
+			return mesh, nil
 		}
 	}
 

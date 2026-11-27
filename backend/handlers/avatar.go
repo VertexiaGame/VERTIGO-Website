@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -12,6 +10,7 @@ import (
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/renderer"
 	"vertexia-frontend/backend/service"
+	"vertexia-frontend/backend/storage"
 )
 
 func setAvatarNoCache(c fiber.Ctx) {
@@ -26,17 +25,20 @@ func refreshAvatarRendersAsync(userID int) {
 		service.Avatar.InvalidateRenderCache(userID)
 	}
 	go func() {
-		fullPath := service.AvatarFullPath(userID)
-		headPath := service.AvatarHeadPath(userID)
-		_ = os.MkdirAll(filepath.Dir(fullPath), 0755)
+		ctx, cancel := bgStoreCtx()
+		defer cancel()
+		store := storage.Default()
 		if imgBytes, err := renderer.RenderUser(database.DB, userID); err == nil && len(imgBytes) > 0 {
-			_ = os.WriteFile(fullPath, imgBytes, 0644)
+			_ = storage.PutBytes(ctx, store, service.AvatarFullPath(userID), imgBytes, "image/png")
 		}
 		if imgBytes, err := renderer.RenderUserHeadshot(database.DB, userID); err == nil && len(imgBytes) > 0 {
-			_ = os.WriteFile(headPath, imgBytes, 0644)
+			_ = storage.PutBytes(ctx, store, service.AvatarHeadPath(userID), imgBytes, "image/png")
 		}
 	}()
 }
+
+// maxRenderCacheBytes bounds reads of cached render PNGs.
+const maxRenderCacheBytes = 16 << 20
 
 func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 	idParam := strings.TrimSuffix(c.Params("id"), ".png")
@@ -54,19 +56,20 @@ func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Database offline")
 	}
 
-	cachePathFull := service.AvatarFullPath(userID)
-	cachePathHead := service.AvatarHeadPath(userID)
+	cacheKeyFull := service.AvatarFullPath(userID)
+	cacheKeyHead := service.AvatarHeadPath(userID)
 
-	targetCache := cachePathFull
+	targetCache := cacheKeyFull
 	if isHeadshot {
-		targetCache = cachePathHead
+		targetCache = cacheKeyHead
 	}
 
-	if fi, err := os.Stat(targetCache); err == nil && fi.Size() > 0 {
-		if imgBytes, err := os.ReadFile(targetCache); err == nil && len(imgBytes) > 0 {
-			setAvatarNoCache(c)
-			return c.Send(imgBytes)
-		}
+	store := storage.Default()
+	ctx, cancel := storeCtx(c)
+	defer cancel()
+	if imgBytes, err := storage.GetBytes(ctx, store, targetCache, maxRenderCacheBytes); err == nil && len(imgBytes) > 0 {
+		setAvatarNoCache(c)
+		return c.Send(imgBytes)
 	}
 
 	imgBytesFull, err := renderer.RenderUser(database.DB, userID)
@@ -79,10 +82,8 @@ func serveAvatar(c fiber.Ctx, isHeadshot bool) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	_ = os.MkdirAll(filepath.Dir(cachePathFull), 0755)
-	_ = os.MkdirAll(filepath.Dir(cachePathHead), 0755)
-	_ = os.WriteFile(cachePathFull, imgBytesFull, 0644)
-	_ = os.WriteFile(cachePathHead, imgBytesHead, 0644)
+	_ = storage.PutBytes(ctx, store, cacheKeyFull, imgBytesFull, "image/png")
+	_ = storage.PutBytes(ctx, store, cacheKeyHead, imgBytesHead, "image/png")
 
 	setAvatarNoCache(c)
 	if isHeadshot {
@@ -99,85 +100,75 @@ func AvatarHeadshotGet(c fiber.Ctx) error {
 	return serveAvatar(c, true)
 }
 
-func ShopRenderGet(c fiber.Ctx) error {
-	rawType := c.Params("type")
-	normType, _ := models.NormalizeShopCategory(rawType)
-	if normType == "all" {
-		normType = strings.ToLower(filepath.Base(strings.TrimSpace(rawType)))
+// shopRenderType maps a route type to an allowlisted shop directory.
+func shopRenderType(raw string) (string, bool) {
+	normType, _ := models.NormalizeShopCategory(raw)
+	if !shopItemTypes[normType] {
+		return "", false
 	}
-	if normType == "" || normType == "." || normType == ".." || strings.ContainsAny(normType, "/\\") {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid item type")
+	return normType, true
+}
+
+// serveCachedRender returns the PNG at key, or renders, stores and returns it.
+func serveCachedRender(c fiber.Ctx, key string, render func() ([]byte, error)) error {
+	store := storage.Default()
+	ctx, cancel := storeCtx(c)
+	defer cancel()
+	if imgBytes, err := storage.GetBytes(ctx, store, key, maxRenderCacheBytes); err == nil && len(imgBytes) > 0 {
+		c.Set("Content-Type", "image/png")
+		c.Set("Cache-Control", "public, max-age=86400")
+		c.Set("X-Content-Type-Options", "nosniff")
+		return c.Send(imgBytes)
 	}
 
-	idParam := strings.TrimSuffix(c.Params("id"), ".png")
-	itemID, err := strconv.Atoi(idParam)
-	if err != nil || itemID <= 0 {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid item ID")
-	}
-
-	cachePath := filepath.Join("static", "renders", "shop", normType, idParam+".png")
-	if fi, err := os.Stat(cachePath); err == nil && fi.Size() > 0 {
-		if imgBytes, err := os.ReadFile(cachePath); err == nil && len(imgBytes) > 0 {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=86400")
-			return c.Send(imgBytes)
-		}
-	}
-
-	imgBytes, err := renderer.RenderShopItem(normType, itemID)
+	imgBytes, err := render()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
 	if len(imgBytes) > 0 {
-		_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
-		tmpPath := cachePath + ".tmp"
-		if err := os.WriteFile(tmpPath, imgBytes, 0644); err == nil {
-			_ = os.Rename(tmpPath, cachePath)
-		} else {
-			_ = os.Remove(tmpPath)
-		}
+		_ = storage.PutBytes(ctx, store, key, imgBytes, "image/png")
 	}
 
 	c.Set("Content-Type", "image/png")
 	c.Set("Cache-Control", "public, max-age=86400")
+	c.Set("X-Content-Type-Options", "nosniff")
 	return c.Send(imgBytes)
 }
 
+func ShopRenderGet(c fiber.Ctx) error {
+	normType, ok := shopRenderType(c.Params("type"))
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid item type")
+	}
+
+	itemID, ok := parseStrictID(c.Params("id"), ".png")
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid item ID")
+	}
+
+	key, err := storage.Key(keyShopRenders, normType, strconv.Itoa(itemID)+".png")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid item")
+	}
+	return serveCachedRender(c, key, func() ([]byte, error) {
+		return renderer.RenderShopItem(normType, itemID)
+	})
+}
+
 func AvatarOutfitGet(c fiber.Ctx) error {
-	idParam := strings.TrimSuffix(c.Params("id"), ".png")
-	outfitID, err := strconv.Atoi(idParam)
-	if err != nil || outfitID <= 0 {
+	outfitID, ok := parseStrictID(c.Params("id"), ".png")
+	if !ok {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid outfit ID")
 	}
 
-	cachePath := filepath.Join("static", "renders", "outfits", idParam+".png")
-	if fi, err := os.Stat(cachePath); err == nil && fi.Size() > 0 {
-		if imgBytes, err := os.ReadFile(cachePath); err == nil && len(imgBytes) > 0 {
-			c.Set("Content-Type", "image/png")
-			c.Set("Cache-Control", "public, max-age=86400")
-			return c.Send(imgBytes)
-		}
-	}
-
-	imgBytes, err := renderer.RenderOutfit(database.DB, outfitID)
+	key, err := storage.Key(keyOutfitRenders, strconv.Itoa(outfitID)+".png")
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid outfit ID")
 	}
-
-	if len(imgBytes) > 0 {
-		_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
-		tmpPath := cachePath + ".tmp"
-		if err := os.WriteFile(tmpPath, imgBytes, 0644); err == nil {
-			_ = os.Rename(tmpPath, cachePath)
-		} else {
-			_ = os.Remove(tmpPath)
-		}
-	}
-
-	c.Set("Content-Type", "image/png")
-	c.Set("Cache-Control", "public, max-age=86400")
-	return c.Send(imgBytes)
+	return serveCachedRender(c, key, func() ([]byte, error) {
+		return renderer.RenderOutfit(database.DB, outfitID)
+	})
 }
 
 func AvatarDataGet(c fiber.Ctx) error {
@@ -274,13 +265,13 @@ func AvatarEditorPage(c fiber.Ctx) error {
 	}
 
 	return Render(c, "pages/avatar", fiber.Map{
-		"Title":      "Avatar Editor - VERTEXIA",
-		"User":       user,
-		"Avatar":     avatarData,
-		"Inventory":  inventory,
-		"Equipped":   equipped,
-		"Outfits":    outfits,
-		"ActiveCat":  "all",
+		"Title":     "Avatar Editor - VERTEXIA",
+		"User":      user,
+		"Avatar":    avatarData,
+		"Inventory": inventory,
+		"Equipped":  equipped,
+		"Outfits":   outfits,
+		"ActiveCat": "all",
 	}, "layouts/main")
 }
 

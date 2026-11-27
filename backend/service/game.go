@@ -232,8 +232,6 @@ func (s *GameService) DeleteGame(id int) error {
 	return s.gameRepo.Delete(id)
 }
 
-
-
 func (s *GameService) GetPopularGames(limit int) ([]*models.Game, error) {
 	return s.gameRepo.GetPopularGames(limit)
 }

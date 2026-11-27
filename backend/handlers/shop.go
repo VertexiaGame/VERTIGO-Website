@@ -2,10 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"image"
-	_ "image/jpeg"
-	"image/png"
-	"io"
 	"log"
 	"net/url"
 	"os"
@@ -18,10 +14,10 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
+	"vertexia-frontend/backend/storage"
 )
 
 const (
-	shopItemUploadDir         = "./assets/uploads/shop"
 	shopItemMaxImageBytes     = 8 << 20
 	shopItemMaxModelBytes     = 25 << 20
 	shopItemMaxModelTriangles = 8192
@@ -340,20 +336,24 @@ func ShopPurchasePost(c fiber.Ctx) error {
 	return ShopPurchaseAPI(c)
 }
 
-func saveShopItemImage(src io.Reader, dstPath string) error {
-	img, _, err := image.Decode(src)
-	if err != nil {
-		return errors.New("invalid image file")
+// shopItemKey returns the storage key for a shop item file. itemType must be
+// an allowlisted category and the name derives from the item id.
+func shopItemKey(itemType string, itemID int, ext string) (string, error) {
+	if !shopItemTypes[itemType] || itemID <= 0 || (ext != ".png" && ext != ".obj") {
+		return "", storage.ErrInvalidKey
 	}
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		return errors.New("could not save upload")
-	}
-	defer dst.Close()
-	if err := png.Encode(dst, img); err != nil {
-		return errors.New("could not save upload")
-	}
-	return nil
+	return storage.Key(keyShopUploads, itemType, strconv.Itoa(itemID)+ext)
+}
+
+// loadOBJSafely parses an untrusted OBJ file; the parser panics on some
+// malformed input.
+func loadOBJSafely(path string) (mesh *fauxgl.Mesh, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			mesh, err = nil, errors.New("invalid model")
+		}
+	}()
+	return fauxgl.LoadOBJ(path)
 }
 
 func ShopItemCreatePost(c fiber.Ctx) error {
@@ -463,22 +463,24 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 		return fail(err.Error(), fiber.StatusBadRequest)
 	}
 
-	var savedPaths []string
+	store := storage.Default()
+	ctx, cancel := storeCtx(c)
+	defer cancel()
+	var savedKeys []string
 	cleanup := func() {
-		for _, path := range savedPaths {
-			os.Remove(path)
+		dctx, dcancel := bgStoreCtx()
+		defer dcancel()
+		for _, key := range savedKeys {
+			_ = store.Delete(dctx, key)
 		}
 		_ = service.Shop.DeleteItem(user.ID, itemID)
 	}
 
-	dir := filepath.Join(shopItemUploadDir, filepath.Base(itemType))
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	imageKey, err := shopItemKey(itemType, itemID, ".png")
+	if err != nil {
 		cleanup()
-		recordInternalError(c, err)
-		return fail("Could not save upload", fiber.StatusInternalServerError)
+		return fail("Invalid item category", fiber.StatusBadRequest)
 	}
-
-	imagePath := filepath.Join(dir, strconv.Itoa(itemID)+".png")
 	saveImageField := func(field, kind string) error {
 		header, err := c.FormFile(field)
 		if err != nil {
@@ -491,18 +493,24 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 		if header.Size <= 0 {
 			return errors.New("empty " + kind + " file")
 		}
-		if header.Size > shopItemMaxImageBytes {
-			return errors.New(kind + " file is too large")
-		}
-		src, err := header.Open()
+		data, err := readUpload(header, shopItemMaxImageBytes)
 		if err != nil {
+			if errors.Is(err, errUploadTooLarge) {
+				return errors.New(kind + " file is too large")
+			}
 			return errors.New("could not read " + kind)
 		}
-		defer src.Close()
-		if err := saveShopItemImage(src, imagePath); err != nil {
-			return err
+		encoded, err := reencodePNG(data)
+		if err != nil {
+			if errors.Is(err, errImageTooLarge) {
+				return errors.New(kind + " dimensions are too large (max 8192x8192)")
+			}
+			return errors.New("invalid image file")
 		}
-		savedPaths = append(savedPaths, imagePath)
+		if err := storage.PutBytes(ctx, store, imageKey, encoded, "image/png"); err != nil {
+			return errors.New("could not save upload")
+		}
+		savedKeys = append(savedKeys, imageKey)
 		return nil
 	}
 
@@ -520,41 +528,40 @@ func ShopItemCreatePost(c fiber.Ctx) error {
 			cleanup()
 			return fail("Empty 3D model file", fiber.StatusBadRequest)
 		}
-		if modelHeader.Size > shopItemMaxModelBytes {
-			cleanup()
-			return fail("3D model file is too large", fiber.StatusBadRequest)
-		}
-		modelSrc, err := modelHeader.Open()
+		modelData, err := readUpload(modelHeader, shopItemMaxModelBytes)
 		if err != nil {
 			cleanup()
+			if errors.Is(err, errUploadTooLarge) {
+				return fail("3D model file is too large", fiber.StatusBadRequest)
+			}
 			return fail("Could not read 3D model", fiber.StatusBadRequest)
 		}
-		modelPath := filepath.Join(dir, strconv.Itoa(itemID)+".obj")
-		modelDst, err := os.Create(modelPath)
+		modelKey, err := shopItemKey(itemType, itemID, ".obj")
 		if err != nil {
-			modelSrc.Close()
+			cleanup()
+			return fail("Invalid item category", fiber.StatusBadRequest)
+		}
+		modelTmp, err := writeTempFile("shop-model-*.obj", modelData)
+		if err != nil {
 			cleanup()
 			recordInternalError(c, err)
 			return fail("Could not save upload", fiber.StatusInternalServerError)
 		}
-		if _, err := io.Copy(modelDst, modelSrc); err != nil {
-			modelSrc.Close()
-			modelDst.Close()
-			cleanup()
-			recordInternalError(c, err)
-			return fail("Could not save upload", fiber.StatusInternalServerError)
-		}
-		modelSrc.Close()
-		modelDst.Close()
-		savedPaths = append(savedPaths, modelPath)
-
-		if mesh, err := fauxgl.LoadOBJ(modelPath); err != nil || mesh == nil || len(mesh.Triangles) == 0 {
+		mesh, err := loadOBJSafely(modelTmp)
+		os.Remove(modelTmp)
+		if err != nil || mesh == nil || len(mesh.Triangles) == 0 {
 			cleanup()
 			return fail("Invalid 3D model file", fiber.StatusBadRequest)
 		} else if len(mesh.Triangles) > shopItemMaxModelTriangles {
 			cleanup()
 			return fail("3D model has too many triangles (max 8192)", fiber.StatusBadRequest)
 		}
+		if err := storage.PutBytes(ctx, store, modelKey, modelData, "text/plain; charset=utf-8"); err != nil {
+			cleanup()
+			recordInternalError(c, err)
+			return fail("Could not save upload", fiber.StatusInternalServerError)
+		}
+		savedKeys = append(savedKeys, modelKey)
 
 		if err := saveImageField("file", "texture"); err != nil {
 			cleanup()

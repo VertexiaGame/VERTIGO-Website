@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"html/template"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,7 +29,8 @@ const (
 	BannerEffectDrift  = "drift"
 )
 
-const BannerImageUploadDir = "./static/uploads/banners"
+// BannerImageKeyPrefix is the storage key prefix of uploaded banner images.
+const BannerImageKeyPrefix = "static/uploads/banners"
 
 type Banner struct {
 	ID        int       `json:"id"`
@@ -132,8 +132,10 @@ func BannerImageURL(id int) string {
 	return "/static/uploads/banners/" + strconv.Itoa(id) + ".png"
 }
 
-func BannerImagePath(id int) string {
-	return filepath.Join(BannerImageUploadDir, strconv.Itoa(id)+".png")
+// BannerImageKey returns the storage key of a banner image. Keys derive from
+// the banner id only.
+func BannerImageKey(id int) string {
+	return BannerImageKeyPrefix + "/" + strconv.Itoa(id) + ".png"
 }
 
 func (b *Banner) TypeName() string {
