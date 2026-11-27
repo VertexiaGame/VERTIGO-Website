@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -225,43 +224,6 @@ func (u *User) ParsedSocials() []SocialLink {
 		}
 	}
 	return result
-}
-
-type ReplayCache struct {
-	mu     sync.RWMutex
-	nonces map[string]time.Time
-}
-
-func NewReplayCache() *ReplayCache {
-	rc := &ReplayCache{
-		nonces: make(map[string]time.Time),
-	}
-	go rc.cleanupLoop()
-	return rc
-}
-
-func (rc *ReplayCache) Add(nonce string, expiry time.Time) bool {
-	rc.mu.Lock()
-	defer rc.mu.Unlock()
-	if _, exists := rc.nonces[nonce]; exists {
-		return false
-	}
-	rc.nonces[nonce] = expiry
-	return true
-}
-
-func (rc *ReplayCache) cleanupLoop() {
-	ticker := time.NewTicker(1 * time.Minute)
-	for range ticker.C {
-		rc.mu.Lock()
-		now := time.Now()
-		for nonce, expiry := range rc.nonces {
-			if now.After(expiry) {
-				delete(rc.nonces, nonce)
-			}
-		}
-		rc.mu.Unlock()
-	}
 }
 
 func GenerateRandomString(length int) (string, error) {

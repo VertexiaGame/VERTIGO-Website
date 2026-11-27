@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,9 +12,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/config"
+	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
 	"vertexia-frontend/backend/service/gsm"
 )
@@ -84,57 +87,77 @@ func toGSView(s gsm.GameServer) gsView {
 	return v
 }
 
-func gsmJoinError(c fiber.Ctx, err error) error {
-	switch {
-	case errors.Is(err, gsm.ErrGameMissing), errors.Is(err, gsm.ErrGameClosed):
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Game not found"})
-	case errors.Is(err, gsm.ErrNoCapacity):
-		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "All gameservers are full right now. Please try again shortly."})
-	case errors.Is(err, gsm.ErrLaunch):
-		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Could not launch a gameserver. Please try again shortly."})
-	case errors.Is(err, gsm.ErrUnavailable):
-		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Gameservers are currently unavailable"})
-	default:
-		recordInternalError(c, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not join game"})
+// clientLaunchURI is the vertexia-client:// deep link the website opens. It
+// carries only short-lived, server-specific credentials (the netcode connect
+// token) and a one-time code the client can exchange at /api/v1/auth/exchange
+// for its own access token. It never carries the account Unikey.
+func clientLaunchURI(gameID int, ticket joinTicket, code string) string {
+	q := url.Values{}
+	q.Set("game_id", strconv.Itoa(gameID))
+	q.Set("server_id", ticket.ServerID)
+	q.Set("host", ticket.Host)
+	q.Set("ip", ticket.Host)
+	q.Set("port", strconv.Itoa(ticket.Port))
+	q.Set("connect_token", ticket.ConnectToken)
+	q.Set("expires_at", strconv.FormatInt(ticket.ExpiresAt, 10))
+	if code != "" {
+		q.Set("code", code)
 	}
+	if config.Global != nil && config.Global.PublicBaseURL != "" {
+		q.Set("api", config.Global.PublicBaseURL)
+	}
+	return "vertexia-client://play?" + q.Encode()
 }
 
+func launchCode(user *models.User) string {
+	if service.StudioAuth == nil || user == nil {
+		return ""
+	}
+	code, err := service.StudioAuth.GenerateCode(user.ID)
+	if err != nil {
+		return ""
+	}
+	return code
+}
+
+// GameJoinPost implements POST /api/v1/games/:id/join. The native client
+// authenticates with a Bearer access token; the website uses its session.
 func GameJoinPost(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Please log in to play"})
+	user, err := requestUser(c)
+	if err != nil || user == nil {
+		return unauthorizedJSON(c)
 	}
 	gameID, err := strconv.Atoi(c.Params("id"))
 	if err != nil || gameID <= 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid game ID"})
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not_found"})
 	}
-	if service.User == nil || service.Game == nil || service.GSM == nil {
-		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Gameservers are currently unavailable"})
-	}
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Please log in to play"})
-	}
-	server, redirected, err := service.GSM.Join(gameID, username)
+	server, redirected, ticket, err := joinGameForUser(user, gameID, nil)
 	if err != nil {
-		log.Printf("GSM join game %d by %s failed: %v", gameID, username, err)
-		return gsmJoinError(c, err)
+		log.Printf("GSM join game %d by %s failed: %v", gameID, user.Username, err)
+		return writeJoinFailure(c, err)
 	}
-	syncGamePlaying(gameID, "", -1)
-	return c.JSON(fiber.Map{
-		"success":     true,
-		"redirected":  redirected,
-		"server":      toGSView(server),
-		"ukey":        user.Unikey,
-		"client_args": "--ip " + server.Host + " --port " + strconv.Itoa(server.Port) + " --ukey " + user.Unikey,
-		"client_uri":  "vertexia-client://play?ip=" + url.QueryEscape(server.Host) + "&port=" + strconv.Itoa(server.Port) + "&ukey=" + url.QueryEscape(user.Unikey),
-	})
+	c.Set(fiber.HeaderCacheControl, "no-store")
+	body := fiber.Map{
+		"server_id":     ticket.ServerID,
+		"host":          ticket.Host,
+		"port":          ticket.Port,
+		"connect_token": ticket.ConnectToken,
+		"expires_at":    ticket.ExpiresAt,
+	}
+	if !hasAccessToken(c) {
+		// Website callers additionally get the launch deep link and the
+		// legacy fields the game page script reads.
+		body["success"] = true
+		body["redirected"] = redirected
+		body["server"] = toGSView(server)
+		body["client_uri"] = clientLaunchURI(gameID, ticket, launchCode(user))
+	}
+	return c.JSON(body)
 }
 
 func GameJoinProgressPost(c fiber.Ctx) error {
-	username := GetActiveUser(c)
-	if username == "" {
+	user, err := requestUser(c)
+	if err != nil || user == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Please log in to play"})
 	}
 	gameID, err := strconv.Atoi(c.Params("id"))
@@ -144,11 +167,6 @@ func GameJoinProgressPost(c fiber.Ctx) error {
 	if service.User == nil || service.Game == nil || service.GSM == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Gameservers are currently unavailable"})
 	}
-	user, err := service.User.GetUserByUsername(username)
-	if err != nil || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Please log in to play"})
-	}
-	manager, ukey := service.GSM, user.Unikey
 	c.Set("Content-Type", "application/x-ndjson")
 	c.Set("Cache-Control", "no-store, no-transform")
 	c.Set("X-Accel-Buffering", "no")
@@ -161,25 +179,22 @@ func GameJoinProgressPost(c fiber.Ctx) error {
 			}
 		}
 		send(fiber.Map{"stage": "looking"})
-		server, _, err := manager.JoinWithProgress(gameID, username, func(stage string) { send(fiber.Map{"stage": stage}) })
+		_, _, ticket, err := joinGameForUser(user, gameID, func(stage string) { send(fiber.Map{"stage": stage}) })
 		if err != nil {
 			msg := "Could not join game. Please try again."
-			switch {
-			case errors.Is(err, gsm.ErrGameMissing), errors.Is(err, gsm.ErrGameClosed):
+			switch status, _ := joinFailure(err); status {
+			case fiber.StatusNotFound:
 				msg = "Game not found"
-			case errors.Is(err, gsm.ErrNoCapacity):
+			case fiber.StatusConflict:
 				msg = "All gameservers are full right now. Please try again shortly."
-			case errors.Is(err, gsm.ErrLaunch):
-				msg = "Could not launch a gameserver. Please try again shortly."
-			case errors.Is(err, gsm.ErrUnavailable):
-				msg = "Gameservers are currently unavailable"
+			default:
+				msg = "Could not start a gameserver. Please try again shortly."
 			}
-			log.Printf("GSM join game %d by %s failed: %v", gameID, username, err)
+			log.Printf("GSM join game %d by %s failed: %v", gameID, user.Username, err)
 			send(fiber.Map{"error": msg})
 			return
 		}
-		syncGamePlaying(gameID, "", -1)
-		send(fiber.Map{"stage": "joining", "client_uri": "vertexia-client://play?ip=" + url.QueryEscape(server.Host) + "&port=" + strconv.Itoa(server.Port) + "&ukey=" + url.QueryEscape(ukey)})
+		send(fiber.Map{"stage": "joining", "client_uri": clientLaunchURI(gameID, ticket, launchCode(user))})
 	})
 }
 
@@ -287,18 +302,37 @@ func AdminGSHealthAPI(c fiber.Ctx) error {
 		return c.JSON(health)
 	}
 	cfg := service.GSM.Config()
-	binInfo := fiber.Map{"path": cfg.ServerBin, "exists": false, "size": 0}
-	if st, err := os.Stat(cfg.ServerBin); err == nil && !st.IsDir() {
-		binInfo["exists"] = true
-		binInfo["size"] = st.Size()
-	} else if err != nil {
-		binInfo["error"] = err.Error()
-	}
-	logsInfo := fiber.Map{"dir": cfg.LogsDir, "writable": false}
-	if err := os.MkdirAll(cfg.LogsDir, 0755); err == nil {
-		logsInfo["writable"] = true
+	if service.GSM.Remote() {
+		ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+		agent, err := service.GSM.AgentHealth(ctx)
+		cancel()
+		agentInfo := fiber.Map{"url": cfg.AgentURL, "ok": err == nil}
+		if err != nil {
+			agentInfo["error"] = err.Error()
+		} else {
+			agentInfo["health"] = agent
+		}
+		health["mode"] = "remote"
+		health["agent"] = agentInfo
 	} else {
-		logsInfo["error"] = err.Error()
+		binInfo := fiber.Map{"path": cfg.ServerBin, "exists": false, "size": 0}
+		if st, err := os.Stat(cfg.ServerBin); err == nil && !st.IsDir() {
+			binInfo["exists"] = true
+			binInfo["size"] = st.Size()
+		} else if err != nil {
+			binInfo["error"] = err.Error()
+		}
+		logsInfo := fiber.Map{"dir": cfg.LogsDir, "writable": false}
+		if err := os.MkdirAll(cfg.LogsDir, 0755); err == nil {
+			logsInfo["writable"] = true
+		} else {
+			logsInfo["error"] = err.Error()
+		}
+		health["mode"] = "local"
+		health["binary"] = binInfo
+		health["logs"] = logsInfo
+		health["map"] = cfg.ServerMap
+		health["workdir"] = cfg.ServerWorkdir
 	}
 	redisInfo := fiber.Map{"addr": "", "ok": false}
 	if config.Global != nil {
@@ -317,18 +351,26 @@ func AdminGSHealthAPI(c fiber.Ctx) error {
 	if claimed == nil {
 		claimed = []int{}
 	}
-	health["binary"] = binInfo
-	health["logs"] = logsInfo
 	health["redis"] = redisInfo
 	health["alive"] = alive
 	health["ports"] = fiber.Map{"min": cfg.PortMin, "max": cfg.PortMax, "claimed": claimed}
-	health["map"] = cfg.ServerMap
-	health["workdir"] = cfg.ServerWorkdir
 	return c.JSON(health)
 }
 
+// requireGSOperator limits drain and kill to Head Managers and above.
+func requireGSOperator(c fiber.Ctx) error {
+	user, err := getAdminUser(c)
+	if err != nil {
+		return err
+	}
+	if user.Power < models.PowerHeadManager {
+		return fiber.ErrForbidden
+	}
+	return nil
+}
+
 func AdminGSDrainPost(c fiber.Ctx) error {
-	if _, err := getAdminUser(c); err != nil {
+	if err := requireGSOperator(c); err != nil {
 		return adminAPIError(c, err)
 	}
 	if service.GSM == nil {
@@ -349,7 +391,7 @@ func AdminGSDrainPost(c fiber.Ctx) error {
 }
 
 func AdminGSKillPost(c fiber.Ctx) error {
-	if _, err := getAdminUser(c); err != nil {
+	if err := requireGSOperator(c); err != nil {
 		return adminAPIError(c, err)
 	}
 	if service.GSM == nil {

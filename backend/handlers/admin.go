@@ -24,7 +24,7 @@ type AdminUserView struct {
 	Username         string `json:"username"`
 	DisplayName      string `json:"display_name"`
 	Mail             string `json:"mail"`
-	Unikey           string `json:"unikey"`
+	Unikey           string `json:"-"`
 	Power            int    `json:"power"`
 	RoleName         string `json:"role_name"`
 	RoleDisplay      string `json:"role_display"`

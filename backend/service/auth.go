@@ -17,20 +17,29 @@ import (
 	"time"
 
 	"vertexia-frontend/backend/config"
+	"vertexia-frontend/backend/kv"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/repository"
 )
 
 type AuthService struct {
-	userRepo    *repository.UserRepository
-	replayCache *models.ReplayCache
+	userRepo *repository.UserRepository
 }
 
 func NewAuthService(userRepo *repository.UserRepository) *AuthService {
-	return &AuthService{
-		userRepo:    userRepo,
-		replayCache: models.NewReplayCache(),
+	return &AuthService{userRepo: userRepo}
+}
+
+// markAltchaUsed records a solved challenge until it expires. It uses Redis
+// SET NX so a solution cannot be replayed against another instance.
+func markAltchaUsed(signature string, expires time.Time) (bool, error) {
+	ttl := time.Until(expires)
+	if ttl <= 0 {
+		return false, nil
 	}
+	ctx, cancel := kv.Ctx()
+	defer cancel()
+	return kv.SetNX(ctx, "altcha:used:"+signature, []byte{1}, ttl+time.Minute)
 }
 
 func (s *AuthService) VerifyAltcha(payloadStr string) error {
@@ -84,7 +93,11 @@ func (s *AuthService) VerifyAltcha(payloadStr string) error {
 		return errors.New("CAPTCHA challenge verification failed")
 	}
 
-	if !s.replayCache.Add(payload.Signature, time.Unix(expiresUnix, 0)) {
+	fresh, err := markAltchaUsed(payload.Signature, time.Unix(expiresUnix, 0))
+	if err != nil {
+		return errors.New("CAPTCHA verification is temporarily unavailable")
+	}
+	if !fresh {
 		return errors.New("CAPTCHA challenge has already been used")
 	}
 
@@ -341,6 +354,11 @@ func (s *AuthService) RevokeRememberToken(encodedCookie string) {
 	tokenHash := hex.EncodeToString(hash[:])
 
 	_ = s.userRepo.DeleteRememberToken(tokenHash)
+}
+
+// RevokeAllRememberTokens signs a user out of every remembered browser.
+func (s *AuthService) RevokeAllRememberTokens(userID int) error {
+	return s.userRepo.DeleteRememberTokensForUser(userID)
 }
 
 func (s *AuthService) ValidateUkey(apiKey, ukey string) (*models.User, error) {

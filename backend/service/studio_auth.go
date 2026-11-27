@@ -2,62 +2,44 @@ package service
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
-	"sync"
+	"strconv"
 	"time"
 
+	"vertexia-frontend/backend/kv"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/repository"
 )
 
-type studioCodeEntry struct {
-	UserID    int
-	ExpiresAt time.Time
-}
+// Studio/client browser authorization. Codes and pending states live in
+// Redis (via kv) so any platform instance can finish a flow another started
+// and nothing is lost on restart.
+
+const (
+	studioCodeTTL     = 5 * time.Minute
+	studioStateTTL    = 10 * time.Minute
+	studioCodePrefix  = "studio:code:"
+	studioStatePrefix = "studio:state:"
+	maxStudioStateLen = 256
+)
 
 type pendingStateEntry struct {
-	RedirectURI string
-	CreatedAt   time.Time
-	Code        string
-	Authorized  bool
-	UserID      int
+	RedirectURI string    `json:"redirect_uri"`
+	CreatedAt   time.Time `json:"created_at"`
+	Code        string    `json:"code,omitempty"`
+	Authorized  bool      `json:"authorized"`
+	UserID      int       `json:"uid,omitempty"`
 }
 
 type StudioAuthService struct {
-	mu            sync.Mutex
-	codes         map[string]*studioCodeEntry
-	pendingStates map[string]*pendingStateEntry
-	userRepo      *repository.UserRepository
+	userRepo *repository.UserRepository
 }
 
 func NewStudioAuthService(userRepo *repository.UserRepository) *StudioAuthService {
-	s := &StudioAuthService{
-		codes:         make(map[string]*studioCodeEntry),
-		pendingStates: make(map[string]*pendingStateEntry),
-		userRepo:      userRepo,
-	}
-	go s.cleanupLoop()
-	return s
-}
-
-func (s *StudioAuthService) cleanupLoop() {
-	ticker := time.NewTicker(1 * time.Minute)
-	for range ticker.C {
-		s.mu.Lock()
-		now := time.Now()
-		for k, v := range s.codes {
-			if now.After(v.ExpiresAt) {
-				delete(s.codes, k)
-			}
-		}
-		for k, v := range s.pendingStates {
-			if now.Sub(v.CreatedAt) > 10*time.Minute {
-				delete(s.pendingStates, k)
-			}
-		}
-		s.mu.Unlock()
-	}
+	return &StudioAuthService{userRepo: userRepo}
 }
 
 func generateRandomHex(nBytes int) (string, error) {
@@ -68,26 +50,51 @@ func generateRandomHex(nBytes int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+func studioHash(v string) string {
+	sum := sha256.Sum256([]byte(v))
+	return hex.EncodeToString(sum[:])
+}
+
+func (s *StudioAuthService) loadState(state string) (*pendingStateEntry, error) {
+	ctx, cancel := kv.Ctx()
+	defer cancel()
+	raw, err := kv.Get(ctx, studioStatePrefix+studioHash(state))
+	if err != nil || raw == nil {
+		return nil, err
+	}
+	var entry pendingStateEntry
+	if err := json.Unmarshal(raw, &entry); err != nil {
+		return nil, nil
+	}
+	return &entry, nil
+}
+
+func (s *StudioAuthService) saveState(state string, entry *pendingStateEntry) error {
+	raw, err := json.Marshal(entry)
+	if err != nil {
+		return err
+	}
+	ttl := studioStateTTL - time.Since(entry.CreatedAt)
+	if ttl <= 0 {
+		return nil
+	}
+	ctx, cancel := kv.Ctx()
+	defer cancel()
+	return kv.Set(ctx, studioStatePrefix+studioHash(state), raw, ttl)
+}
+
 func (s *StudioAuthService) RegisterPendingState(state, redirectURI string) {
-	if state == "" {
+	if state == "" || len(state) > maxStudioStateLen {
 		return
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, exists := s.pendingStates[state]; exists {
+	raw, err := json.Marshal(&pendingStateEntry{RedirectURI: redirectURI, CreatedAt: time.Now()})
+	if err != nil {
 		return
 	}
-	s.pendingStates[state] = &pendingStateEntry{
-		RedirectURI: redirectURI,
-		CreatedAt:   time.Now(),
-	}
-	if len(s.pendingStates) > 5000 {
-		for k, v := range s.pendingStates {
-			if time.Since(v.CreatedAt) > 5*time.Minute {
-				delete(s.pendingStates, k)
-			}
-		}
-	}
+	ctx, cancel := kv.Ctx()
+	defer cancel()
+	// NX: never let a second visit reset an already authorized state.
+	_, _ = kv.SetNX(ctx, studioStatePrefix+studioHash(state), raw, studioStateTTL)
 }
 
 func (s *StudioAuthService) GenerateCode(userID int) (string, error) {
@@ -95,76 +102,75 @@ func (s *StudioAuthService) GenerateCode(userID int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.codes[code] = &studioCodeEntry{
-		UserID:    userID,
-		ExpiresAt: time.Now().Add(5 * time.Minute),
+	ctx, cancel := kv.Ctx()
+	defer cancel()
+	if err := kv.Set(ctx, studioCodePrefix+studioHash(code), []byte(strconv.Itoa(userID)), studioCodeTTL); err != nil {
+		return "", err
 	}
 	return code, nil
 }
 
 func (s *StudioAuthService) GenerateCodeForState(state string, userID int) (string, error) {
+	if len(state) > maxStudioStateLen {
+		return "", errors.New("state too long")
+	}
 	code, err := s.GenerateCode(userID)
 	if err != nil {
 		return "", err
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if entry, ok := s.pendingStates[state]; ok {
-		entry.Code = code
-		entry.Authorized = true
-		entry.UserID = userID
-	} else {
-		s.pendingStates[state] = &pendingStateEntry{
-			RedirectURI: "",
-			CreatedAt:   time.Now(),
-			Code:        code,
-			Authorized:  true,
-			UserID:      userID,
-		}
+	entry, err := s.loadState(state)
+	if err != nil {
+		return "", err
+	}
+	if entry == nil {
+		entry = &pendingStateEntry{CreatedAt: time.Now()}
+	}
+	entry.Code = code
+	entry.Authorized = true
+	entry.UserID = userID
+	if err := s.saveState(state, entry); err != nil {
+		return "", err
 	}
 	return code, nil
 }
 
 func (s *StudioAuthService) GetPendingCode(state string) (string, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	entry, ok := s.pendingStates[state]
-	if !ok || !entry.Authorized {
+	if state == "" || len(state) > maxStudioStateLen {
 		return "", false
 	}
-	if time.Since(entry.CreatedAt) > 10*time.Minute {
+	entry, err := s.loadState(state)
+	if err != nil || entry == nil || !entry.Authorized || entry.Code == "" {
+		return "", false
+	}
+	if time.Since(entry.CreatedAt) > studioStateTTL {
 		return "", false
 	}
 	return entry.Code, true
 }
 
+// ConsumeCode redeems a one-time code. GETDEL makes redemption atomic across
+// instances, so a code can never be exchanged twice.
 func (s *StudioAuthService) ConsumeCode(code string) (*models.User, error) {
-	s.mu.Lock()
-	entry, ok := s.codes[code]
-	if !ok {
-		s.mu.Unlock()
+	if len(code) != 64 {
 		return nil, errors.New("invalid or expired code")
 	}
-	if time.Now().After(entry.ExpiresAt) {
-		delete(s.codes, code)
-		s.mu.Unlock()
-		return nil, errors.New("code expired")
+	ctx, cancel := kv.Ctx()
+	defer cancel()
+	raw, err := kv.GetDel(ctx, studioCodePrefix+studioHash(code))
+	if err != nil {
+		return nil, err
 	}
-	delete(s.codes, code)
-	for _, pending := range s.pendingStates {
-		if pending.Code == code {
-			pending.Code = ""
-			pending.Authorized = false
-		}
+	if raw == nil {
+		return nil, errors.New("invalid or expired code")
 	}
-	s.mu.Unlock()
-
+	userID, err := strconv.Atoi(string(raw))
+	if err != nil || userID <= 0 {
+		return nil, errors.New("invalid or expired code")
+	}
 	if s.userRepo == nil {
 		return nil, errors.New("user repository not initialized")
 	}
-	user, err := s.userRepo.GetByID(entry.UserID)
+	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,5 +179,3 @@ func (s *StudioAuthService) ConsumeCode(code string) (*models.User, error) {
 	}
 	return user, nil
 }
-
-

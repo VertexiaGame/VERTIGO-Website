@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
+	"vertexia-frontend/backend/kv"
 )
 
 const (
@@ -36,7 +37,19 @@ const (
 	studioPollTTL       = time.Minute
 	usersCardsMax       = 300
 	usersCardsTTL       = time.Minute
+	tokenExchangeMax    = 20
+	tokenExchangeTTL    = time.Minute
+	gameJoinMax         = 30
+	gameJoinTTL         = time.Minute
 )
+
+// limiterStorage keeps every rate-limit counter in Redis so limits hold
+// across platform instances and restarts.
+var limiterStorage = kv.NewStorage("ratelimit:")
+
+// LimiterStorage is the shared counter store for limiters built outside this
+// package (the global limiter in main).
+func LimiterStorage() *kv.Storage { return limiterStorage }
 
 func rateLimitRetryAfter(c fiber.Ctx) int {
 	if secs, err := strconv.Atoi(c.GetRespHeader(fiber.HeaderRetryAfter)); err == nil && secs >= 1 && secs <= 3600 {
@@ -79,38 +92,53 @@ func uploadLimitKey(c fiber.Ctx) string {
 	return "upload:ip:" + c.IP()
 }
 
-func newUploadLimiter(max int, expiration time.Duration) fiber.Handler {
+func newUploadLimiter(prefix string, max int, expiration time.Duration) fiber.Handler {
 	return limiter.New(limiter.Config{
 		Max:          max,
 		Expiration:   expiration,
-		KeyGenerator: uploadLimitKey,
+		KeyGenerator: func(c fiber.Ctx) string { return prefix + uploadLimitKey(c) },
 		LimitReached: RateLimitReached,
+		Storage:      limiterStorage,
 	})
 }
 
-func newIPLimiter(max int, expiration time.Duration) fiber.Handler {
+// newPrefixedIPLimiter keeps a separate counter namespace so endpoints that
+// share an IP budget size do not drain each other.
+func newPrefixedIPLimiter(prefix string, max int, expiration time.Duration) fiber.Handler {
 	return limiter.New(limiter.Config{
 		Max:          max,
 		Expiration:   expiration,
+		KeyGenerator: func(c fiber.Ctx) string { return prefix + c.IP() },
 		LimitReached: RateLimitReached,
+		Storage:      limiterStorage,
 	})
 }
 
 var (
-	gameCreateLimiter    = newUploadLimiter(gameCreateUploadMax, gameCreateUploadTTL)
-	gameUpdateLimiter    = newUploadLimiter(gameUpdateUploadMax, gameUpdateUploadTTL)
-	shopCreateLimiter    = newUploadLimiter(shopCreateUploadMax, shopCreateUploadTTL)
-	assetUploadLimiter   = newUploadLimiter(assetUploadMax, assetUploadTTL)
-	createPreviewLimiter = newUploadLimiter(createPreviewMax, createPreviewTTL)
-	clanCreateLimiter    = newUploadLimiter(clanCreateMax, clanCreateTTL)
-	clanUpdateLimiter    = newUploadLimiter(clanUpdateMax, clanUpdateTTL)
-	clanActionLimiter    = newUploadLimiter(clanActionMax, clanActionTTL)
-	authAttemptLimiter   = newIPLimiter(authAttemptMax, authAttemptTTL)
-	altchaLimiter        = newIPLimiter(altchaMax, altchaTTL)
-	externalAPILimiter   = newIPLimiter(externalAPIMax, externalAPITTL)
-	studioPollLimiter    = newIPLimiter(studioPollMax, studioPollTTL)
-	usersCardsLimiter    = newIPLimiter(usersCardsMax, usersCardsTTL)
+	gameCreateLimiter    = newUploadLimiter("gamecreate:", gameCreateUploadMax, gameCreateUploadTTL)
+	gameUpdateLimiter    = newUploadLimiter("gameupdate:", gameUpdateUploadMax, gameUpdateUploadTTL)
+	shopCreateLimiter    = newUploadLimiter("shopcreate:", shopCreateUploadMax, shopCreateUploadTTL)
+	assetUploadLimiter   = newUploadLimiter("assetupload:", assetUploadMax, assetUploadTTL)
+	createPreviewLimiter = newUploadLimiter("createpreview:", createPreviewMax, createPreviewTTL)
+	clanCreateLimiter    = newUploadLimiter("clancreate:", clanCreateMax, clanCreateTTL)
+	clanUpdateLimiter    = newUploadLimiter("clanupdate:", clanUpdateMax, clanUpdateTTL)
+	clanActionLimiter    = newUploadLimiter("clanaction:", clanActionMax, clanActionTTL)
+	authAttemptLimiter   = newPrefixedIPLimiter("auth:", authAttemptMax, authAttemptTTL)
+	altchaLimiter        = newPrefixedIPLimiter("altcha:", altchaMax, altchaTTL)
+	externalAPILimiter   = newPrefixedIPLimiter("external:", externalAPIMax, externalAPITTL)
+	studioPollLimiter    = newPrefixedIPLimiter("studiopoll:", studioPollMax, studioPollTTL)
+	usersCardsLimiter    = newPrefixedIPLimiter("userscards:", usersCardsMax, usersCardsTTL)
+	tokenExchangeLimiter = newPrefixedIPLimiter("tokenexchange:", tokenExchangeMax, tokenExchangeTTL)
+	gameJoinLimiter      = newPrefixedIPLimiter("gamejoin:", gameJoinMax, gameJoinTTL)
 )
+
+func TokenExchangeLimiter() fiber.Handler {
+	return tokenExchangeLimiter
+}
+
+func GameJoinLimiter() fiber.Handler {
+	return gameJoinLimiter
+}
 
 func GameCreateLimiter() fiber.Handler {
 	return gameCreateLimiter

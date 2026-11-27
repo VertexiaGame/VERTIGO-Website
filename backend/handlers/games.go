@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
 )
@@ -243,16 +244,49 @@ func GameRatePost(c fiber.Ctx) error {
 	})
 }
 
+// apiGame is the public game shape shared by the website and the native
+// client: the existing model fields plus the client contract fields.
+type apiGame struct {
+	*models.Game
+	ThumbnailURL  string `json:"thumbnail_url"`
+	PlayersOnline int    `json:"players_online"`
+}
+
+type apiGameDetail struct {
+	apiGame
+	Creator   fiber.Map `json:"creator"`
+	UpdatedAt int64     `json:"updated_at"`
+}
+
+func gameThumbnailURL(gameID int) string {
+	base := ""
+	if config.Global != nil {
+		base = config.Global.PublicBaseURL
+	}
+	return base + "/static/uploads/games/" + strconv.Itoa(gameID) + ".png"
+}
+
+func toAPIGame(g *models.Game) apiGame {
+	maxPlayers := g.MaxPlayers
+	if service.GSM != nil {
+		maxPlayers = service.GSM.EffectiveMaxForGame(g.MaxPlayers)
+	}
+	cp := *g
+	cp.MaxPlayers = maxPlayers
+	return apiGame{Game: &cp, ThumbnailURL: gameThumbnailURL(g.ID), PlayersOnline: g.Playing}
+}
+
 func GamesAPI(c fiber.Ctx) error {
 	filter := extractGameFilter(c)
 
 	if service.Game == nil {
 		return c.JSON(fiber.Map{
-			"games":       []*models.Game{},
+			"games":       []apiGame{},
 			"total":       0,
 			"page":        filter.Page,
 			"limit":       filter.Limit,
 			"total_pages": 1,
+			"next_page":   nil,
 		})
 	}
 
@@ -260,11 +294,12 @@ func GamesAPI(c fiber.Ctx) error {
 	if err != nil {
 		log.Printf("GamesAPI error: %v", err)
 		return c.JSON(fiber.Map{
-			"games":       []*models.Game{},
+			"games":       []apiGame{},
 			"total":       0,
 			"page":        filter.Page,
 			"limit":       filter.Limit,
 			"total_pages": 1,
+			"next_page":   nil,
 		})
 	}
 
@@ -272,12 +307,48 @@ func GamesAPI(c fiber.Ctx) error {
 	if total > 0 && filter.Limit > 0 {
 		totalPages = (total + filter.Limit - 1) / filter.Limit
 	}
+	out := make([]apiGame, 0, len(games))
+	for _, g := range games {
+		if g != nil {
+			out = append(out, toAPIGame(g))
+		}
+	}
+	var nextPage any
+	if filter.Page < totalPages {
+		nextPage = filter.Page + 1
+	}
 
 	return c.JSON(fiber.Map{
-		"games":       games,
+		"games":       out,
 		"total":       total,
 		"page":        filter.Page,
 		"limit":       filter.Limit,
 		"total_pages": totalPages,
+		"next_page":   nextPage,
 	})
+}
+
+// GameDetailAPI implements GET /api/v1/games/:id.
+func GameDetailAPI(c fiber.Ctx) error {
+	gameID, err := strconv.Atoi(c.Params("id"))
+	if err != nil || gameID <= 0 || service.Game == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not_found"})
+	}
+	game, err := service.Game.GetGameByID(gameID)
+	viewerID := 0
+	if user, uerr := requestUser(c); uerr == nil && user != nil {
+		viewerID = user.ID
+	}
+	if err != nil || game == nil || !game.VisibleTo(viewerID) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not_found"})
+	}
+	creator := fiber.Map{"id": nil, "username": game.CreatorName}
+	if game.CreatorID.Valid {
+		creator["id"] = game.CreatorID.Int64
+	}
+	updated := game.EditedAt
+	if updated.IsZero() {
+		updated = game.CreatedAt
+	}
+	return c.JSON(apiGameDetail{apiGame: toAPIGame(game), Creator: creator, UpdatedAt: updated.Unix()})
 }

@@ -24,7 +24,8 @@ func Setup(app *fiber.App) {
 				!strings.HasPrefix(path, "/api/v1/asset") &&
 				!strings.HasPrefix(path, "/avatar/headshot") &&
 				!strings.HasPrefix(path, "/api/v1/avatar/headshot") &&
-				path != "/api/v1/auth/validate" {
+				!strings.HasPrefix(path, "/api/v1/auth/") &&
+				path != "/api/v1/me" {
 				if c.Get("HX-Request") == "true" {
 					c.Set("HX-Redirect", "/sitelock")
 					return c.SendStatus(fiber.StatusFound)
@@ -60,6 +61,10 @@ func Setup(app *fiber.App) {
 
 	app.Use("/ws/feed", func(c fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
+			if !handlers.WebSocketOriginAllowed(c) {
+				log.Printf("WS /ws/feed rejected: cross-origin handshake from %s", c.IP())
+				return c.SendStatus(fiber.StatusForbidden)
+			}
 			username := handlers.GetActiveUser(c)
 			if username == "" {
 				log.Printf("WS /ws/feed rejected: unauthorized handshake from %s", c.IP())
@@ -83,9 +88,9 @@ func Setup(app *fiber.App) {
 	app.Get("/auth/validate", handlers.ValidateUkey)
 
 	app.Get("/studio/auth", handlers.StudioAuthGet)
-	app.Post("/studio/auth/allow", handlers.StudioAuthAllow)
 	app.Post("/studio/auth/deny", handlers.StudioAuthDeny)
 	app.Get("/studio/auth/poll", handlers.StudioPollLimiter(), handlers.StudioAuthPoll)
+	app.Post("/studio/auth/allow", handlers.AuthAttemptLimiter(), handlers.StudioAuthAllow)
 
 	app.Get("/search", handlers.SearchRedirect)
 	app.Get("/api/v1/search", handlers.SearchAPI)
@@ -232,8 +237,10 @@ func Setup(app *fiber.App) {
 
 	api.Get("/altcha", handlers.AltchaLimiter(), handlers.AltchaGet)
 	api.Get("/auth/validate", handlers.ValidateUkey)
-	api.Post("/studio/exchange", handlers.StudioAuthExchange)
-	api.Get("/studio/exchange", handlers.StudioAuthExchange)
+	api.Post("/studio/exchange", handlers.TokenExchangeLimiter(), handlers.StudioAuthExchange)
+	api.Post("/auth/exchange", handlers.TokenExchangeLimiter(), handlers.ClientAuthExchange)
+	api.Post("/auth/logout", handlers.TokenExchangeLimiter(), handlers.AuthLogoutPost)
+	api.Get("/me", handlers.MeGet)
 	api.Get("/studio/poll", handlers.StudioPollLimiter(), handlers.StudioAuthPoll)
 	api.Post("/studio/games", handlers.GameCreateLimiter(), handlers.StudioGameCreatePost)
 	api.Get("/studio/games", handlers.StudioGamesListGet)
@@ -278,13 +285,14 @@ func Setup(app *fiber.App) {
 	api.Post("/settings/privacy", handlers.SettingsPrivacyPost)
 
 	api.Get("/games", handlers.GamesAPI)
+	api.Get("/games/:id", handlers.GameDetailAPI)
 	api.Post("/games", handlers.GameCreateLimiter(), handlers.GameCreatePost)
 	api.Post("/games/:id", handlers.GameUpdateLimiter(), handlers.GameUpdatePost)
 	api.Post("/games/:id/thumbnails/remove", handlers.GameUpdateLimiter(), handlers.GameThumbRemovePost)
 	api.Post("/games/:id/thumbnails/move", handlers.GameUpdateLimiter(), handlers.GameThumbMovePost)
 	api.Post("/games/:id/rate", handlers.GameRatePost)
-	api.Post("/games/:id/join", handlers.GameJoinPost)
-	api.Post("/games/:id/join/progress", handlers.GameJoinProgressPost)
+	api.Post("/games/:id/join", handlers.GameJoinLimiter(), handlers.GameJoinPost)
+	api.Post("/games/:id/join/progress", handlers.GameJoinLimiter(), handlers.GameJoinProgressPost)
 	api.Get("/games/:id/servers", handlers.GameServersGet)
 	api.Post("/gs/:id/leave", handlers.GameserverLeavePost)
 
@@ -373,6 +381,8 @@ func Setup(app *fiber.App) {
 	app.Get("/static/renders/outfits/:id", handlers.AvatarOutfitGet)
 	app.Get("/static/renders/meshes/:id", handlers.AssetRenderGet)
 	app.Get("/static/renders/shop/:type/:id", handlers.ShopRenderGet)
+
+	setupStorageRoutes(app)
 
 	app.Get("/assets*", static.New("./assets", static.Config{
 		NotFoundHandler: func(c fiber.Ctx) error {

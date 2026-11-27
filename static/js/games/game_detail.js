@@ -47,10 +47,6 @@ window.gameDetailGameId = function() {
     return m ? m[1] : '';
 };
 
-window.buildClientJoinUri = function(host, port, ukey) {
-    return 'vertexia-client://play?ip=' + encodeURIComponent(host || '') + '&port=' + encodeURIComponent(String(port == null ? '' : port)) + '&ukey=' + encodeURIComponent(ukey || '');
-};
-
 window.launchClientJoinUri = function(uri) {
     if (!uri) return;
     var frame = document.getElementById('vtxClientLaunchFrame');

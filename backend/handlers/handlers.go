@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gofiber/contrib/v3/websocket"
 	"github.com/gofiber/fiber/v3"
+	"vertexia-frontend/backend/kv"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
 )
@@ -120,11 +122,65 @@ func sendFeedError(client *WSClient, err error) {
 	_ = client.Write(websocket.TextMessage, errPayload)
 }
 
-func broadcastToClients(data []byte) {
-	clients := getFeedClientsSnapshot()
-	for _, item := range clients {
-		_ = item.client.Write(websocket.TextMessage, data)
+// feedEvent is one feed WebSocket message fanned out to every platform
+// instance over Redis pub/sub (channel feedEventsChannel).
+type feedEvent struct {
+	Data     json.RawMessage `json:"data"`
+	Friends  bool            `json:"friends,omitempty"`
+	AuthorID int             `json:"author_id,omitempty"`
+	Author   string          `json:"author,omitempty"`
+}
+
+const feedEventsChannel = "feed:events"
+
+// publishFeedEvent sends ev to every instance. Without Redis (development,
+// single instance) it delivers locally; when Redis is required, a publish
+// failure is logged rather than silently delivered to this instance only.
+func publishFeedEvent(ev feedEvent) {
+	if kv.Client() == nil && !kv.Required() {
+		deliverFeedEvent(ev)
+		return
 	}
+	payload, err := json.Marshal(ev)
+	if err != nil {
+		return
+	}
+	ctx, cancel := kv.Ctx()
+	defer cancel()
+	if err := kv.Publish(ctx, feedEventsChannel, payload); err != nil {
+		log.Printf("feed publish failed: %v", err)
+	}
+}
+
+func deliverFeedEvent(ev feedEvent) {
+	for _, item := range getFeedClientsSnapshot() {
+		if ev.Friends && item.username != ev.Author {
+			if service.User == nil || service.Friend == nil {
+				continue
+			}
+			recipient, err := service.User.GetUserByUsername(item.username)
+			if err != nil || recipient == nil {
+				continue
+			}
+			status, _ := service.Friend.GetFriendStatus(recipient.ID, ev.AuthorID)
+			if status != "friends" {
+				continue
+			}
+		}
+		_ = item.client.Write(websocket.TextMessage, ev.Data)
+	}
+}
+
+// StartFeedFanout subscribes this instance to feed events published by any
+// instance. It reports false when Redis is not connected.
+func StartFeedFanout(ctx context.Context) bool {
+	return kv.Subscribe(ctx, feedEventsChannel, func(payload []byte) {
+		var ev feedEvent
+		if err := json.Unmarshal(payload, &ev); err != nil || len(ev.Data) == 0 {
+			return
+		}
+		deliverFeedEvent(ev)
+	})
 }
 
 func Home(c fiber.Ctx) error {
@@ -391,6 +447,9 @@ func GetFeedCommentsHandler(c fiber.Ctx) error {
 	}
 
 	comments, err := service.Feed.GetFeedComments(feedID, feedType, username)
+	if errors.Is(err, service.ErrFeedPostNotFound) {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+	}
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -548,7 +607,10 @@ func FeedWS(c *websocket.Conn) {
 					if clientMsg.FID > 0 && service.Feed != nil {
 						totalReactions, hasReacted, err := service.Feed.ToggleReaction(username, clientMsg.FID, feedType)
 						if err == nil {
-							BroadcastReactionUpdate(clientMsg.FID, totalReactions, feedType, username, hasReacted)
+							post, _ := service.Feed.VisiblePost(username, clientMsg.FID, feedType)
+							if audience, ok := feedAudience(post, feedType); ok {
+								BroadcastReactionUpdate(clientMsg.FID, totalReactions, feedType, username, hasReacted, audience)
+							}
 						} else {
 							sendFeedError(client, err)
 						}
@@ -558,7 +620,10 @@ func FeedWS(c *websocket.Conn) {
 					if clientMsg.CID > 0 && service.Feed != nil {
 						totalReactions, hasReacted, err := service.Feed.ToggleCommentReaction(username, clientMsg.CID)
 						if err == nil {
-							BroadcastCommentReactionUpdate(clientMsg.CID, totalReactions, feedType, username, hasReacted)
+							post, realType, _ := service.Feed.CommentPost(username, clientMsg.CID)
+							if audience, ok := feedAudience(post, realType); ok {
+								BroadcastCommentReactionUpdate(clientMsg.CID, totalReactions, realType, username, hasReacted, audience)
+							}
 						} else {
 							sendFeedError(client, err)
 						}
@@ -572,7 +637,10 @@ func FeedWS(c *websocket.Conn) {
 							continue
 						}
 						comment.Tag = wornClanTag(comment.UserID)
-						BroadcastCommentPost(comment)
+						post, _ := service.Feed.VisiblePost(username, clientMsg.FeedID, feedType)
+						if audience, ok := feedAudience(post, feedType); ok {
+							BroadcastCommentPost(comment, audience)
+						}
 					}
 
 				default:
@@ -624,23 +692,24 @@ func BroadcastFeedPost(post *models.FeedPost, feedType string) wsMessage {
 		return msg
 	}
 
-	for _, item := range getFeedClientsSnapshot() {
-		if feedType == "friends" && item.username != post.Username {
-			recipient, err := service.User.GetUserByUsername(item.username)
-			if err != nil || recipient == nil || service.Friend == nil {
-				continue
-			}
-			status, _ := service.Friend.GetFriendStatus(recipient.ID, post.UserID)
-			if status != "friends" {
-				continue
-			}
-		}
-		_ = item.client.Write(websocket.TextMessage, data)
-	}
+	publishFeedEvent(feedEvent{Data: data, Friends: feedType == "friends", AuthorID: post.UserID, Author: post.Username})
 	return msg
 }
 
-func BroadcastCommentPost(comment *models.FeedComment) {
+// feedAudience scopes an event about a post: friends-feed activity only goes
+// to the post author and their friends. ok is false when the post cannot be
+// resolved, in which case nothing is broadcast.
+func feedAudience(post *models.FeedPost, feedType string) (feedEvent, bool) {
+	if post == nil {
+		return feedEvent{}, false
+	}
+	if feedType != "friends" {
+		return feedEvent{}, true
+	}
+	return feedEvent{Friends: true, AuthorID: post.UserID, Author: post.Username}, true
+}
+
+func BroadcastCommentPost(comment *models.FeedComment, audience feedEvent) {
 	msg := struct {
 		Type    string              `json:"type"`
 		Comment *models.FeedComment `json:"comment"`
@@ -653,10 +722,11 @@ func BroadcastCommentPost(comment *models.FeedComment) {
 		return
 	}
 
-	broadcastToClients(data)
+	audience.Data = data
+	publishFeedEvent(audience)
 }
 
-func BroadcastReactionUpdate(fid int, reactions int, feedType, actor string, hasReacted bool) {
+func BroadcastReactionUpdate(fid int, reactions int, feedType, actor string, hasReacted bool, audience feedEvent) {
 	msg := struct {
 		Type       string `json:"type"`
 		FID        int    `json:"fid"`
@@ -678,10 +748,11 @@ func BroadcastReactionUpdate(fid int, reactions int, feedType, actor string, has
 		return
 	}
 
-	broadcastToClients(data)
+	audience.Data = data
+	publishFeedEvent(audience)
 }
 
-func BroadcastCommentReactionUpdate(cid int, reactions int, feedType, actor string, hasReacted bool) {
+func BroadcastCommentReactionUpdate(cid int, reactions int, feedType, actor string, hasReacted bool, audience feedEvent) {
 	msg := struct {
 		Type       string `json:"type"`
 		CID        int    `json:"cid"`
@@ -703,5 +774,6 @@ func BroadcastCommentReactionUpdate(cid int, reactions int, feedType, actor stri
 		return
 	}
 
-	broadcastToClients(data)
+	audience.Data = data
+	publishFeedEvent(audience)
 }
