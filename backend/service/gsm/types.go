@@ -21,6 +21,9 @@ type GameServer struct {
 	LastBeat    time.Time `json:"last_beat"`
 	EmptySince  time.Time `json:"empty_since"`
 	DrainingAt  time.Time `json:"draining_at"`
+	// LastHeartbeat is only advanced by the gameserver's own reports
+	// (Heartbeat, ServerJoin, SyncRoster). Zero until the first report.
+	LastHeartbeat time.Time `json:"last_heartbeat"`
 }
 
 type GameInfo struct {
@@ -47,6 +50,24 @@ type Config struct {
 	ServerWorkdir     string
 	ServerMap         string
 	LogsDir           string
+
+	// AgentURL switches the manager to remote mode: gameservers run on a
+	// dedicated host managed by gsm-agent instead of as local children.
+	AgentURL     string
+	AgentSecret  string
+	AgentTimeout time.Duration
+	// HeartbeatTimeout evicts an active server whose last heartbeat (or
+	// creation time when it never reported) is older than this. 0 disables.
+	HeartbeatTimeout time.Duration
+	// MaxServers caps the number of gameserver records. 0 means unlimited.
+	MaxServers int
+	// ReadyTimeout bounds how long a launch may take to become ready.
+	ReadyTimeout time.Duration
+	// NetcodeKeyHex and NetcodeProtocolID are passed to local children.
+	NetcodeKeyHex     string
+	NetcodeProtocolID uint64
+	// APIKey is the GAMESERVER_API_KEY given to local children.
+	APIKey string
 }
 
 func DefaultConfig() Config {
@@ -62,6 +83,9 @@ func DefaultConfig() Config {
 		ShutdownGrace:     10 * time.Second,
 		ServerMap:         "assets/maps/default.vrtx",
 		LogsDir:           "./logs/gsm",
+		AgentTimeout:      10 * time.Second,
+		HeartbeatTimeout:  90 * time.Second,
+		ReadyTimeout:      30 * time.Second,
 	}
 }
 

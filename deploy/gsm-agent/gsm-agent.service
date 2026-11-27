@@ -1,0 +1,68 @@
+# systemd unit for the VERTIGO gameserver host agent.
+#
+# Install:
+#   useradd --system --home-dir /var/lib/gsm-agent --shell /usr/sbin/nologin gsm
+#   install -m 0755 gsm-agent /usr/local/bin/gsm-agent
+#   install -d -m 0750 -o root -g gsm /etc/vertexia
+#   install -m 0640 -o root -g gsm gsm-agent.env.example /etc/vertexia/gsm-agent.env   (then edit)
+#   install -m 0644 gsm-agent.service /etc/systemd/system/gsm-agent.service
+#   systemctl daemon-reload && systemctl enable --now gsm-agent
+#
+# Gameserver lifecycle across agent restarts:
+#   KillMode=process means "systemctl stop/restart gsm-agent" only signals the
+#   agent itself. Running gameservers (each in its own process group) keep
+#   serving players. On the next start the agent reloads its records from
+#   Redis, adopts processes that are still alive, restarts dead ones on the
+#   same port (counted against GSM_MAX_RESTARTS) and keeps failed ones
+#   released. To deliberately stop every gameserver on this host, stop them
+#   through the platform/API, or run: systemctl kill --kill-whom=all gsm-agent
+#   (--kill-who=all on systemd older than 252).
+
+[Unit]
+Description=VERTIGO gameserver host agent (gsm-agent)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gsm
+Group=gsm
+EnvironmentFile=/etc/vertexia/gsm-agent.env
+ExecStart=/usr/local/bin/gsm-agent
+WorkingDirectory=/var/lib/gsm-agent
+Restart=always
+RestartSec=2
+KillMode=process
+TimeoutStopSec=30
+LimitNOFILE=65536
+UMask=0027
+
+# Directories (created and chowned to the gsm user by systemd). Keep
+# GSM_SERVER_LOGS_DIR and GSM_SERVER_WORKDIR inside these paths.
+StateDirectory=gsm-agent
+LogsDirectory=gsm-agent
+
+# Hardening. Gameservers are children of the agent and inherit this sandbox.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/log/gsm-agent /var/lib/gsm-agent
+PrivateTmp=true
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
