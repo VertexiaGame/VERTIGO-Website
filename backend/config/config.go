@@ -1,7 +1,11 @@
 package config
 
 import (
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -63,6 +67,130 @@ type Config struct {
 	TypeSafeBaseURL        string
 	TypeSafeModel          string
 	FilterTimeout          time.Duration
+
+	AppEnv            string
+	PublicBaseURL     string
+	RedisURL          string
+	RedisTLS          bool
+	RedisRequired     bool
+	DBTLS             string
+	DBTLSCAPEM        string
+	DBTLSServerName   string
+	DBTimeout         time.Duration
+	GSMAgentURL       string
+	GSMAgentSecret    string
+	GSMAgentTimeout   time.Duration
+	NetcodePrivateKey []byte
+	NetcodeProtocolID uint64
+	NetcodeTokenTTL   time.Duration
+	ClientTokenTTL    time.Duration
+	StudioTokenTTL    time.Duration
+	LaunchTicketTTL   time.Duration
+}
+
+// IsProduction reports whether APP_ENV=production. Production enables the
+// strict validation in Validate.
+func (c *Config) IsProduction() bool {
+	return c != nil && c.AppEnv == "production"
+}
+
+// GSMRemote reports whether gameservers are managed by a remote agent instead
+// of being spawned as local child processes.
+func (c *Config) GSMRemote() bool {
+	return c != nil && c.GSMAgentURL != ""
+}
+
+// Validate rejects configurations that would run insecurely or silently lose
+// state. Development configurations only fail on outright contradictions.
+func (c *Config) Validate() error {
+	var problems []string
+	add := func(format string, args ...any) { problems = append(problems, fmt.Sprintf(format, args...)) }
+	if c.GSMRemote() {
+		u, err := url.Parse(c.GSMAgentURL)
+		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") {
+			add("GSM_AGENT_URL must be an absolute http(s) URL")
+		} else if c.IsProduction() && u.Scheme != "https" {
+			add("GSM_AGENT_URL must use https in production")
+		}
+		if len(c.GSMAgentSecret) < 32 {
+			add("GSM_AGENT_SECRET must be at least 32 characters when GSM_AGENT_URL is set")
+		}
+	}
+	if c.GSMEnabled && c.GSMRemote() && c.GSMPublicHost == "" {
+		add("GSM_PUBLIC_HOST must name the public UDP gameserver host (for example games.vertexia.wempos-forum.com)")
+	}
+	if c.GSMEnabled && c.PublicBaseURL != "" && c.GSMPublicHost != "" {
+		if u, err := url.Parse(c.PublicBaseURL); err == nil && strings.EqualFold(u.Hostname(), c.GSMPublicHost) {
+			add("GSM_PUBLIC_HOST must not be the platform web hostname: Cloudflare does not carry raw UDP to Workers")
+		}
+	}
+	if len(c.NetcodePrivateKey) != 0 && len(c.NetcodePrivateKey) != 32 {
+		add("NETCODE_PRIVATE_KEY must be 64 hex characters")
+	}
+	switch c.DBTLS {
+	case "", "false", "true", "preferred":
+	case "skip-verify":
+		if c.IsProduction() {
+			add("DB_TLS=skip-verify disables certificate verification and is not allowed in production")
+		}
+	default:
+		add("DB_TLS must be one of true, false, preferred, skip-verify")
+	}
+	if c.IsProduction() {
+		if len(c.AltchaHMACKey) < 32 || strings.HasPrefix(c.AltchaHMACKey, "Please-Put") {
+			add("ALTCHA_HMAC_KEY must be a random secret of at least 32 characters")
+		}
+		if len(c.RegistrationIPSalt) < 32 || strings.HasPrefix(c.RegistrationIPSalt, "Please-Put") {
+			add("REGISTRATION_IP_SALT must be a random secret of at least 32 characters")
+		}
+		if !c.SessionSecure {
+			add("SESSION_SECURE must be true in production")
+		}
+		if !c.RedisRequired {
+			add("REDIS_REQUIRED must not be disabled in production")
+		}
+		if c.RunWithDatabase && c.DBTLS != "true" && !isLoopbackHost(c.DBHost) {
+			add("DB_TLS must be true for a non-local MySQL host in production")
+		}
+		if c.GSMEnabled {
+			if !c.GSMRemote() {
+				add("GSM_AGENT_URL is required in production: the platform container cannot host UDP gameservers")
+			}
+			if len(c.NetcodePrivateKey) != 32 {
+				add("NETCODE_PRIVATE_KEY is required in production so clients never need the server key")
+			}
+			if len(strings.TrimSpace(c.GameserverAPIKey)) < 32 || strings.HasPrefix(c.GameserverAPIKey, "Please-Put") {
+				add("GAMESERVER_API_KEY must be a random secret of at least 32 characters")
+			}
+		}
+	}
+	if len(problems) > 0 {
+		return errors.New("invalid configuration:\n  - " + strings.Join(problems, "\n  - "))
+	}
+	return nil
+}
+
+func isLoopbackHost(host string) bool {
+	host = strings.TrimSpace(host)
+	if host == "" || strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+func envDuration(key string, def time.Duration) time.Duration {
+	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(key))); err == nil && d > 0 {
+		return d
+	}
+	return def
+}
+
+func envBool(key string, def bool) bool {
+	if v, err := strconv.ParseBool(strings.TrimSpace(os.Getenv(key))); err == nil {
+		return v
+	}
+	return def
 }
 
 var Global *Config
@@ -238,13 +366,7 @@ func Load() (*Config, error) {
 		gsmShutdownGrace = 10 * time.Second
 	}
 	gsmServerBin := strings.TrimSpace(os.Getenv("GSM_SERVER_BIN"))
-	if gsmServerBin == "" {
-		gsmServerBin = `C:\Users\xampp\Documents\VERTIGO-Full\A\target\debug\RaveEngineServer.exe`
-	}
 	gsmServerWorkdir := strings.TrimSpace(os.Getenv("GSM_SERVER_WORKDIR"))
-	if gsmServerWorkdir == "" {
-		gsmServerWorkdir = `C:\Users\xampp\Documents\VERTIGO-Full\A\target\debug`
-	}
 	gsmServerMap := strings.TrimSpace(os.Getenv("GSM_SERVER_MAP"))
 	if gsmServerMap == "" {
 		gsmServerMap = "assets/maps/default.vrtx"
@@ -253,8 +375,13 @@ func Load() (*Config, error) {
 	if gsmBindHost == "" {
 		gsmBindHost = "127.0.0.1"
 	}
+	appEnv := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
+	gsmAgentURL := strings.TrimSuffix(strings.TrimSpace(os.Getenv("GSM_AGENT_URL")), "/")
 	gsmPublicHost := strings.TrimSpace(os.Getenv("GSM_PUBLIC_HOST"))
-	if gsmPublicHost == "" {
+	// Auto-detecting the host only makes sense when gameservers run on this
+	// machine. A remote agent or a production container must be told the
+	// public UDP hostname explicitly.
+	if gsmPublicHost == "" && gsmAgentURL == "" && appEnv != "production" {
 		if detected := detectServerHost(); detected != "" {
 			gsmPublicHost = detected
 		} else {
@@ -286,6 +413,27 @@ func Load() (*Config, error) {
 	filterTimeout, _ := time.ParseDuration(os.Getenv("FILTER_TIMEOUT"))
 	if filterTimeout <= 0 {
 		filterTimeout = 20 * time.Second
+	}
+
+	var netcodeKey []byte
+	if raw := strings.TrimSpace(os.Getenv("NETCODE_PRIVATE_KEY")); raw != "" {
+		decoded, err := hex.DecodeString(raw)
+		if err != nil || len(decoded) != 32 {
+			return nil, errors.New("NETCODE_PRIVATE_KEY must be 64 hex characters")
+		}
+		netcodeKey = decoded
+	}
+	var netcodeProtocolID uint64
+	if raw := strings.TrimSpace(os.Getenv("NETCODE_PROTOCOL_ID")); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 64)
+		if err != nil {
+			return nil, errors.New("NETCODE_PROTOCOL_ID must be an unsigned integer")
+		}
+		netcodeProtocolID = parsed
+	}
+	publicBaseURL := strings.TrimSuffix(strings.TrimSpace(os.Getenv("PUBLIC_BASE_URL")), "/")
+	if publicBaseURL == "" {
+		publicBaseURL = "https://vertexia.wempos-forum.com"
 	}
 
 	liveTimerEnabled, _ := strconv.ParseBool(os.Getenv("LIVETIMER_ENABLED"))
@@ -351,6 +499,25 @@ func Load() (*Config, error) {
 		TypeSafeBaseURL:        typeSafeBaseURL,
 		TypeSafeModel:          typeSafeModel,
 		FilterTimeout:          filterTimeout,
+
+		AppEnv:            appEnv,
+		PublicBaseURL:     publicBaseURL,
+		RedisURL:          strings.TrimSpace(os.Getenv("REDIS_URL")),
+		RedisTLS:          envBool("REDIS_TLS", false),
+		RedisRequired:     envBool("REDIS_REQUIRED", appEnv == "production"),
+		DBTLS:             strings.ToLower(strings.TrimSpace(os.Getenv("DB_TLS"))),
+		DBTLSCAPEM:        strings.TrimSpace(os.Getenv("DB_TLS_CA_PEM")),
+		DBTLSServerName:   strings.TrimSpace(os.Getenv("DB_TLS_SERVER_NAME")),
+		DBTimeout:         envDuration("DB_TIMEOUT", 10*time.Second),
+		GSMAgentURL:       gsmAgentURL,
+		GSMAgentSecret:    strings.TrimSpace(os.Getenv("GSM_AGENT_SECRET")),
+		GSMAgentTimeout:   envDuration("GSM_AGENT_TIMEOUT", 10*time.Second),
+		NetcodePrivateKey: netcodeKey,
+		NetcodeProtocolID: netcodeProtocolID,
+		NetcodeTokenTTL:   envDuration("NETCODE_TOKEN_TTL", 60*time.Second),
+		ClientTokenTTL:    envDuration("CLIENT_TOKEN_TTL", 24*time.Hour),
+		StudioTokenTTL:    envDuration("STUDIO_TOKEN_TTL", 7*24*time.Hour),
+		LaunchTicketTTL:   envDuration("LAUNCH_TICKET_TTL", 2*time.Minute),
 	}
 
 	Global = cfg
