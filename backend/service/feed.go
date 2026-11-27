@@ -91,6 +91,42 @@ func (s *FeedService) GetSinglePost(id, currentUserID int, feedType string) (*mo
 	return nil, ""
 }
 
+var ErrFeedPostNotFound = errors.New("Post not found")
+
+// visiblePost returns the live post when viewerID may see it: anyone for
+// worldwide posts, the author and accepted friends for friends posts.
+func (s *FeedService) visiblePost(feedID, viewerID int, feedType string) (*models.FeedPost, error) {
+	if feedType != "friends" && feedType != "worldwide" {
+		return nil, ErrFeedPostNotFound
+	}
+	post, _ := s.GetSinglePost(feedID, viewerID, feedType)
+	if post == nil {
+		return nil, ErrFeedPostNotFound
+	}
+	return post, nil
+}
+
+// VisiblePost resolves a post for the named viewer (empty for anonymous).
+func (s *FeedService) VisiblePost(username string, feedID int, feedType string) (*models.FeedPost, error) {
+	viewerID := 0
+	if username != "" {
+		if u, _ := s.userRepo.GetByUsername(username); u != nil {
+			viewerID = u.ID
+		}
+	}
+	return s.visiblePost(feedID, viewerID, feedType)
+}
+
+// CommentPost resolves the post a comment belongs to, if the viewer can see it.
+func (s *FeedService) CommentPost(username string, commentID int) (*models.FeedPost, string, error) {
+	feedID, feedType, err := s.feedRepo.GetCommentTarget(commentID)
+	if err != nil {
+		return nil, "", ErrFeedPostNotFound
+	}
+	post, err := s.VisiblePost(username, feedID, feedType)
+	return post, feedType, err
+}
+
 func (s *FeedService) PostToFeed(username, content, feedType string, images ...models.ForumImageUpload) (*models.FeedPost, error) {
 	if username == "" {
 		return nil, errors.New("Unauthorized")
@@ -157,6 +193,10 @@ func (s *FeedService) ToggleReaction(username string, feedID int, feedType strin
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil || user == nil {
 		return 0, false, errors.New("user not found")
+	}
+
+	if _, err := s.visiblePost(feedID, user.ID, feedType); err != nil {
+		return 0, false, err
 	}
 
 	if s.cooldown != nil {
@@ -246,6 +286,10 @@ func (s *FeedService) PostComment(username string, feedID int, parentID *int, fe
 		return nil, errors.New("User not found")
 	}
 
+	if _, err := s.visiblePost(feedID, user.ID, feedType); err != nil {
+		return nil, err
+	}
+
 	if s.cooldown != nil {
 		key := fmt.Sprintf("feed_comment:%d", user.ID)
 		if allowed, remaining := s.cooldown.Allow(key, 5*time.Second); !allowed {
@@ -291,6 +335,10 @@ func (s *FeedService) GetFeedComments(feedID int, feedType, currentUsername stri
 		}
 	}
 
+	if _, err := s.visiblePost(feedID, currentUserID, feedType); err != nil {
+		return nil, err
+	}
+
 	flatList, err := s.feedRepo.GetCommentsByFeedID(feedID, feedType, currentUserID)
 	if err != nil {
 		return nil, err
@@ -329,6 +377,10 @@ func (s *FeedService) ToggleCommentReaction(username string, commentID int) (int
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil || user == nil {
 		return 0, false, errors.New("user not found")
+	}
+
+	if _, _, err := s.CommentPost(user.Username, commentID); err != nil {
+		return 0, false, err
 	}
 
 	if s.cooldown != nil {

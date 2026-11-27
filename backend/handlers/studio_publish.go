@@ -3,8 +3,6 @@ package handlers
 import (
 	"errors"
 	"io"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -12,46 +10,64 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
+	"vertexia-frontend/backend/storage"
 )
 
-const (
-	gameVrtxUploadDir = "./uploads/games/vrtx"
-	gameVrtxMaxBytes  = 40 << 20
-)
+const gameVrtxMaxBytes = 40 << 20
 
+// gameVrtxDiskPath returns the private storage key of a game's VRTX file.
 func gameVrtxDiskPath(gameID int) string {
-	return filepath.Join(gameVrtxUploadDir, strconv.Itoa(gameID)+".vrtx")
+	return keyGameVrtx + "/" + strconv.Itoa(gameID) + ".vrtx"
 }
 
-func studioKeyFromRequest(c fiber.Ctx) string {
-	for _, key := range []string{"ukey", "unikey", "user_key"} {
-		if v := strings.TrimSpace(c.Query(key)); v != "" {
-			return strings.Trim(strings.TrimSpace(v), "\"")
-		}
-	}
-	for _, key := range []string{"X-User-Key", "X-Unikey", "X-Ukey"} {
-		if v := strings.TrimSpace(c.Get(key)); v != "" {
-			return strings.Trim(strings.TrimSpace(v), "\"")
-		}
-	}
-	for _, key := range []string{"ukey", "unikey"} {
-		if v := strings.TrimSpace(c.FormValue(key)); v != "" {
-			return strings.Trim(strings.TrimSpace(v), "\"")
-		}
-	}
-	return ""
+func vrtxUploadLimit() int64 {
+	return uploadLimit(gameVrtxMaxBytes)
 }
 
+// sendGameVrtx streams a game's VRTX file from the store.
+func sendGameVrtx(c fiber.Ctx, gameID int) error {
+	c.Set("Content-Disposition", "attachment; filename=\"game-"+strconv.Itoa(gameID)+".vrtx\"")
+	err := sendStoredObject(c, gameVrtxDiskPath(gameID), "application/octet-stream", "private, no-store")
+	if errors.Is(err, storage.ErrNotFound) {
+		c.Response().Header.Del(fiber.HeaderContentDisposition)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Game file not found"})
+	}
+	if err != nil {
+		c.Response().Header.Del(fiber.HeaderContentDisposition)
+		recordInternalError(c, err)
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Game storage unavailable"})
+	}
+	return nil
+}
+
+// resolveStudioUser accepts, in order: a bearer access token, the browser
+// session, then the legacy Unikey (header, deprecated query, form or JSON
+// body). A present but invalid bearer token is rejected.
 func resolveStudioUser(c fiber.Ctx, jsonUkey string) (*models.User, error) {
 	if service.User == nil {
 		return nil, errors.New("service unavailable")
+	}
+	if hasAccessToken(c) {
+		u, _, err := bearerUser(c)
+		if err != nil {
+			return nil, errors.New("unauthorized")
+		}
+		return u, nil
 	}
 	if username := GetActiveUser(c); username != "" {
 		if u, _ := service.User.GetUserByUsername(username); u != nil {
 			return u, nil
 		}
 	}
-	ukey := studioKeyFromRequest(c)
+	ukey := legacyUnikey(c)
+	if ukey == "" {
+		for _, key := range []string{"ukey", "unikey"} {
+			if v := strings.TrimSpace(c.FormValue(key)); v != "" {
+				ukey = strings.Trim(v, "\"")
+				break
+			}
+		}
+	}
 	if ukey == "" {
 		ukey = strings.Trim(strings.TrimSpace(jsonUkey), "\"")
 	}
@@ -106,21 +122,22 @@ func firstNonEmpty(values ...string) string {
 }
 
 func readStudioVrtxBytes(c fiber.Ctx) ([]byte, error) {
+	limit := vrtxUploadLimit()
 	for _, field := range []string{"file", "vrtx"} {
 		if header, err := c.FormFile(field); err == nil && header != nil && header.Size > 0 {
-			if header.Size > gameVrtxMaxBytes {
+			if header.Size > limit {
 				return nil, errors.New("VRTX file is too large")
 			}
 			src, err := header.Open()
 			if err != nil {
 				return nil, errors.New("Could not read upload")
 			}
-			data, err := io.ReadAll(io.LimitReader(src, gameVrtxMaxBytes+1))
+			data, err := io.ReadAll(io.LimitReader(src, limit+1))
 			src.Close()
 			if err != nil {
 				return nil, errors.New("Could not read upload")
 			}
-			if int64(len(data)) > gameVrtxMaxBytes {
+			if int64(len(data)) > limit {
 				return nil, errors.New("VRTX file is too large")
 			}
 			return data, nil
@@ -130,7 +147,7 @@ func readStudioVrtxBytes(c fiber.Ctx) ([]byte, error) {
 	if len(data) == 0 {
 		return nil, errors.New("Missing VRTX file")
 	}
-	if int64(len(data)) > gameVrtxMaxBytes {
+	if int64(len(data)) > limit {
 		return nil, errors.New("VRTX file is too large")
 	}
 	out := make([]byte, len(data))
@@ -171,6 +188,9 @@ func StudioGameVrtxUploadPost(c fiber.Ctx) error {
 	if ownerID != user.ID && !user.HasAdminAccess() {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "You do not own this game"})
 	}
+	if game.Locked && !user.HasAdminAccess() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "This game is locked by staff"})
+	}
 	data, err := readStudioVrtxBytes(c)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -178,27 +198,9 @@ func StudioGameVrtxUploadPost(c fiber.Ctx) error {
 	if err := validateVrtxBytes(data); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	if err := os.MkdirAll(gameVrtxUploadDir, 0755); err != nil {
-		recordInternalError(c, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
-	}
-	dst := gameVrtxDiskPath(gameID)
-	tmp, err := os.CreateTemp(gameVrtxUploadDir, "vrtxupload*.tmp")
-	if err != nil {
-		recordInternalError(c, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
-	}
-	tmpPath := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
-		recordInternalError(c, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
-	}
-	tmp.Close()
-	os.Remove(dst)
-	if err := os.Rename(tmpPath, dst); err != nil {
-		os.Remove(tmpPath)
+	ctx, cancel := storeCtx(c)
+	defer cancel()
+	if err := storage.PutBytes(ctx, storage.Default(), gameVrtxDiskPath(gameID), data, "application/octet-stream"); err != nil {
 		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save upload"})
 	}
@@ -220,14 +222,7 @@ func GameserverGameVrtxGet(c fiber.Ctx) error {
 	if err != nil || game == nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Game not found"})
 	}
-	diskPath := gameVrtxDiskPath(gameID)
-	fi, err := os.Stat(diskPath)
-	if err != nil || fi.IsDir() || fi.Size() <= 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Game file not found"})
-	}
-	c.Set("Content-Type", "application/octet-stream")
-	c.Set("Content-Disposition", "attachment; filename=\"game-"+strconv.Itoa(gameID)+".vrtx\"")
-	return c.SendFile(diskPath)
+	return sendGameVrtx(c, gameID)
 }
 
 func StudioGamesListGet(c fiber.Ctx) error {
@@ -305,12 +300,5 @@ func StudioGameVrtxGet(c fiber.Ctx) error {
 	if ownerID != user.ID && !user.HasAdminAccess() {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "You do not own this game"})
 	}
-	diskPath := gameVrtxDiskPath(gameID)
-	fi, err := os.Stat(diskPath)
-	if err != nil || fi.IsDir() || fi.Size() <= 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Game file not found"})
-	}
-	c.Set("Content-Type", "application/octet-stream")
-	c.Set("Content-Disposition", "attachment; filename=\"game-"+strconv.Itoa(gameID)+".vrtx\"")
-	return c.SendFile(diskPath)
+	return sendGameVrtx(c, gameID)
 }

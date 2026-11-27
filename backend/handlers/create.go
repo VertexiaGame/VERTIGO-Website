@@ -2,19 +2,20 @@ package handlers
 
 import (
 	"errors"
-	"io"
 	"mime/multipart"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/renderer"
 	"vertexia-frontend/backend/service"
+	"vertexia-frontend/backend/storage"
 )
 
 var createCategoryNames = map[string]string{
@@ -31,25 +32,30 @@ const (
 	createPreviewMaxTextureBytes = 8 << 20
 	gameThumbnailUploadDir       = "./static/uploads/games"
 	gameThumbnailMaxImageBytes   = 8 << 20
+	// gameThumbnailStoredMaxBytes bounds reads of re-encoded PNGs, which can
+	// be larger than the original JPEG upload.
+	gameThumbnailStoredMaxBytes = 64 << 20
 )
 
 var gameThumbnailImageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true}
 
 const gameMaxThumbnails = 5
 
+// gameIconPath returns the storage key of an approved game icon.
 func gameIconPath(gameID int) string {
-	return filepath.Join(gameThumbnailUploadDir, strconv.Itoa(gameID)+".png")
+	return keyGameMedia + "/" + strconv.Itoa(gameID) + ".png"
 }
 
 func gameBannerPath(gameID int) string {
 	return gameThumbPath(gameID, 1)
 }
 
+// gameThumbPath returns the storage key of an approved game thumbnail.
 func gameThumbPath(gameID, index int) string {
 	if index <= 1 {
-		return filepath.Join(gameThumbnailUploadDir, "thumbs", strconv.Itoa(gameID)+".png")
+		return keyGameMedia + "/thumbs/" + strconv.Itoa(gameID) + ".png"
 	}
-	return filepath.Join(gameThumbnailUploadDir, "thumbs", strconv.Itoa(gameID)+"_"+strconv.Itoa(index)+".png")
+	return keyGameMedia + "/thumbs/" + strconv.Itoa(gameID) + "_" + strconv.Itoa(index) + ".png"
 }
 
 func gameThumbURL(gameID, index int) string {
@@ -59,27 +65,46 @@ func gameThumbURL(gameID, index int) string {
 	return "/static/uploads/games/thumbs/" + strconv.Itoa(gameID) + "_" + strconv.Itoa(index) + ".png"
 }
 
+// gameThumbsPresent checks every thumbnail slot concurrently.
+func gameThumbsPresent(gameID int) [gameMaxThumbnails]bool {
+	var present [gameMaxThumbnails]bool
+	ctx, cancel := bgStoreCtx()
+	defer cancel()
+	store := storage.Default()
+	var wg sync.WaitGroup
+	for i := 1; i <= gameMaxThumbnails; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			present[i-1], _ = storage.Exists(ctx, store, gameThumbPath(gameID, i))
+		}(i)
+	}
+	wg.Wait()
+	return present
+}
+
 func gameThumbURLs(gameID int) []string {
 	var urls []string
-	for i := 1; i <= gameMaxThumbnails; i++ {
-		if _, err := os.Stat(gameThumbPath(gameID, i)); err != nil {
-			continue
+	for i, ok := range gameThumbsPresent(gameID) {
+		if ok {
+			urls = append(urls, gameThumbURL(gameID, i+1))
 		}
-		urls = append(urls, gameThumbURL(gameID, i))
 	}
 	return urls
 }
 
 func clearGameThumbs(gameID int) {
+	ctx, cancel := bgStoreCtx()
+	defer cancel()
 	for i := 1; i <= gameMaxThumbnails; i++ {
-		os.Remove(gameThumbPath(gameID, i))
+		_ = storage.Default().Delete(ctx, gameThumbPath(gameID, i))
 	}
 }
 
 func gameThumbCount(gameID int) int {
 	n := 0
-	for i := 1; i <= gameMaxThumbnails; i++ {
-		if _, err := os.Stat(gameThumbPath(gameID, i)); err != nil {
+	for _, ok := range gameThumbsPresent(gameID) {
+		if !ok {
 			break
 		}
 		n++
@@ -91,20 +116,21 @@ func removeGameThumb(gameID, index int) error {
 	if index < 1 || index > gameMaxThumbnails {
 		return errors.New("Invalid thumbnail")
 	}
-	if _, err := os.Stat(gameThumbPath(gameID, index)); err != nil {
+	ctx, cancel := bgStoreCtx()
+	defer cancel()
+	store := storage.Default()
+	if ok, _ := storage.Exists(ctx, store, gameThumbPath(gameID, index)); !ok {
 		return errors.New("Thumbnail not found")
 	}
-	if err := os.Remove(gameThumbPath(gameID, index)); err != nil {
+	if err := store.Delete(ctx, gameThumbPath(gameID, index)); err != nil {
 		return errors.New("Could not remove thumbnail")
 	}
 	for i := index + 1; i <= gameMaxThumbnails; i++ {
 		src := gameThumbPath(gameID, i)
-		if _, err := os.Stat(src); err != nil {
+		if ok, _ := storage.Exists(ctx, store, src); !ok {
 			break
 		}
-		dst := gameThumbPath(gameID, i-1)
-		os.Remove(dst)
-		if err := os.Rename(src, dst); err != nil {
+		if err := storage.Move(ctx, store, src, gameThumbPath(gameID, i-1)); err != nil {
 			return errors.New("Could not reorder thumbnails")
 		}
 	}
@@ -118,30 +144,23 @@ func swapGameThumbs(gameID, a, b int) error {
 	if a < 1 || a > gameMaxThumbnails || b < 1 || b > gameMaxThumbnails {
 		return errors.New("Invalid thumbnail position")
 	}
+	ctx, cancel := bgStoreCtx()
+	defer cancel()
+	store := storage.Default()
 	pa, pb := gameThumbPath(gameID, a), gameThumbPath(gameID, b)
-	if _, err := os.Stat(pa); err != nil {
-		return errors.New("Thumbnail not found")
-	}
-	if _, err := os.Stat(pb); err != nil {
-		return errors.New("Thumbnail not found")
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(pa), "thumbswap*.png")
+	da, err := storage.GetBytes(ctx, store, pa, gameThumbnailStoredMaxBytes)
 	if err != nil {
+		return errors.New("Thumbnail not found")
+	}
+	db, err := storage.GetBytes(ctx, store, pb, gameThumbnailStoredMaxBytes)
+	if err != nil {
+		return errors.New("Thumbnail not found")
+	}
+	if err := storage.PutBytes(ctx, store, pa, db, "image/png"); err != nil {
 		return errors.New("Could not reorder thumbnails")
 	}
-	tmpPath := tmp.Name()
-	tmp.Close()
-	os.Remove(tmpPath)
-	if err := os.Rename(pa, tmpPath); err != nil {
-		return errors.New("Could not reorder thumbnails")
-	}
-	if err := os.Rename(pb, pa); err != nil {
-		os.Rename(tmpPath, pa)
-		return errors.New("Could not reorder thumbnails")
-	}
-	if err := os.Rename(tmpPath, pb); err != nil {
-		os.Rename(pa, pb)
-		os.Rename(tmpPath, pa)
+	if err := storage.PutBytes(ctx, store, pb, da, "image/png"); err != nil {
+		_ = storage.PutBytes(ctx, store, pa, da, "image/png")
 		return errors.New("Could not reorder thumbnails")
 	}
 	return nil
@@ -176,28 +195,47 @@ func checkGameUploadImage(header *multipart.FileHeader, kind string) error {
 	if !gameThumbnailImageExtensions[ext] {
 		return errors.New(kind + " must be a PNG or JPEG image")
 	}
-	if header.Size > gameThumbnailMaxImageBytes {
+	if header.Size > uploadLimit(gameThumbnailMaxImageBytes) {
 		return errors.New(kind + " file is too large")
 	}
 	return nil
 }
 
-func saveGameUploadImage(header *multipart.FileHeader, kind, dstPath string) error {
+// prepareUploadPNG reads an image upload with a hard size limit, verifies it
+// is a PNG or JPEG of sane dimensions and re-encodes it as PNG.
+func prepareUploadPNG(header *multipart.FileHeader, kind string) ([]byte, error) {
 	if err := checkGameUploadImage(header, kind); err != nil {
+		return nil, err
+	}
+	data, err := readUpload(header, gameThumbnailMaxImageBytes)
+	if err != nil {
+		if errors.Is(err, errUploadTooLarge) {
+			return nil, errors.New(kind + " file is too large")
+		}
+		return nil, errors.New("Could not read " + strings.ToLower(kind))
+	}
+	encoded, err := reencodePNG(data)
+	if err != nil {
+		if errors.Is(err, errImageTooLarge) {
+			return nil, errors.New(kind + " dimensions are too large (max 8192x8192)")
+		}
+		if errors.Is(err, errInvalidImage) {
+			return nil, errors.New(kind + " must be a PNG or JPEG image")
+		}
+		return nil, errors.New("Could not save upload")
+	}
+	return encoded, nil
+}
+
+// saveGameUploadImage validates header and stores it as PNG under key.
+func saveGameUploadImage(header *multipart.FileHeader, kind, key string) error {
+	encoded, err := prepareUploadPNG(header, kind)
+	if err != nil {
 		return err
 	}
-	src, err := header.Open()
-	if err != nil {
-		return errors.New("Could not read " + strings.ToLower(kind))
-	}
-	defer src.Close()
-	if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
-		return errors.New("Could not save upload")
-	}
-	if err := saveShopItemImage(src, dstPath); err != nil {
-		if err.Error() == "invalid image file" {
-			return errors.New(kind + " must be a PNG or JPEG image")
-		}
+	ctx, cancel := bgStoreCtx()
+	defer cancel()
+	if err := storage.PutBytes(ctx, storage.Default(), key, encoded, "image/png"); err != nil {
 		return errors.New("Could not save upload")
 	}
 	return nil
@@ -328,10 +366,6 @@ func CreatePreviewPost(c fiber.Ctx) error {
 		c.Set("Content-Type", "image/png")
 		return c.Send(imgBytes)
 	}
-	if fileHeader.Size > createPreviewMaxModelBytes {
-		return c.Status(fiber.StatusRequestEntityTooLarge).SendString("Model file is too large")
-	}
-
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	isModel := category == "hat" || category == "tool"
 	if isModel && ext != ".obj" {
@@ -341,59 +375,69 @@ func CreatePreviewPost(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid image file")
 	}
 
-	src, err := fileHeader.Open()
-	if err != nil {
-		recordInternalError(c, err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Could not read upload")
+	limit := int64(createPreviewMaxModelBytes)
+	if !isModel {
+		limit = createPreviewMaxTextureBytes
 	}
-	defer src.Close()
+	data, err := readUpload(fileHeader, limit)
+	if err != nil {
+		if errors.Is(err, errUploadTooLarge) {
+			if isModel {
+				return c.Status(fiber.StatusRequestEntityTooLarge).SendString("Model file is too large")
+			}
+			return c.Status(fiber.StatusRequestEntityTooLarge).SendString("Image file is too large")
+		}
+		return c.Status(fiber.StatusBadRequest).SendString("Could not read upload")
+	}
+	// The renderer decodes images, so they are sniffed and size-checked first
+	// and written with an extension derived from their content.
+	tmpExt := ".obj"
+	if !isModel {
+		format, _, err := sniffImage(data, imgPNG, imgJPEG)
+		if err != nil {
+			if errors.Is(err, errImageTooLarge) {
+				return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+			}
+			return c.Status(fiber.StatusBadRequest).SendString("Invalid image file")
+		}
+		tmpExt = imageFormatExt[format]
+	}
 
-	tmpFile, err := os.CreateTemp("", "crtpreview*"+ext)
+	tmpPath, err := writeTempFile("crtpreview*"+tmpExt, data)
 	if err != nil {
 		recordInternalError(c, err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Could not save upload")
 	}
-	tmpPath := tmpFile.Name()
 	defer os.Remove(tmpPath)
-	if _, err := io.Copy(tmpFile, src); err != nil {
-		tmpFile.Close()
-		recordInternalError(c, err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Could not save upload")
-	}
-	tmpFile.Close()
 
 	var previewTexture string
 	if isModel {
 		if texHeader, err := c.FormFile("texture"); err == nil && texHeader != nil && texHeader.Size > 0 {
-			if texHeader.Size > createPreviewMaxTextureBytes {
-				return c.Status(fiber.StatusRequestEntityTooLarge).SendString("Texture file is too large")
-			}
 			texExt := strings.ToLower(filepath.Ext(texHeader.Filename))
 			if texExt == "" {
 				texExt = ".png"
 			}
 			if texExt == ".png" || texExt == ".jpg" || texExt == ".jpeg" {
-				texSrc, err := texHeader.Open()
+				texData, err := readUpload(texHeader, createPreviewMaxTextureBytes)
 				if err != nil {
-					recordInternalError(c, err)
-					return c.Status(fiber.StatusInternalServerError).SendString("Could not read texture")
+					if errors.Is(err, errUploadTooLarge) {
+						return c.Status(fiber.StatusRequestEntityTooLarge).SendString("Texture file is too large")
+					}
+					return c.Status(fiber.StatusBadRequest).SendString("Could not read texture")
 				}
-				tmpTex, err := os.CreateTemp("", "crtpreviewtex*"+texExt)
+				format, _, err := sniffImage(texData, imgPNG, imgJPEG)
 				if err != nil {
-					texSrc.Close()
+					if errors.Is(err, errImageTooLarge) {
+						return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+					}
+					return c.Status(fiber.StatusBadRequest).SendString("Invalid texture file")
+				}
+				texTmpPath, err := writeTempFile("crtpreviewtex*"+imageFormatExt[format], texData)
+				if err != nil {
 					recordInternalError(c, err)
 					return c.Status(fiber.StatusInternalServerError).SendString("Could not save texture")
 				}
-				texTmpPath := tmpTex.Name()
 				defer os.Remove(texTmpPath)
-				if _, err := io.Copy(tmpTex, texSrc); err != nil {
-					tmpTex.Close()
-					texSrc.Close()
-					recordInternalError(c, err)
-					return c.Status(fiber.StatusInternalServerError).SendString("Could not save texture")
-				}
-				tmpTex.Close()
-				texSrc.Close()
 				previewTexture = texTmpPath
 			}
 		}
@@ -612,6 +656,9 @@ func GameUpdatePost(c fiber.Ctx) error {
 	if ownerID != user.ID && !user.HasAdminAccess() {
 		return fail("You do not own this game", fiber.StatusForbidden)
 	}
+	if game.Locked && !user.HasAdminAccess() {
+		return fail("This game is locked by staff", fiber.StatusForbidden)
+	}
 
 	private := game.Private
 	if hasGameFormKey(c, "visibility") {
@@ -689,6 +736,9 @@ func requireGameThumbOwner(c fiber.Ctx) (int, int, error) {
 	}
 	if ownerID != user.ID && !user.HasAdminAccess() {
 		return 0, fiber.StatusForbidden, errors.New("You do not own this game")
+	}
+	if game.Locked && !user.HasAdminAccess() {
+		return 0, fiber.StatusForbidden, errors.New("This game is locked by staff")
 	}
 	return gameID, 0, nil
 }

@@ -718,6 +718,15 @@ func (r *UserRepository) DeleteRememberToken(tokenHash string) error {
 	return err
 }
 
+// DeleteRememberTokensForUser revokes every remember-me cookie of a user.
+func (r *UserRepository) DeleteRememberTokensForUser(userID int) error {
+	if r.db == nil {
+		return nil
+	}
+	_, err := r.db.Exec("DELETE FROM remember_tokens WHERE uid = ?", userID)
+	return err
+}
+
 func (r *UserRepository) UserExists(userID int) (bool, error) {
 	if r.db == nil {
 		return false, errors.New("database connection is offline")

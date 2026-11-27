@@ -181,6 +181,20 @@ func SettingsPasswordPost(c fiber.Ctx) error {
 	}
 
 	err = service.User.ChangePassword(user.ID, c.FormValue("current_password"), c.FormValue("new_password"), c.FormValue("retype_password"))
+	if err == nil {
+		// A password change signs out remembered browsers and native/Studio
+		// access tokens. The current session cookie stays valid.
+		if service.Auth != nil {
+			if rerr := service.Auth.RevokeAllRememberTokens(user.ID); rerr != nil {
+				recordInternalError(c, rerr)
+			}
+		}
+		if service.Tokens != nil {
+			if rerr := service.Tokens.RevokeAll(user.ID); rerr != nil {
+				recordInternalError(c, rerr)
+			}
+		}
+	}
 	return handleSettingsResponse(c, err, "Password updated successfully", nil)
 }
 

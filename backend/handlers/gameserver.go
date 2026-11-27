@@ -120,16 +120,16 @@ func gameserverRequestMember(c fiber.Ctx) string {
 	if uid == 0 {
 		uid = body.UserID
 	}
-	if ukey == "" {
-		ukey = gameserverUkeyFromRequest(c)
+	// The uid comes from the netcode connect token's user_data, which the
+	// platform signed, so it wins over the legacy Unikey and usernames.
+	if uid > 0 && service.User != nil {
+		if u, _ := service.User.GetUserByID(uid); u != nil {
+			return u.Username
+		}
+		return ""
 	}
 	if ukey == "" {
-		for _, key := range []string{"unikey", "user_key"} {
-			if v := strings.TrimSpace(c.Query(key)); v != "" {
-				ukey = strings.Trim(strings.TrimSpace(v), "\"")
-				break
-			}
-		}
+		ukey = gameserverUkeyFromRequest(c)
 	}
 	if ukey == "" {
 		ukey = strings.TrimSpace(c.FormValue("ukey"))

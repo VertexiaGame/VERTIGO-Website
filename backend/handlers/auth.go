@@ -269,7 +269,7 @@ func Logout(c fiber.Ctx) error {
 
 func ValidateUkey(c fiber.Ctx) error {
 	apiKey := c.Get("X-Gameserver-Key")
-	ukey := c.Query("ukey")
+	ukey := legacyUnikey(c)
 
 	user, err := service.Auth.ValidateUkey(apiKey, ukey)
 	if err != nil {

@@ -2,8 +2,7 @@ package handlers
 
 import (
 	"crypto/subtle"
-	"os"
-	"path/filepath"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -11,8 +10,11 @@ import (
 	"vertexia-frontend/backend/config"
 	"vertexia-frontend/backend/models"
 	"vertexia-frontend/backend/service"
+	"vertexia-frontend/backend/storage"
 )
 
+// gameserverKeyValid checks the shared gameserver API key. It is accepted
+// from headers only: query strings end up in proxy and edge logs.
 func gameserverKeyValid(c fiber.Ctx) bool {
 	if config.Global == nil {
 		return false
@@ -21,24 +23,14 @@ func gameserverKeyValid(c fiber.Ctx) bool {
 	if expected == "" {
 		return false
 	}
-	provided := c.Get("X-Gameserver-Key")
-	if provided == "" {
-		provided = c.Get("Gameserver-Key")
-	}
-	if provided == "" {
-		provided = c.Get("X-API-Key")
-	}
-	if provided == "" {
-		provided = c.Query("gameserver_key")
-	}
-	if provided == "" {
-		provided = c.Query("api_key")
-	}
-	if provided == "" {
-		authHeader := c.Get("Authorization")
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			provided = strings.TrimPrefix(authHeader, "Bearer ")
+	provided := ""
+	for _, h := range []string{"X-Gameserver-Key", "Gameserver-Key", "X-API-Key"} {
+		if provided = c.Get(h); provided != "" {
+			break
 		}
+	}
+	if provided == "" && !hasAccessToken(c) {
+		provided = bearerToken(c)
 	}
 	provided = strings.Trim(strings.TrimSpace(provided), "\"")
 	if provided == "" {
@@ -48,15 +40,8 @@ func gameserverKeyValid(c fiber.Ctx) bool {
 }
 
 func gameserverUkeyFromRequest(c fiber.Ctx) string {
-	for _, key := range []string{"ukey", "unikey", "user_key"} {
-		if v := strings.TrimSpace(c.Query(key)); v != "" {
-			return strings.Trim(strings.TrimSpace(v), "\"")
-		}
-	}
-	for _, key := range []string{"X-User-Key", "X-Unikey", "X-Ukey"} {
-		if v := strings.TrimSpace(c.Get(key)); v != "" {
-			return strings.Trim(strings.TrimSpace(v), "\"")
-		}
+	if v := legacyUnikey(c); v != "" {
+		return v
 	}
 	if idParam := strings.TrimSpace(c.Params("ukey")); idParam != "" {
 		return strings.Trim(idParam, "\"")
@@ -144,17 +129,12 @@ func serveGameserverShopFile(c fiber.Ctx, ext string) error {
 	if !gameserverKeyValid(c) {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized gameserver request")
 	}
-	rawType := c.Params("type")
-	normType, _ := models.NormalizeShopCategory(rawType)
-	if normType == "all" {
-		normType = strings.ToLower(filepath.Base(strings.TrimSpace(rawType)))
+	normType, ok := shopRenderType(c.Params("type"))
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid item type")
 	}
-	idParam := strings.TrimSpace(c.Params("id"))
-	if dotIdx := strings.Index(idParam, "."); dotIdx != -1 {
-		idParam = idParam[:dotIdx]
-	}
-	itemID, err := strconv.Atoi(idParam)
-	if err != nil || itemID <= 0 {
+	itemID, ok := parseStrictID(strings.TrimSpace(c.Params("id")), ".png", ".obj")
+	if !ok {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid item ID")
 	}
 
@@ -171,21 +151,26 @@ func serveGameserverShopFile(c fiber.Ctx, ext string) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid asset extension")
 	}
 
-	candidates := []string{
-		filepath.Join("assets", "uploads", "shop", normType, fileName),
-		filepath.Join("static", "uploads", "shop", normType, fileName),
-		filepath.Join("uploads", "shop", normType, fileName),
-	}
-	for _, candidate := range candidates {
-		clean := filepath.Clean(candidate)
-		if fi, err := os.Stat(clean); err == nil && !fi.IsDir() && fi.Size() > 0 {
-			c.Set("Content-Type", contentType)
-			c.Set("Cache-Control", "public, max-age=86400")
-			c.Set("X-Avatar-Asset-Type", normType)
-			c.Set("X-Avatar-Asset-ID", strconv.Itoa(itemID))
-			return c.SendFile(clean)
+	// assets/uploads/shop is where uploads are written; the other prefixes
+	// are legacy locations kept for files that predate it.
+	for _, prefix := range []string{keyShopUploads, "static/uploads/shop", "uploads/shop"} {
+		key, err := storage.Key(prefix, normType, fileName)
+		if err != nil {
+			continue
+		}
+		c.Set("X-Avatar-Asset-Type", normType)
+		c.Set("X-Avatar-Asset-ID", strconv.Itoa(itemID))
+		err = sendStoredObject(c, key, contentType, "public, max-age=86400")
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, storage.ErrNotFound) {
+			recordInternalError(c, err)
+			return c.Status(fiber.StatusServiceUnavailable).SendString("Avatar asset storage unavailable")
 		}
 	}
+	c.Response().Header.Del("X-Avatar-Asset-Type")
+	c.Response().Header.Del("X-Avatar-Asset-ID")
 	return c.Status(fiber.StatusNotFound).SendString("Avatar asset not found")
 }
 

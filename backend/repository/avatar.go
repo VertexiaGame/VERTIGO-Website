@@ -111,24 +111,27 @@ func (r *AvatarRepository) EquipItem(userID int, itemType string, itemID int) er
 	if err := lockAvatarInventory(tx, userID); err != nil {
 		return err
 	}
-	var specialType string
-	err = tx.QueryRow(`SELECT type FROM shopitem WHERE id = ? AND special = 'true'`, itemID).Scan(&specialType)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	// Every equipped item must be in the user's crate, and the requested slot
+	// must match the item's real type.
+	var shopType string
+	err = tx.QueryRow(`SELECT type FROM shopitem WHERE id = ?`, itemID).Scan(&shopType)
+	if errors.Is(err, sql.ErrNoRows) {
+		return errors.New("item not found")
+	}
+	if err != nil {
 		return err
 	}
-	if err == nil {
-		want, _ := models.NormalizeShopCategory(specialType)
-		requested, _ := models.NormalizeShopCategory(itemType)
-		if want != requested {
-			return errors.New("invalid item type")
-		}
-		var owned bool
-		if err := tx.QueryRow(`SELECT EXISTS (SELECT 1 FROM crate WHERE uid = ? AND iid = ?)`, userID, itemID).Scan(&owned); err != nil {
-			return err
-		}
-		if !owned {
-			return errors.New("you do not own this special item")
-		}
+	want, _ := models.NormalizeShopCategory(shopType)
+	requested, _ := models.NormalizeShopCategory(itemType)
+	if want == "all" || want != requested {
+		return errors.New("invalid item type")
+	}
+	var owned bool
+	if err := tx.QueryRow(`SELECT EXISTS (SELECT 1 FROM crate WHERE uid = ? AND iid = ?)`, userID, itemID).Scan(&owned); err != nil {
+		return err
+	}
+	if !owned {
+		return errors.New("you do not own this item")
 	}
 	av, err := readAvatar(tx, userID)
 	if err != nil {
@@ -566,17 +569,17 @@ func (r *AvatarRepository) WearOutfit(userID, outfitID int) error {
 	if err := lockAvatarInventory(tx, userID); err != nil {
 		return err
 	}
-	var missingSpecial bool
-	err = tx.QueryRow(`SELECT EXISTS (SELECT 1 FROM shopitem s
-		WHERE s.special = 'true' AND s.id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		AND NOT EXISTS (SELECT 1 FROM crate c WHERE c.uid = ? AND c.iid = s.id))`,
-		outfit.Hat1, outfit.Hat2, outfit.Hat3, outfit.Hat4, outfit.Hat5, outfit.Tool, outfit.Shirt, outfit.TShirt, outfit.Pants, outfit.Face,
-		userID).Scan(&missingSpecial)
-	if err != nil {
-		return err
-	}
-	if missingSpecial {
-		return errors.New("this outfit contains a special item you no longer own")
+	for _, id := range []int{outfit.Hat1, outfit.Hat2, outfit.Hat3, outfit.Hat4, outfit.Hat5, outfit.Tool, outfit.Shirt, outfit.TShirt, outfit.Pants, outfit.Face} {
+		if id <= 0 {
+			continue
+		}
+		var owned bool
+		if err := tx.QueryRow(`SELECT EXISTS (SELECT 1 FROM crate WHERE uid = ? AND iid = ?)`, userID, id).Scan(&owned); err != nil {
+			return err
+		}
+		if !owned {
+			return errors.New("this outfit contains an item you no longer own")
+		}
 	}
 
 	query := `UPDATE avatar SET 

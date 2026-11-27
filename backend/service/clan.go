@@ -1077,7 +1077,9 @@ func canAssignRole(access *ClanAccess, role *models.ClanRole) bool {
 	if access.IsAdmin || access.IsOwner {
 		return true
 	}
-	return access.Role != nil && access.Role.Rank > role.Rank
+	// Rank alone is not enough: a low-rank role can carry permissions the
+	// actor does not have.
+	return access.Role != nil && access.Role.Rank > role.Rank && role.Permissions&^access.Role.Permissions == 0
 }
 
 func canActOnMember(access *ClanAccess, target *models.ClanMember) bool {

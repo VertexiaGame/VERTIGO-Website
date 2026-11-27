@@ -249,6 +249,17 @@ func (r *FeedRepository) GetCommentsByFeedID(feedID int, feedType string, curren
 	return comments, nil
 }
 
+// GetCommentTarget returns the post a live comment belongs to.
+func (r *FeedRepository) GetCommentTarget(commentID int) (int, string, error) {
+	if r.db == nil {
+		return 0, "", sql.ErrNoRows
+	}
+	var feedID int
+	var feedType string
+	err := r.db.QueryRow(`SELECT feed_id, feed_type FROM feed_comments WHERE id = ? AND removed = 'false'`, commentID).Scan(&feedID, &feedType)
+	return feedID, feedType, err
+}
+
 func (r *FeedRepository) HasUserReactedComment(userID, commentID int) (bool, error) {
 	return r.checkExists("SELECT EXISTS(SELECT 1 FROM creact WHERE uid = ? AND cid = ?)", userID, commentID)
 }
