@@ -85,7 +85,25 @@ type Config struct {
 	NetcodeTokenTTL   time.Duration
 	ClientTokenTTL    time.Duration
 	StudioTokenTTL    time.Duration
-	LaunchTicketTTL   time.Duration
+
+	GSMHeartbeatTimeout time.Duration
+	GSMMaxServers       int
+	GSMReadyTimeout     time.Duration
+	GSMPublicIP         string
+
+	R2AccountID       string
+	R2Bucket          string
+	R2AccessKeyID     string
+	R2SecretAccessKey string
+	R2PublicBaseURL   string
+	R2Endpoint        string
+	StorageDir        string
+	UploadMaxBytes    int64
+}
+
+// R2Enabled reports whether runtime-written files go to Cloudflare R2.
+func (c *Config) R2Enabled() bool {
+	return c != nil && c.R2Bucket != ""
 }
 
 // IsProduction reports whether APP_ENV=production. Production enables the
@@ -164,6 +182,17 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+	if c.R2Bucket != "" && (c.R2AccessKeyID == "" || c.R2SecretAccessKey == "" || (c.R2AccountID == "" && c.R2Endpoint == "")) {
+		add("R2_BUCKET requires R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_ACCOUNT_ID (or R2_ENDPOINT)")
+	}
+	if c.R2PublicBaseURL != "" {
+		if u, err := url.Parse(c.R2PublicBaseURL); err != nil || u.Scheme != "https" || u.Host == "" {
+			add("R2_PUBLIC_BASE_URL must be an absolute https URL")
+		}
+	}
+	if c.IsProduction() && !c.R2Enabled() {
+		add("R2_BUCKET is required in production: the container filesystem is ephemeral")
+	}
 	if len(problems) > 0 {
 		return errors.New("invalid configuration:\n  - " + strings.Join(problems, "\n  - "))
 	}
@@ -182,6 +211,34 @@ func isLoopbackHost(host string) bool {
 func envDuration(key string, def time.Duration) time.Duration {
 	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(key))); err == nil && d > 0 {
 		return d
+	}
+	return def
+}
+
+// ParsePortRange parses "min-max" (inclusive) with 1024 <= min <= max <= 65535.
+func ParsePortRange(raw string) (int, int, bool) {
+	lo, hi, found := strings.Cut(strings.TrimSpace(raw), "-")
+	if !found {
+		return 0, 0, false
+	}
+	a, err1 := strconv.Atoi(strings.TrimSpace(lo))
+	b, err2 := strconv.Atoi(strings.TrimSpace(hi))
+	if err1 != nil || err2 != nil || a < 1024 || b > 65535 || a > b {
+		return 0, 0, false
+	}
+	return a, b, true
+}
+
+func envInt(key string, def int) int {
+	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(key))); err == nil && v > 0 {
+		return v
+	}
+	return def
+}
+
+func envString(key, def string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
 	}
 	return def
 }
@@ -309,7 +366,12 @@ func Load() (*Config, error) {
 	limiterMax, _ := strconv.Atoi(os.Getenv("LIMITER_MAX"))
 	limiterExpiration, _ := time.ParseDuration(os.Getenv("LIMITER_EXPIRATION"))
 	sessionSecure, _ := strconv.ParseBool(os.Getenv("SESSION_SECURE"))
-	sessionSameSite := os.Getenv("SESSION_SAMESITE")
+	sessionSameSite := strings.TrimSpace(os.Getenv("SESSION_SAMESITE"))
+	if sessionSameSite == "" {
+		// An empty SameSite lets Firefox and Safari send the remember-me
+		// cookie on cross-site requests.
+		sessionSameSite = "Lax"
+	}
 	sessionIdleTimeout, _ := time.ParseDuration(os.Getenv("SESSION_IDLE_TIMEOUT"))
 	sessionAbsoluteTimeout, _ := time.ParseDuration(os.Getenv("SESSION_ABSOLUTE_TIMEOUT"))
 	altchaHMACKey := os.Getenv("ALTCHA_HMAC_KEY")
@@ -341,6 +403,9 @@ func Load() (*Config, error) {
 	gsmPortMax, _ := strconv.Atoi(os.Getenv("GSM_PORT_MAX"))
 	if gsmPortMax <= 0 {
 		gsmPortMax = 5250
+	}
+	if lo, hi, ok := ParsePortRange(os.Getenv("GSM_PORT_RANGE")); ok {
+		gsmPortMin, gsmPortMax = lo, hi
 	}
 	if gsmPortMax < gsmPortMin {
 		gsmPortMax = gsmPortMin
@@ -517,7 +582,20 @@ func Load() (*Config, error) {
 		NetcodeTokenTTL:   envDuration("NETCODE_TOKEN_TTL", 60*time.Second),
 		ClientTokenTTL:    envDuration("CLIENT_TOKEN_TTL", 24*time.Hour),
 		StudioTokenTTL:    envDuration("STUDIO_TOKEN_TTL", 7*24*time.Hour),
-		LaunchTicketTTL:   envDuration("LAUNCH_TICKET_TTL", 2*time.Minute),
+
+		GSMHeartbeatTimeout: envDuration("GSM_HEARTBEAT_TIMEOUT", 90*time.Second),
+		GSMMaxServers:       envInt("GSM_MAX_SERVERS", 0),
+		GSMReadyTimeout:     envDuration("GSM_READY_TIMEOUT", 30*time.Second),
+		GSMPublicIP:         strings.TrimSpace(os.Getenv("GSM_PUBLIC_IP")),
+
+		R2AccountID:       strings.TrimSpace(os.Getenv("R2_ACCOUNT_ID")),
+		R2Bucket:          strings.TrimSpace(os.Getenv("R2_BUCKET")),
+		R2AccessKeyID:     strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID")),
+		R2SecretAccessKey: strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY")),
+		R2PublicBaseURL:   strings.TrimSuffix(strings.TrimSpace(os.Getenv("R2_PUBLIC_BASE_URL")), "/"),
+		R2Endpoint:        strings.TrimSuffix(strings.TrimSpace(os.Getenv("R2_ENDPOINT")), "/"),
+		StorageDir:        envString("STORAGE_DIR", "."),
+		UploadMaxBytes:    int64(envInt("UPLOAD_MAX_BYTES", 40<<20)),
 	}
 
 	Global = cfg

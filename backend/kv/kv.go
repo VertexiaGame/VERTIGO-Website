@@ -30,9 +30,28 @@ type Options struct {
 }
 
 var (
-	mu     sync.RWMutex
-	client *redis.Client
+	mu       sync.RWMutex
+	client   *redis.Client
+	required bool
 )
+
+// ErrUnavailable is returned by helpers when Redis is required but missing.
+var ErrUnavailable = errors.New("kv: redis is required but not connected")
+
+// SetRequired makes every memory fallback in this package an error. main
+// enables it in production so state is never silently kept per-process.
+func SetRequired(v bool) {
+	mu.Lock()
+	required = v
+	mu.Unlock()
+}
+
+// Required reports whether memory fallbacks are forbidden.
+func Required() bool {
+	mu.RLock()
+	defer mu.RUnlock()
+	return required
+}
 
 // Connect dials Redis and verifies it with PING. It never falls back to an
 // in-memory store; callers decide whether a failure is fatal.
@@ -85,6 +104,15 @@ func Client() *redis.Client {
 	mu.RLock()
 	defer mu.RUnlock()
 	return client
+}
+
+// Ping checks the shared client. It returns ErrUnavailable when no client is set.
+func Ping(ctx context.Context) error {
+	c := Client()
+	if c == nil {
+		return ErrUnavailable
+	}
+	return c.Ping(ctx).Err()
 }
 
 // Ctx returns a context bounded by the standard operation timeout.

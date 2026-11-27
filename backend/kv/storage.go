@@ -14,7 +14,8 @@ import (
 // Redis client, so middleware built at package init (rate limiters) picks up
 // Redis once main has connected. Without a client it uses a process-local map,
 // which is only acceptable in development: production startup refuses to run
-// without Redis (see config.RedisRequired).
+// without Redis (see config.RedisRequired) and SetRequired turns any fallback
+// into an error.
 type Storage struct {
 	prefix string
 	local  *memory
@@ -40,6 +41,9 @@ func (s *Storage) GetWithContext(ctx context.Context, key string) ([]byte, error
 		}
 		return val, err
 	}
+	if Required() {
+		return nil, ErrUnavailable
+	}
 	return s.local.get(key), nil
 }
 
@@ -55,6 +59,9 @@ func (s *Storage) SetWithContext(ctx context.Context, key string, val []byte, ex
 	}
 	if c := Client(); c != nil {
 		return c.Set(ctx, s.key(key), val, exp).Err()
+	}
+	if Required() {
+		return ErrUnavailable
 	}
 	s.local.set(key, val, exp)
 	return nil
@@ -72,6 +79,9 @@ func (s *Storage) DeleteWithContext(ctx context.Context, key string) error {
 	}
 	if c := Client(); c != nil {
 		return c.Del(ctx, s.key(key)).Err()
+	}
+	if Required() {
+		return ErrUnavailable
 	}
 	s.local.del(key)
 	return nil
@@ -93,6 +103,9 @@ func (s *Storage) ResetWithContext(ctx context.Context) error {
 			}
 		}
 		return iter.Err()
+	}
+	if Required() {
+		return ErrUnavailable
 	}
 	s.local.reset()
 	return nil
